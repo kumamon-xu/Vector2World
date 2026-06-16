@@ -257,7 +257,9 @@ public final class DefaultMaterials {
 	static {
 
 		surfaceMaterialMap = new HashMap<>();
+		surfaceMaterialMap.put("artificial_turf", GRASS);
 		surfaceMaterialMap.put("asphalt", ASPHALT);
+		surfaceMaterialMap.put("bare_rock", ROCK);
 		surfaceMaterialMap.put("carpet", CARPET);
 		surfaceMaterialMap.put("cobblestone", SETT);
 		surfaceMaterialMap.put("compacted", GRAVEL);
@@ -266,12 +268,15 @@ public final class DefaultMaterials {
 		surfaceMaterialMap.put("dirt", EARTH);
 		surfaceMaterialMap.put("earth", EARTH);
 		surfaceMaterialMap.put("fine_gravel", GRAVEL);
+		surfaceMaterialMap.put("granite", STONE);
 		surfaceMaterialMap.put("grass", GRASS);
-		surfaceMaterialMap.put("gravel", GRAVEL);
 		surfaceMaterialMap.put("grass_paver", GRASS_PAVER);
+		surfaceMaterialMap.put("gravel", GRAVEL);
 		surfaceMaterialMap.put("ground", EARTH);
 		surfaceMaterialMap.put("ice", ICE);
+		surfaceMaterialMap.put("laterite", EARTH);
 		surfaceMaterialMap.put("marble", MARBLE);
+		surfaceMaterialMap.put("metal", STEEL);
 		surfaceMaterialMap.put("mud", EARTH);
 		surfaceMaterialMap.put("paved", ASPHALT);
 		surfaceMaterialMap.put("paving_stones", PAVING_STONE);
