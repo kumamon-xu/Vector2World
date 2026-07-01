@@ -387,7 +387,8 @@ public class RoadModule extends ConfigurableWorldModule {
 
 				Road road = roads.get(i);
 
-				if (!isOneway(road.tags)) {
+				if (!isOneway(road.tags)
+						|| road.laneLayout.getLanesLeftToRight().stream().anyMatch(l -> l.type == SIDEWALK)) {
 					allOneway = false;
 					break;
 				}
