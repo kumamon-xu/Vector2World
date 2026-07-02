@@ -425,4 +425,17 @@ public final class DefaultMaterials {
 		return config.mapStyle().resolveMaterial(getSurfaceMaterialRef(value, fallback));
 	}
 
+	/**
+	 * Names of materials that should be smooth by default.
+	 * This is intended as a temporary solution while normal mode is still part of material properties
+	 * rather than mesh geometry creation.
+	 */
+	public static final List<String> DEFAULT_SMOOTH_MATERIALS = List.of(
+			"TERRAIN_DEFAULT", "WATER", "EARTH", "GRASS", "GRAVEL", "ICE", "SCRUB", "SHELLS", "SAND", "SNOW",
+			"WOODCHIPS", "TARTAN", "CARPET", "RAIL_BALLAST", "RAILWAY", "TREE_TRUNK", "TREE_CROWN", "POSTBOX_ROYALMAIL",
+			"FIREHYDRANT", "FLAGCLOTH", "PITCH_BEACHVOLLEYBALL", "PITCH_SOCCER", "PITCH_TENNIS_ASPHALT",
+			"PITCH_TENNIS_CLAY", "PITCH_TENNIS_GRASS", "PITCH_TENNIS_SINGLES_ASPHALT", "PITCH_TENNIS_SINGLES_CLAY",
+			"PITCH_TENNIS_SINGLES_GRASS", "TENNIS_NET"
+	);
+
 }

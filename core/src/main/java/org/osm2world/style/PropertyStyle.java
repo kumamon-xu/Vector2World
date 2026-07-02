@@ -158,7 +158,9 @@ public class PropertyStyle implements Style {
 			String materialName = entry.getKey();
 			Set<String> attributes = entry.getValue();
 
-			Material material = new Material(Material.Interpolation.FLAT, WHITE);
+			boolean assumeSmooth = DefaultMaterials.DEFAULT_SMOOTH_MATERIALS.contains(materialName.toUpperCase());
+
+			Material material = new Material(assumeSmooth ? Material.Interpolation.SMOOTH : Material.Interpolation.FLAT, WHITE);
 
 			String keyPrefix = "material_" + materialName + "_";
 
