@@ -14,6 +14,7 @@ import static org.osm2world.output.gltf.GltfFlavor.GLB;
 import static org.osm2world.output.gltf.GltfFlavor.GLTF;
 import static org.osm2world.scene.material.Material.Interpolation.SMOOTH;
 import static org.osm2world.scene.mesh.MeshStore.*;
+import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
 import static org.osm2world.scene.texcoord.TexCoordUtil.mirroredVertically;
 
 import java.io.*;

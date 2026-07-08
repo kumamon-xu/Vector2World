@@ -14,13 +14,13 @@ import org.osm2world.map_data.data.overlaps.MapOverlap;
 import org.osm2world.map_elevation.creation.EleConstraintEnforcer;
 import org.osm2world.map_elevation.data.EleConnector;
 import org.osm2world.map_elevation.data.GroundState;
-import org.osm2world.util.exception.InvalidGeometryException;
 import org.osm2world.math.algorithms.CAGUtil;
 import org.osm2world.math.shapes.PolygonShapeXZ;
 import org.osm2world.math.shapes.SimplePolygonShapeXZ;
-import org.osm2world.scene.mesh.Mesh;
+import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
 import org.osm2world.scene.model.Model;
 import org.osm2world.scene.model.ModelInstance;
+import org.osm2world.util.exception.InvalidGeometryException;
 import org.osm2world.world.attachment.AttachmentConnector;
 import org.osm2world.world.attachment.AttachmentSurface;
 
@@ -29,13 +29,13 @@ public interface WorldObject {
 	/**
 	 * returns the meshes making up this {@link WorldObject}.
 	 */
-	public List<Mesh> buildMeshes();
+	public List<? extends MeshOrMeshWithMetadata> buildMeshes();
 
 	/**
 	 * returns the meshes making up this {@link WorldObject}, including {@link #getSubModels()}.
 	 */
-	public default List<Mesh> buildMeshesForModelHierarchy() {
-		List<Mesh> result = new ArrayList<>(buildMeshes());
+	public default List<? extends MeshOrMeshWithMetadata> buildMeshesForModelHierarchy() {
+		List<MeshOrMeshWithMetadata> result = new ArrayList<>(buildMeshes());
 		getSubModels().forEach(it -> result.addAll(it.getMeshes()));
 		return result;
 	}

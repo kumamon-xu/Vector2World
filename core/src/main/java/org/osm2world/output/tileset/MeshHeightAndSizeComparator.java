@@ -1,10 +1,9 @@
 package org.osm2world.output.tileset;
 
-import static org.osm2world.scene.mesh.MeshStore.MeshWithMetadata;
-
 import java.util.Comparator;
 
 import org.osm2world.math.shapes.AxisAlignedRectangleXZ;
+import org.osm2world.scene.mesh.MeshWithMetadata;
 
 final class MeshHeightAndSizeComparator implements Comparator<MeshWithMetadata> {
 

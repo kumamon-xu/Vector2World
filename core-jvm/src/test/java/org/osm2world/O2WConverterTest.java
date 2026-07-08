@@ -1,6 +1,6 @@
 package org.osm2world;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.osm2world.output.common.compression.Compression.NONE;
 import static org.osm2world.output.gltf.GltfFlavor.GLTF;
 import static org.osm2world.util.test.TestFileUtil.createTempFile;
@@ -22,6 +22,8 @@ import org.osm2world.math.geo.MapProjection;
 import org.osm2world.math.geo.MetricMapProjection;
 import org.osm2world.output.Output;
 import org.osm2world.output.gltf.GltfOutput;
+import org.osm2world.scene.Scene;
+import org.osm2world.util.test.TestWorldModule;
 
 public class O2WConverterTest {
 
@@ -59,6 +61,20 @@ public class O2WConverterTest {
 			}
 
 		}
+
+	}
+
+	@Test
+	public void testMeshMetadata() {
+
+		var builder = new MapDataBuilder();
+		var node = builder.createNode(0, 0);
+
+		node.addRepresentation(new TestWorldModule.TestNodeWorldObject(node));
+		Scene scene = new Scene(null, builder.build());
+
+		assertFalse(scene.getMeshesWithMetadata().isEmpty());
+		assertEquals(Map.of("testKey", "1"), scene.getMeshesWithMetadata().get(0).metadata().extraProperties());
 
 	}
 

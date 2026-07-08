@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.osm2world.scene.material.Material.Interpolation.FLAT;
 import static org.osm2world.scene.mesh.MeshStore.ClipToBounds.clipToBounds;
 import static org.osm2world.scene.mesh.MeshStore.ClipToBounds.getSegmentsCCW;
+import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
 import static org.osm2world.test.TestUtil.assertAlmostEquals;
 
 import java.util.List;
@@ -51,9 +52,9 @@ public class MeshStoreTest {
 		var material = new Material(FLAT, Color.WHITE).makeDoubleSided();
 
 		var mesh = new Mesh(geometryBuilder.build(), material);
-		var metadata = new MeshStore.MeshMetadata(null, null);
+		var metadata = new MeshMetadata(null, null);
 
-		MeshStore input = new MeshStore(List.of(new MeshStore.MeshWithMetadata(mesh, metadata)));
+		MeshStore input = new MeshStore(List.of(new MeshWithMetadata(mesh, metadata)));
 
 		MeshStore result = input.process(List.of(new MeshStore.EmulateDoubleSidedMaterials()));
 

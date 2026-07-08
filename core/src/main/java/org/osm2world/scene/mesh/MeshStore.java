@@ -7,17 +7,16 @@ import static java.util.Collections.nCopies;
 import static java.util.stream.Collectors.toList;
 import static org.osm2world.math.algorithms.GeometryUtil.isRightOf;
 import static org.osm2world.scene.color.Color.WHITE;
-import static org.osm2world.scene.mesh.Geometry.combine;
+import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
+import static org.osm2world.scene.mesh.MeshWithMetadata.merge;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.osm2world.map_data.data.MapRelationElement;
 import org.osm2world.math.VectorXYZ;
 import org.osm2world.math.VectorXZ;
 import org.osm2world.math.algorithms.GeometryUtil;
@@ -29,9 +28,7 @@ import org.osm2world.scene.color.Color;
 import org.osm2world.scene.color.LColor;
 import org.osm2world.scene.material.*;
 import org.osm2world.util.FaultTolerantIterationUtil;
-import org.osm2world.world.data.WorldObject;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -42,42 +39,6 @@ public class MeshStore {
 
 	@FunctionalInterface
 	public static interface MeshProcessingStep extends Function<MeshStore, MeshStore> {}
-
-	public record MeshMetadata(
-			@Nullable MapRelationElement mapElement,
-			@Nullable Class<? extends WorldObject> modelClass) {
-
-		@Override
-		public String toString() {
-			return "{" + mapElement + ", " + (modelClass == null ? null : modelClass.getSimpleName()) + "}";
-		}
-
-	}
-
-	public record MeshWithMetadata(@Nonnull Mesh mesh, @Nonnull MeshMetadata metadata) {
-
-		public MeshWithMetadata(Mesh mesh, MeshMetadata metadata) {
-			if (mesh == null || metadata == null) throw new NullPointerException();
-			this.mesh = mesh;
-			this.metadata = metadata;
-		}
-
-		public static MeshWithMetadata merge(List<MeshWithMetadata> meshes) {
-
-			if (meshes.isEmpty()) throw new IllegalArgumentException();
-
-			MeshMetadata metadata = (meshes.stream().allMatch(m -> Objects.equal(m.metadata, meshes.get(0).metadata)))
-					? meshes.get(0).metadata
-					: new MeshMetadata(null, null);
-
-			Geometry mergedGeometry = combine(meshes.stream().map(m -> m.mesh.geometry).collect(toList()));
-			Mesh mergedMesh = new Mesh(mergedGeometry, meshes.get(0).mesh.material);
-
-			return new MeshWithMetadata(mergedMesh, metadata);
-
-		}
-
-	}
 
 	private final List<MeshWithMetadata> meshes = new ArrayList<>();
 
@@ -100,7 +61,7 @@ public class MeshStore {
 	}
 
 	public List<Mesh> meshes() {
-		return meshes.stream().map(m -> m.mesh).toList();
+		return meshes.stream().map(m -> m.mesh()).toList();
 	}
 
 	public List<MeshWithMetadata> meshesWithMetadata() {
@@ -108,8 +69,8 @@ public class MeshStore {
 	}
 
 	public Multimap<MeshMetadata, Mesh> meshesByMetadata() {
-		Map<Mesh, MeshWithMetadata> metadataMap = Maps.uniqueIndex(meshes, m -> m.mesh);
-		return Multimaps.index(meshes(), m -> metadataMap.get(m).metadata);
+		Map<Mesh, MeshWithMetadata> metadataMap = Maps.uniqueIndex(meshes, m -> m.mesh());
+		return Multimaps.index(meshes(), m -> metadataMap.get(m).metadata());
 	}
 
 	public MeshStore process(List<MeshProcessingStep> processingSteps) {
@@ -265,7 +226,7 @@ public class MeshStore {
 			List<MeshWithMetadata> result = new ArrayList<>();
 
 			for (List<MeshWithMetadata> meshSet : meshSetsByHashCode.values()) {
-				result.add(MeshWithMetadata.merge(meshSet));
+				result.add(merge(meshSet));
 			}
 
 			return new MeshStore(result);

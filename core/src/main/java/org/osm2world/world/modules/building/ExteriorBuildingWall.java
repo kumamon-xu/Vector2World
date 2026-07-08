@@ -393,6 +393,10 @@ public class ExteriorBuildingWall {
 			for (WallSurface surface : levelsBySurface.keySet()) {
 
 				Collection<Level> levels = levelsBySurface.get(surface);
+
+				target.setCurrentMetadata(Map.of("level", String.join(";",
+						levels.stream().map(l -> Integer.toString(l.level)).toList())));
+
 				Level lowestLevel = levels.stream().min(Comparator.comparingInt(l -> l.level)).get();
 				double totalLevelHeight = levels.stream().mapToDouble(l -> l.height).sum();
 
@@ -415,6 +419,8 @@ public class ExteriorBuildingWall {
 				}
 
 			}
+
+			target.setCurrentMetadata(null);
 
 		}
 

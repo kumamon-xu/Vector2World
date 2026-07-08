@@ -11,6 +11,7 @@ import static org.osm2world.scene.material.DefaultMaterials.TERRAIN_DEFAULT;
 import static org.osm2world.scene.mesh.MeshStore.*;
 import static org.osm2world.scene.mesh.MeshStore.MergeMeshes.MergeOption.*;
 import static org.osm2world.scene.mesh.MeshStore.ReplaceTexturesWithAtlas.generateTextureAtlasGroup;
+import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
 import static org.osm2world.scene.texcoord.NamedTexCoordFunction.GLOBAL_X_Z;
 import static org.osm2world.scene.texcoord.TexCoordUtil.triangleTexCoordLists;
 import static org.osm2world.world.modules.common.WorldModuleParseUtil.parseDirection;

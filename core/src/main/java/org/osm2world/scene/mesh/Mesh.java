@@ -2,7 +2,7 @@ package org.osm2world.scene.mesh;
 
 import org.osm2world.scene.material.Material;
 
-public class Mesh {
+public final class Mesh implements MeshOrMeshWithMetadata {
 
 	public final Geometry geometry;
 	public final Material material;

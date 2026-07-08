@@ -154,6 +154,8 @@ public class ViewerFrame extends JFrame {
 					new RoofDataDebugView());
 			initAndAddDebugView(subMenu, VK_B, false,
 					new GroundFootprintDebugView());
+			initAndAddDebugView(subMenu, -1, false,
+					new MeshMetadataDebugView.LevelMetadataDebugView());
 
 			initAndAddDebugView(subMenu, -1, false,
 					new AttachmentSurfaceDebugView());

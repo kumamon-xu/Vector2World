@@ -5,6 +5,7 @@ import static java.util.Collections.singletonList;
 import static org.osm2world.scene.material.DefaultMaterials.PLASTIC;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -13,6 +14,7 @@ import org.osm2world.map_elevation.data.GroundState;
 import org.osm2world.math.VectorXYZ;
 import org.osm2world.math.shapes.TriangleXYZ;
 import org.osm2world.scene.mesh.Mesh;
+import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
 import org.osm2world.world.data.NoOutlineNodeWorldObject;
 import org.osm2world.world.data.ProceduralWorldObject;
 import org.osm2world.world.data.WorldObject;
@@ -49,6 +51,8 @@ public class TestWorldModule extends AbstractModule {
 		@Override
 		public void buildMeshesAndModels(Target target) {
 
+			target.setCurrentMetadata(Map.of("testKey", "1"));
+
 			VectorXYZ base = node.getPos().xyz(0);
 
 			TriangleXYZ triangle = new TriangleXYZ(base, base.add(0, 1, 0), base.add(1, 1, 0));
@@ -57,7 +61,7 @@ public class TestWorldModule extends AbstractModule {
 		}
 
 		@Override
-		public List<Mesh> buildMeshes() {
+		public List<? extends MeshOrMeshWithMetadata> buildMeshes() {
 			if (mesh == null) {
 				return ProceduralWorldObject.super.buildMeshes();
 			} else {

@@ -150,7 +150,7 @@ public class BuildingModuleTest {
 		assertSame(1, buildings.size());
 
 		assertTrue(buildings.get(0).buildMeshes().stream().anyMatch(it ->
-				DefaultMaterials.ROOF_DEFAULT.defaultAppearance().equals(it.material)));
+				DefaultMaterials.ROOF_DEFAULT.defaultAppearance().equals(it.asMesh().material)));
 
 		assertFalse(scene.getMeshes().isEmpty());
 

@@ -26,7 +26,7 @@ import org.osm2world.output.tileset.tiles_data.TilesetAsset;
 import org.osm2world.output.tileset.tiles_data.TilesetEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetParentEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetRoot;
-import org.osm2world.scene.mesh.MeshStore;
+import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.util.platform.json.JsonUtil;
 
 /**
@@ -97,16 +97,16 @@ public class TilesetOutput extends MeshOutput {
 
 		if (config.getBoolean("subdivideTiles", false)) {
 
-			List<MeshStore.MeshWithMetadata> meshes = meshStore.meshesWithMetadata();
+			List<MeshWithMetadata> meshes = meshStore.meshesWithMetadata();
 			meshes.sort(new MeshHeightAndSizeComparator());
 
 			File gltfFile0 = outputDir.resolve(baseFileName + "_0" + extension).toFile();
-			List<MeshStore.MeshWithMetadata> topMeshes = meshes.subList(0, Math.min(meshes.size(), NUM_MESHES_FOR_SUBDIVISION_TOP));
+			List<MeshWithMetadata> topMeshes = meshes.subList(0, Math.min(meshes.size(), NUM_MESHES_FOR_SUBDIVISION_TOP));
 			writeGltf(gltfFile0, topMeshes, bounds);
 			tileContentFiles.add(gltfFile0);
 
 			File gltfFile1 = outputDir.resolve(baseFileName + "_1" + extension).toFile();
-			List<MeshStore.MeshWithMetadata> restMeshes = meshes.subList(Math.min(meshes.size(), 100), meshes.size());
+			List<MeshWithMetadata> restMeshes = meshes.subList(Math.min(meshes.size(), 100), meshes.size());
 			writeGltf(gltfFile1, restMeshes, bounds);
 			tileContentFiles.add(gltfFile1);
 
@@ -124,7 +124,7 @@ public class TilesetOutput extends MeshOutput {
 
 	}
 
-	private void writeGltf(File gltfFile, List<MeshStore.MeshWithMetadata> meshesWithMetadata,
+	private void writeGltf(File gltfFile, List<MeshWithMetadata> meshesWithMetadata,
 			SimpleClosedShapeXZ bounds) {
 
 		GltfOutput gltfOutput = new GltfOutput(gltfFile, gltfFlavor, gltfCompression);

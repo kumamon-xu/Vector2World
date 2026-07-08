@@ -11,10 +11,7 @@ import org.osm2world.map_elevation.data.GroundState;
 import org.osm2world.output.CommonTarget;
 import org.osm2world.output.Output;
 import org.osm2world.scene.Scene;
-import org.osm2world.scene.mesh.LevelOfDetail;
-import org.osm2world.scene.mesh.Mesh;
-import org.osm2world.scene.mesh.MeshStore;
-import org.osm2world.scene.mesh.TriangleGeometry;
+import org.osm2world.scene.mesh.*;
 import org.osm2world.world.data.WorldObject;
 
 /**
@@ -68,7 +65,13 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 	 */
 	private void renderObject(WorldObject object) {
 		beginObject(object);
-		object.buildMeshes().forEach(this::drawMesh);
+		object.buildMeshes().forEach(m -> {
+			if (m instanceof MeshWithMetadata mm) {
+				this.drawMesh(mm);
+			} else {
+				this.drawMesh(m.asMesh());
+			}
+		});
 		object.getSubModels().forEach(it -> it.render(this));
 	}
 
@@ -80,6 +83,10 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 	 * @param object  the object that all draw method calls until the next beginObject belong to; can be null
 	 */
 	default void beginObject(@Nullable WorldObject object) {}
+
+	default void drawMesh(MeshWithMetadata mesh) {
+		this.drawMesh(mesh.asMesh());
+	}
 
 	default void drawMesh(Mesh mesh) {
 		if (mesh.lodRange.contains(getLod())) {
@@ -93,6 +100,6 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 	 * gives this output the chance to perform finish/cleanup operations
 	 * after all objects have been drawn.
 	 */
-	default void finish() {};
+	default void finish() {}
 
 }

@@ -1,17 +1,19 @@
 package org.osm2world.world.data;
 
+import static java.util.Objects.requireNonNullElse;
+import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
 import org.osm2world.math.VectorXZ;
 import org.osm2world.output.CommonTarget;
-import org.osm2world.scene.mesh.LODRange;
-import org.osm2world.scene.mesh.LevelOfDetail;
-import org.osm2world.scene.mesh.Mesh;
+import org.osm2world.scene.mesh.*;
 import org.osm2world.scene.model.ModelInstance;
 import org.osm2world.world.attachment.AttachmentSurface;
 
@@ -25,14 +27,15 @@ public interface ProceduralWorldObject extends WorldObject {
 
 	class Target implements CommonTarget {
 
-		protected final List<Mesh> meshes = new ArrayList<>();
+		protected final List<MeshWithMetadata> meshes = new ArrayList<>();
 		protected final List<ModelInstance> subModels = new ArrayList<>();
 		protected final List<AttachmentSurface> attachmentSurfaces = new ArrayList<>();
 
 		private @Nullable LODRange currentLodRange = null;
 		private List<String> currentAttachmentTypes = List.of();
 		private @Nullable WorldObject currentAttachmentObject = null;
-		private Function<VectorXZ, Double> currentBaseEleFunction = null;
+		private @Nullable Function<VectorXZ, Double> currentBaseEleFunction = null;
+		private Map<String, Object> currentMetadata = Map.of();
 
 		public @Nullable LODRange getCurrentLodRange() {
 			return currentLodRange;
@@ -57,14 +60,21 @@ public interface ProceduralWorldObject extends WorldObject {
 			this.currentAttachmentTypes = List.of(attachmentTypes);
 		}
 
+		/** sets metadata for meshes which are drawn after this call */
+		public void setCurrentMetadata(@Nullable Map<String, Object> metadata) {
+			this.currentMetadata = requireNonNullElse(metadata, Map.of());
+		}
+
 		@Override
 		public void drawMesh(Mesh mesh) {
 
-			if (currentLodRange == null) {
-				meshes.add(mesh);
-			} else {
-				meshes.add(new Mesh(mesh.geometry, mesh.material, currentLodRange.min(), currentLodRange.max()));
+			if (currentLodRange != null) {
+				mesh = new Mesh(mesh.geometry, mesh.material, currentLodRange.min(), currentLodRange.max());
 			}
+
+			MeshMetadata metadata = new MeshMetadata(null, null, currentMetadata);
+
+			meshes.add(new MeshWithMetadata(mesh, metadata));
 
 			if (!currentAttachmentTypes.isEmpty()) {
 				attachmentSurfaces.add(AttachmentSurface.fromMeshes(currentAttachmentTypes, currentAttachmentObject, List.of(mesh), currentBaseEleFunction));
@@ -76,13 +86,23 @@ public interface ProceduralWorldObject extends WorldObject {
 			subModels.add(subModel);
 		}
 
+		List<MeshWithMetadata> meshesWithMetadata(ProceduralWorldObject worldObject) {
+			List<MeshWithMetadata> result = new ArrayList<>(meshes.size());
+			for (MeshWithMetadata m : meshes) {
+				var metadata = new MeshMetadata(worldObject.getPrimaryMapElement().getElementWithId(),
+						worldObject.getClass(), m.metadata().extraProperties());
+				result.add(new MeshWithMetadata(m.mesh(), metadata));
+			}
+			return result;
+		}
+
 	}
 
 	@Override
-	default List<Mesh> buildMeshes() {
+	default List<? extends MeshOrMeshWithMetadata> buildMeshes() {
 		var target = new Target();
 		buildMeshesAndModels(target);
-		return target.meshes;
+		return target.meshesWithMetadata(this);
 	}
 
 	@Override

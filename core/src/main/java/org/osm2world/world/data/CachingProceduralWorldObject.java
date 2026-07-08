@@ -5,7 +5,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.osm2world.scene.mesh.LevelOfDetail;
-import org.osm2world.scene.mesh.Mesh;
+import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
 import org.osm2world.scene.model.ModelInstance;
 
 /**
@@ -25,9 +25,9 @@ abstract public class CachingProceduralWorldObject implements ProceduralWorldObj
 	}
 
 	@Override
-	public List<Mesh> buildMeshes() {
+	public List<? extends MeshOrMeshWithMetadata> buildMeshes() {
 		fillTargetIfNecessary();
-		return target.meshes;
+		return target.meshesWithMetadata(this);
 	}
 
 	@Override

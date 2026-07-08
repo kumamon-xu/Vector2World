@@ -14,6 +14,7 @@ import org.osm2world.math.shapes.AxisAlignedRectangleXZ;
 import org.osm2world.output.common.MeshOutput;
 import org.osm2world.scene.mesh.Mesh;
 import org.osm2world.scene.mesh.MeshStore;
+import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.world.data.WorldObject;
 
 import com.google.common.collect.Iterables;
@@ -87,14 +88,14 @@ public final class Scene {
 	}
 
 	/** @see #getMeshesWithMetadata(O2WConfig) */
-	public List<MeshStore.MeshWithMetadata> getMeshesWithMetadata() {
+	public List<MeshWithMetadata> getMeshesWithMetadata() {
 		return getMeshesWithMetadata(null);
 	}
 
 	/**
 	 * returns the same meshes as {@link #getMeshes(O2WConfig)}, but includes metadata
 	 */
-	public List<MeshStore.MeshWithMetadata> getMeshesWithMetadata(@Nullable O2WConfig config) {
+	public List<MeshWithMetadata> getMeshesWithMetadata(@Nullable O2WConfig config) {
 		var meshStore = loadMeshStore(config);
 		return meshStore.meshesWithMetadata();
 	}
