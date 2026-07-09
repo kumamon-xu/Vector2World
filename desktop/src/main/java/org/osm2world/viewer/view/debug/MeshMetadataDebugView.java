@@ -1,8 +1,9 @@
 package org.osm2world.viewer.view.debug;
 
-import java.util.*;
+import java.util.List;
+import java.util.OptionalInt;
+import java.util.Set;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.osm2world.output.jogl.JOGLOutput;
@@ -14,29 +15,6 @@ import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.scene.mesh.TriangleGeometry;
 
 public abstract class MeshMetadataDebugView extends StaticDebugView {
-
-	private static class RandomColorScheme {
-
-		private final Random random = new Random(500);
-
-		private final Map<String, Color> valueColors = new HashMap<>();
-
-		public Color getOrCreateColor(String value) {
-
-			if (!valueColors.containsKey(value)) {
-				valueColors.put(value, nextColor());
-			}
-
-			return valueColors.get(value);
-
-		}
-
-		@Nonnull
-		public Color nextColor() {
-			return new Color((int) (random.nextDouble() * 0x1000000));
-		}
-
-	}
 
 	public MeshMetadataDebugView(String label, String description) {
 		super(label, description);

@@ -3,8 +3,6 @@ package org.osm2world.viewer.view.debug;
 import static java.util.Collections.emptyList;
 import static org.osm2world.scene.color.Color.ORANGE;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import org.osm2world.math.VectorXYZ;
@@ -20,14 +18,37 @@ public class AttachmentSurfaceDebugView extends StaticDebugView {
 
 	private static final Color BASE_ELE_COLOR = ORANGE;
 
-	private final Map<String, Color> surfaceTypeColors = new HashMap<>();
+	private final RandomColorScheme surfaceTypeColors;
 
 	public AttachmentSurfaceDebugView() {
 
 		super("Attachment surfaces", "shows surfaces that other WorldObjects can attach themselves to");
 
-		surfaceTypeColors.put("wall", new Color(1.0f, 1.0f, 0));
-		surfaceTypeColors.put("roof", new Color(1.0f, 0.8f, 0.8f));
+		surfaceTypeColors = new RandomColorScheme() {
+
+			@Override
+			public Color getOrCreateColor(String value) {
+
+				if (!valueColors.containsKey(value)) {
+
+					var random = new Random(valueColors.size());
+					float h = random.nextFloat();
+					float s = (random.nextInt(2000) + 1000) / 10000f;
+					float b = 0.9f;
+					final Color newColor = Color.getHSBColor(h, s, b);
+
+					valueColors.put(value, newColor);
+
+				}
+
+				return valueColors.get(value);
+
+			}
+
+		};
+
+		surfaceTypeColors.assignColor("wall", new Color(1.0f, 1.0f, 0));
+		surfaceTypeColors.assignColor("roof", new Color(1.0f, 0.8f, 0.8f));
 
 	}
 
@@ -38,7 +59,7 @@ public class AttachmentSurfaceDebugView extends StaticDebugView {
 			for (AttachmentSurface surface : object.getAttachmentSurfaces()) {
 
 				String type = surface.getTypes().iterator().next();
-				Color color = getOrCreateColor(type);
+				Color color = surfaceTypeColors.getOrCreateColor(type);
 
 				for (FlatSimplePolygonShapeXYZ face : surface.getFaces()) {
 
@@ -58,24 +79,6 @@ public class AttachmentSurfaceDebugView extends StaticDebugView {
 
 			}
 		}
-
-	}
-
-	private Color getOrCreateColor(String surfaceType) {
-
-		if (!surfaceTypeColors.containsKey(surfaceType)) {
-
-			Random random = new Random(surfaceTypeColors.size());
-			float h = random.nextFloat();
-			float s = (random.nextInt(2000) + 1000) / 10000f;
-			float b = 0.9f;
-			final Color newColor = Color.getHSBColor(h, s, b);
-
-			surfaceTypeColors.put(surfaceType, newColor);
-
-		}
-
-		return surfaceTypeColors.get(surfaceType);
 
 	}
 

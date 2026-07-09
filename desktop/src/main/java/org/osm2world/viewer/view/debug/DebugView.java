@@ -2,8 +2,9 @@ package org.osm2world.viewer.view.debug;
 
 import static java.util.Collections.emptyList;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+
+import javax.annotation.Nonnull;
 
 import org.osm2world.conversion.ConversionLog;
 import org.osm2world.conversion.O2WConfig;
@@ -176,6 +177,36 @@ public abstract class DebugView {
 						headStart.subtract(endNormal2.mult(headLength / 2)),
 						headStart.add(endNormal2.mult(headLength / 2)))
 		), emptyList());
+
+	}
+
+	/**
+	 * Color generator used by debug views to randomly assign colors based on arbitrary values.
+	 */
+	protected static class RandomColorScheme {
+
+		protected final Random random = new Random(500);
+
+		protected final Map<String, Color> valueColors = new HashMap<>();
+
+		public void assignColor(String value, Color color) {
+			this.valueColors.put(value, color);
+		}
+
+		public Color getOrCreateColor(String value) {
+
+			if (!valueColors.containsKey(value)) {
+				valueColors.put(value, nextColor());
+			}
+
+			return valueColors.get(value);
+
+		}
+
+		@Nonnull
+		public Color nextColor() {
+			return new Color((int) (random.nextDouble() * 0x1000000));
+		}
 
 	}
 
