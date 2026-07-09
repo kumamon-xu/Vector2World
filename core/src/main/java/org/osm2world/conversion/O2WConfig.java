@@ -122,11 +122,13 @@ public class O2WConfig {
 	}
 
 	public String getString(String key) {
-		return props.getProperty(key);
+		String property = props.getProperty(key);
+		return property == null ? null : property.trim();
 	}
 
 	public String getString(String key, String defaultValue) {
-		return props.getProperty(key, defaultValue);
+		String property = props.getProperty(key);
+		return property == null ? defaultValue : property.trim();
 	}
 
 	public boolean getBoolean(String key) {

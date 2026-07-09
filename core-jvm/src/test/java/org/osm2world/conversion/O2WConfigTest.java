@@ -1,7 +1,6 @@
 package org.osm2world.conversion;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.osm2world.util.test.TestFileUtil.getTestFile;
 
 import java.io.File;
@@ -74,6 +73,22 @@ public class O2WConfigTest {
 		assertEquals(0.42, result.getDouble("treesPerSquareMeter", 0.42), 0);
 		assertEquals("baz", result.getString("stringProperty", "something"));
 		assertTrue(result.getBoolean("keepOsmElements"));
+
+	}
+
+	@Test
+	public void testgetString() {
+
+		var config = new O2WConfig(Map.of(
+				"key1", "FooBar",
+				"key2", "\tsomeWhitespace  "
+		));
+
+		assertEquals("FooBar", config.getString("key1"));
+		assertEquals("someWhitespace", config.getString("key2"));
+		assertEquals("someWhitespace", config.getString("key2", "default"));
+		assertNull(config.getString("key3"));
+		assertEquals("default", config.getString("key3", "default"));
 
 	}
 
