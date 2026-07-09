@@ -30,7 +30,6 @@ import org.osm2world.scene.material.*;
 import org.osm2world.util.FaultTolerantIterationUtil;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
@@ -53,7 +52,7 @@ public class MeshStore {
 	}
 
 	public void addMesh(Mesh mesh, @Nullable MeshMetadata metadata) {
-		addMesh(new MeshWithMetadata(mesh, metadata != null ? metadata : new MeshMetadata(null, null)));
+		addMesh(new MeshWithMetadata(mesh, metadata != null ? metadata : new MeshMetadata(null, Map.of())));
 	}
 
 	public void addMesh(MeshWithMetadata meshWithMetadata) {
@@ -68,9 +67,8 @@ public class MeshStore {
 		return new ArrayList<>(meshes);
 	}
 
-	public Multimap<MeshMetadata, Mesh> meshesByMetadata() {
-		Map<Mesh, MeshWithMetadata> metadataMap = Maps.uniqueIndex(meshes, m -> m.mesh());
-		return Multimaps.index(meshes(), m -> metadataMap.get(m).metadata());
+	public Multimap<MeshWithMetadata.ElementMetadata, MeshWithMetadata> meshesByElementMetadata() {
+		return Multimaps.index(meshes, m -> m.metadata().elementMetadata());
 	}
 
 	public MeshStore process(List<MeshProcessingStep> processingSteps) {
@@ -142,10 +140,13 @@ public class MeshStore {
 		public enum MergeOption {
 
 			/**
-			 * whether meshes should be merged across distinct OSM elements.
-			 * If this is enabled, the result will not have any {@link MeshMetadata}.
+			 * Whether meshes should be merged across distinct OSM elements.
+			 * If this is enabled, the result will not have any element information in their {@link MeshMetadata}.
 			 */
 			MERGE_ELEMENTS,
+
+			/** Whether meshes should be merged even if they have different metadata properties. */
+			MERGE_METADATA_PROPERTIES,
 
 			/** whether meshes should be kept separate if they have different {@link Material#interpolation()} */
 			SEPARATE_NORMAL_MODES,
@@ -176,7 +177,12 @@ public class MeshStore {
 			}
 
 			if (!options.contains(MergeOption.MERGE_ELEMENTS)
-					&& !java.util.Objects.equals(m1.metadata(), m2.metadata())) {
+					&& !java.util.Objects.equals(m1.metadata().mapElement(), m2.metadata().mapElement())) {
+				return false;
+			}
+
+			if (!options.contains(MergeOption.MERGE_METADATA_PROPERTIES)
+					&& !m1.metadata().extraProperties().equals(m2.metadata().extraProperties())) {
 				return false;
 			}
 
@@ -205,7 +211,10 @@ public class MeshStore {
 
 				int hashCode = mesh.mesh().material.textureLayers().hashCode();
 				if (!options.contains(MergeOption.MERGE_ELEMENTS)) {
-					hashCode ^= mesh.metadata().hashCode();
+					hashCode ^= Objects.hash(mesh.metadata().mapElement(), mesh.metadata().modelClass());
+				}
+				if (!options.contains(MergeOption.MERGE_METADATA_PROPERTIES)) {
+					hashCode ^= mesh.metadata().extraProperties().hashCode();
 				}
 
 				for (List<MeshWithMetadata> set : meshSetsByHashCode.get(hashCode)) {

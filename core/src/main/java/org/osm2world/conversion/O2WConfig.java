@@ -380,6 +380,18 @@ public class O2WConfig {
 	}
 
 	/**
+	 * Indicates whether building levels should be exported as metadata to the output file.
+	 * Can be "false" (default), "true", or "indoor" (only for buildings with indoor elements).
+	 */
+	public String exportLevels() {
+		return switch (getString("exportLevels", "false").toLowerCase()) {
+			case "yes", "true" -> "true";
+			case "indoor" -> "indoor";
+			default -> "false";
+		};
+	}
+
+	/**
 	 * Indicates which metadata (such as OSM IDs and tags from the source data) should be exported to the output file.
 	 * Only works with some output formats (currently glTF and glb).
 	 * By default, only OSM IDs are exported.

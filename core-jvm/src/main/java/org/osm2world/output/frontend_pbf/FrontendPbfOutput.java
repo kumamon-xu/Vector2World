@@ -11,7 +11,7 @@ import static org.osm2world.scene.material.DefaultMaterials.TERRAIN_DEFAULT;
 import static org.osm2world.scene.mesh.MeshStore.*;
 import static org.osm2world.scene.mesh.MeshStore.MergeMeshes.MergeOption.*;
 import static org.osm2world.scene.mesh.MeshStore.ReplaceTexturesWithAtlas.generateTextureAtlasGroup;
-import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
+import static org.osm2world.scene.mesh.MeshWithMetadata.ElementMetadata;
 import static org.osm2world.scene.texcoord.NamedTexCoordFunction.GLOBAL_X_Z;
 import static org.osm2world.scene.texcoord.TexCoordUtil.triangleTexCoordLists;
 import static org.osm2world.world.modules.common.WorldModuleParseUtil.parseDirection;
@@ -226,7 +226,7 @@ public class FrontendPbfOutput extends MeshOutput {
 	private final Block<Material> materialBlock = new SimpleBlock<>();
 	private final Block<Model> modelBlock = new SimpleBlock<>();
 
-	private final Map<MeshMetadata, Multimap<Model, InstanceParameters>> modelInstancesByWO = new HashMap<>();
+	private final Map<ElementMetadata, Multimap<Model, InstanceParameters>> modelInstancesByWO = new HashMap<>();
 
 	/**
 	 * Creates a {@link FrontendPbfOutput}. Writing only completes once {@link #finish()} is called.
@@ -274,7 +274,7 @@ public class FrontendPbfOutput extends MeshOutput {
 
 		if (!bbox.contains(modelInstance.params().position().xz())) return;
 
-		MeshMetadata worldObjectMetadata = new MeshMetadata(currentWorldObject.getPrimaryMapElement().getElementWithId(),
+		ElementMetadata worldObjectMetadata = new ElementMetadata(currentWorldObject.getPrimaryMapElement().getElementWithId(),
 				currentWorldObject.getClass());
 
 		if (!modelInstancesByWO.containsKey(worldObjectMetadata)) {
@@ -453,7 +453,7 @@ public class FrontendPbfOutput extends MeshOutput {
 
 	}
 
-	private List<FrontendPbf.WorldObject> buildWorldObjects(@Nullable MeshMetadata worldObjectMetadata,
+	private List<FrontendPbf.WorldObject> buildWorldObjects(@Nullable ElementMetadata worldObjectMetadata,
 			Collection<Mesh> meshes, Multimap<Model, InstanceParameters> modelInstances) {
 
 		List<FrontendPbf.WorldObject> result = new ArrayList<>();
@@ -486,7 +486,7 @@ public class FrontendPbfOutput extends MeshOutput {
 
 	}
 
-	private FrontendPbf.WorldObject buildWorldObject(@Nullable MeshMetadata worldObjectMetadata,
+	private FrontendPbf.WorldObject buildWorldObject(@Nullable ElementMetadata worldObjectMetadata,
 			Collection<Mesh> meshes, Multimap<Model, InstanceParameters> modelInstances) {
 
 		if (meshes.isEmpty() && modelInstances.isEmpty()) {
@@ -697,10 +697,10 @@ public class FrontendPbfOutput extends MeshOutput {
 
 		MeshStore instanceMeshStore = new MeshStore();
 
-		for (MeshMetadata metadata : modelInstancesByWO.keySet()) {
+		for (ElementMetadata metadata : modelInstancesByWO.keySet()) {
 			for (java.util.Map.Entry<Model, InstanceParameters> entry : modelInstancesByWO.get(metadata).entries()) {
 				for (Mesh mesh : entry.getKey().buildMeshes(entry.getValue())) {
-					instanceMeshStore.addMesh(mesh, metadata);
+					instanceMeshStore.addMesh(mesh, new MeshWithMetadata.MeshMetadata(metadata, Map.of()));
 				}
 			}
 		}
@@ -727,12 +727,13 @@ public class FrontendPbfOutput extends MeshOutput {
 
 		/* convert all WorldObjects */
 
-		Multimap<MeshMetadata, Mesh> meshesByMetadata = meshStore.meshesByMetadata();
+		Multimap<ElementMetadata, Mesh> meshesByMetadata = HashMultimap.create();
+		meshStore.meshesByElementMetadata().forEach((k, v) -> meshesByMetadata.put(k, v.mesh()));
 
-		Set<MeshMetadata> knownObjectMetadata = new HashSet<>(modelInstancesByWO.keySet());
+		Set<ElementMetadata> knownObjectMetadata = new HashSet<>(modelInstancesByWO.keySet());
 		knownObjectMetadata.addAll(meshesByMetadata.keySet());
 
-		for (MeshMetadata objectMetadata : knownObjectMetadata) {
+		for (ElementMetadata objectMetadata : knownObjectMetadata) {
 
 			objects.addAll(buildWorldObjects(objectMetadata, meshesByMetadata.get(objectMetadata),
 					modelInstancesByWO.getOrDefault(objectMetadata, HashMultimap.create())));

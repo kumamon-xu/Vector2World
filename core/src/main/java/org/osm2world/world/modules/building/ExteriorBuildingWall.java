@@ -4,6 +4,7 @@ import static java.lang.Math.round;
 import static java.util.Arrays.asList;
 import static java.util.Collections.*;
 import static java.util.Comparator.comparingDouble;
+import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.osm2world.math.VectorXZ.NULL_VECTOR;
@@ -328,7 +329,7 @@ public class ExteriorBuildingWall {
 
 						if (surface != null && level != null) {
 
-							Level lowestLevelOfSurface = levelsBySurface.get(surface).stream().min(Comparator.comparingInt(l -> l.level)).get();
+							Level lowestLevelOfSurface = levelsBySurface.get(surface).stream().min(comparingInt(l -> l.level)).get();
 
 							VectorXZ pos = new VectorXZ(points.offsetOf(node.getPos()),
 									level.relativeEle - lowestLevelOfSurface.relativeEle);
@@ -392,12 +393,13 @@ public class ExteriorBuildingWall {
 
 			for (WallSurface surface : levelsBySurface.keySet()) {
 
-				Collection<Level> levels = levelsBySurface.get(surface);
+				List<Level> levels = new ArrayList<>(levelsBySurface.get(surface));
+				levels.sort(comparingInt(l -> l.level));
 
 				target.setCurrentMetadata(Map.of("level", String.join(";",
 						levels.stream().map(l -> Integer.toString(l.level)).toList())));
 
-				Level lowestLevel = levels.stream().min(Comparator.comparingInt(l -> l.level)).get();
+				Level lowestLevel = levels.get(0);
 				double totalLevelHeight = levels.stream().mapToDouble(l -> l.height).sum();
 
 				Double windowHeight = totalLevelHeight / levels.size();
@@ -501,7 +503,7 @@ public class ExteriorBuildingWall {
 
 			WindowParameters windowParams = new WindowParameters(tags, level.height, config);
 
-			Level lowestLevelOfSurface = levelsBySurface.get(surface).stream().min(Comparator.comparingInt(l -> l.level)).get();
+			Level lowestLevelOfSurface = levelsBySurface.get(surface).stream().min(comparingInt(l -> l.level)).get();
 			double levelZOnSurface = level.relativeEle - lowestLevelOfSurface.relativeEle;
 
 			int numColumns = windowParams.numberWindows != null

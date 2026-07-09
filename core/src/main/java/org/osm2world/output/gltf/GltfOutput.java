@@ -14,7 +14,7 @@ import static org.osm2world.output.gltf.GltfFlavor.GLB;
 import static org.osm2world.output.gltf.GltfFlavor.GLTF;
 import static org.osm2world.scene.material.Material.Interpolation.SMOOTH;
 import static org.osm2world.scene.mesh.MeshStore.*;
-import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
+import static org.osm2world.scene.mesh.MeshWithMetadata.ElementMetadata;
 import static org.osm2world.scene.texcoord.TexCoordUtil.mirroredVertically;
 
 import java.io.*;
@@ -425,6 +425,9 @@ public class GltfOutput extends AbstractOutput {
 		if (!keepOsmElements) {
 			mergeOptions.add(MergeOption.MERGE_ELEMENTS);
 		}
+		if ("false".equals(config.exportLevels())) {
+			mergeOptions.add(MergeOption.MERGE_METADATA_PROPERTIES);
+		}
 
 		LevelOfDetail lod = config.lod();
 
@@ -442,7 +445,7 @@ public class GltfOutput extends AbstractOutput {
 
 		MeshStore processedMeshStore = meshStore.process(processingSteps);
 
-		Multimap<MeshMetadata, Mesh> meshesByMetadata = processedMeshStore.meshesByMetadata();
+		Multimap<ElementMetadata, MeshWithMetadata> meshesByMetadata = processedMeshStore.meshesByElementMetadata();
 
 		/* define metadata for the scene and root node */
 
@@ -483,14 +486,15 @@ public class GltfOutput extends AbstractOutput {
 
 		rootNode.children = new ArrayList<>();
 
-		for (MeshMetadata objectMetadata : meshesByMetadata.keySet()) {
+		for (ElementMetadata elementMetadata : meshesByMetadata.keySet()) {
 
 			List<Integer> meshNodeIndizes = new ArrayList<>(meshesByMetadata.size());
 
-			FaultTolerantIterationUtil.forEach(meshesByMetadata.get(objectMetadata), (Mesh mesh) -> {
+			FaultTolerantIterationUtil.forEach(meshesByMetadata.get(elementMetadata), (MeshWithMetadata mesh) -> {
 				try {
-					int index = createNode(createMesh(mesh), null);
+					int index = createNode(createMesh(mesh.mesh()), null);
 					meshNodeIndizes.add(index);
+					addExtrasToMeshNode(gltf.nodes.get(index), mesh.metadata(), config);
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
@@ -505,10 +509,10 @@ public class GltfOutput extends AbstractOutput {
 					meshNodeIndizes.add(parentNodeIndex);
 				}
 
-				meshNodeIndizes.forEach(index -> addMeshNameAndExtras(gltf.nodes.get(index), objectMetadata, config));
+				assert meshNodeIndizes.size() == 1;
+				addNameAndExtrasToParentNode(gltf.nodes.get(meshNodeIndizes.get(0)), elementMetadata, config);
 
 			}
-
 			rootNode.children.addAll(meshNodeIndizes);
 
 		}
@@ -636,7 +640,7 @@ public class GltfOutput extends AbstractOutput {
 		}
 	}
 
-	private static void addMeshNameAndExtras(GltfNode node, MeshMetadata metadata, O2WConfig config) {
+	private static void addNameAndExtrasToParentNode(GltfNode node, ElementMetadata metadata, O2WConfig config) {
 
 		MapRelationElement mapElement = metadata.mapElement();
 
@@ -664,6 +668,19 @@ public class GltfOutput extends AbstractOutput {
 		} else {
 			node.name = "Multiple elements";
 		}
+
+	}
+
+	private static void addExtrasToMeshNode(GltfNode node, MeshWithMetadata.MeshMetadata metadata, O2WConfig config) {
+
+		Map<String, Object> extras = new HashMap<>();
+
+		if (!"false".equals(config.exportLevels())
+				&& metadata.extraProperties().containsKey("level")) {
+			extras.put("level", metadata.extraProperties().get("level"));
+		}
+
+		node.extras = extras;
 
 	}
 

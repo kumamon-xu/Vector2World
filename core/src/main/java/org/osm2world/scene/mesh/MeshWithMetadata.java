@@ -1,5 +1,6 @@
 package org.osm2world.scene.mesh;
 
+import static com.google.common.base.Objects.equal;
 import static java.util.stream.Collectors.toList;
 import static org.osm2world.scene.mesh.Geometry.combine;
 
@@ -12,24 +13,40 @@ import javax.annotation.Nullable;
 import org.osm2world.map_data.data.MapRelationElement;
 import org.osm2world.world.data.WorldObject;
 
-import com.google.common.base.Objects;
-
 public record MeshWithMetadata(@Nonnull Mesh mesh, @Nonnull MeshMetadata metadata) implements MeshOrMeshWithMetadata {
 
-	public record MeshMetadata(
+	public record ElementMetadata(
 			@Nullable MapRelationElement mapElement,
-			@Nullable Class<? extends WorldObject> modelClass,
-			Map<String, Object> extraProperties) {
+			@Nullable Class<? extends WorldObject> modelClass
+	) {}
+
+	public record MeshMetadata(@Nullable ElementMetadata elementMetadata,
+			@Nonnull Map<String, Object> extraProperties) {
+
+		public MeshMetadata(@Nullable MapRelationElement mapElement,
+				@Nullable Class<? extends WorldObject> modelClass,
+				@Nonnull Map<String, Object> extraProperties) {
+			this((mapElement == null && modelClass == null) ? null : new ElementMetadata(mapElement, modelClass),
+					extraProperties);
+		}
 
 		public MeshMetadata(@Nullable MapRelationElement mapElement,
 				@Nullable Class<? extends WorldObject> modelClass) {
 			this(mapElement, modelClass, Map.of());
 		}
 
+		public @Nullable MapRelationElement mapElement() {
+			return elementMetadata == null ? null : elementMetadata.mapElement();
+		}
+
+		public @Nullable Class<? extends WorldObject> modelClass() {
+			return elementMetadata == null ? null : elementMetadata.modelClass();
+		}
+
 		@Override
 		public @Nonnull String toString() {
-			return "{" + mapElement + ", "
-					+ (modelClass == null ? null : modelClass.getSimpleName())
+			return "{" + mapElement() + ", "
+					+ (modelClass() == null ? null : modelClass().getSimpleName())
 					+ (extraProperties.isEmpty() ? "" : (", " + extraProperties)) + "}";
 		}
 
@@ -45,12 +62,17 @@ public record MeshWithMetadata(@Nonnull Mesh mesh, @Nonnull MeshMetadata metadat
 
 		if (meshes.isEmpty()) throw new IllegalArgumentException();
 
-		MeshMetadata metadata = (meshes.stream().allMatch(m -> Objects.equal(m.metadata, meshes.get(0).metadata)))
-				? meshes.get(0).metadata
-				: new MeshMetadata(null, null);
+		MeshWithMetadata m0 = meshes.get(0);
+
+		var elementMetadata = meshes.stream().allMatch(m -> equal(m.metadata.elementMetadata, m0.metadata.elementMetadata))
+				? m0.metadata.elementMetadata : null;
+		Map<String, Object> extraProperties = meshes.stream().allMatch(m -> equal(m.metadata.extraProperties, m0.metadata.extraProperties))
+				? m0.metadata.extraProperties : Map.of();
+
+		MeshMetadata metadata = new MeshMetadata(elementMetadata, extraProperties);
 
 		Geometry mergedGeometry = combine(meshes.stream().map(m -> m.mesh.geometry).collect(toList()));
-		Mesh mergedMesh = new Mesh(mergedGeometry, meshes.get(0).mesh.material);
+		Mesh mergedMesh = new Mesh(mergedGeometry, m0.mesh.material);
 
 		return new MeshWithMetadata(mergedMesh, metadata);
 

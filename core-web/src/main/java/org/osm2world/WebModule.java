@@ -304,6 +304,9 @@ public class WebModule {
 			if (!config.config.keepOsmElements()) {
 				mergeOptions.add(MeshStore.MergeMeshes.MergeOption.MERGE_ELEMENTS);
 			}
+			if ("false".equals(config.config.exportLevels())) {
+				mergeOptions.add(MeshStore.MergeMeshes.MergeOption.MERGE_METADATA_PROPERTIES);
+			}
 
 			var meshStore = new MeshStore(meshOutput.getMeshesWithMetadata());
 

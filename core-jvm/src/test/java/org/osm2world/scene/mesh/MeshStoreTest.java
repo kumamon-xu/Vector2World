@@ -8,7 +8,7 @@ import static org.osm2world.scene.mesh.MeshStore.ClipToBounds.getSegmentsCCW;
 import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
 import static org.osm2world.test.TestUtil.assertAlmostEquals;
 
-import java.util.List;
+import java.util.*;
 
 import org.junit.Test;
 import org.osm2world.math.VectorXYZ;
@@ -17,9 +17,36 @@ import org.osm2world.math.shapes.AxisAlignedRectangleXZ;
 import org.osm2world.math.shapes.TriangleXYZ;
 import org.osm2world.math.shapes.TriangleXZ;
 import org.osm2world.scene.color.Color;
+import org.osm2world.scene.material.DefaultMaterials;
 import org.osm2world.scene.material.Material;
 
 public class MeshStoreTest {
+
+	@Test
+	public void testMergeMeshes_Metadata() {
+
+		Material material = DefaultMaterials.CONCRETE.defaultAppearance();
+
+		var metadataA = new MeshMetadata(null, null, Map.of("k", "value"));
+		var metadataB = new MeshMetadata(null, null, Map.of("k", "other"));
+
+		Mesh meshA0 = new Mesh(randomTriangleGeometry(0), material);
+		Mesh meshA1 = new Mesh(randomTriangleGeometry(1), material);
+		Mesh meshB0 = new Mesh(randomTriangleGeometry(2), material);
+
+		var store = new MeshStore(List.of(
+				new MeshWithMetadata(meshA0, metadataA),
+				new MeshWithMetadata(meshA1, metadataA),
+				new MeshWithMetadata(meshB0, metadataB)
+		));
+
+		var result0 = store.process(List.of(new MeshStore.MergeMeshes(Set.of())));
+		assertEquals(2, result0.meshes().size());
+
+		var result1 = store.process(List.of(new MeshStore.MergeMeshes(EnumSet.of(MeshStore.MergeMeshes.MergeOption.MERGE_METADATA_PROPERTIES))));
+		assertEquals(1, result1.meshes().size());
+
+	}
 
 	@Test
 	public void testClipToBounds() {
@@ -52,7 +79,7 @@ public class MeshStoreTest {
 		var material = new Material(FLAT, Color.WHITE).makeDoubleSided();
 
 		var mesh = new Mesh(geometryBuilder.build(), material);
-		var metadata = new MeshMetadata(null, null);
+		var metadata = new MeshMetadata(null, Map.of());
 
 		MeshStore input = new MeshStore(List.of(new MeshWithMetadata(mesh, metadata)));
 
@@ -60,6 +87,25 @@ public class MeshStoreTest {
 
 		assertEquals(2, result.meshes().size());
 		assertTrue(result.meshes().stream().noneMatch(m -> m.material.doubleSided()));
+
+	}
+
+	private static TriangleGeometry randomTriangleGeometry(long seed) {
+
+		var r = new Random(seed);
+
+		VectorXYZ[] vs = new VectorXYZ[3];
+
+		for (int i = 0; i <= 1; i++) {
+			vs[i] = new VectorXYZ(r.nextDouble(-10, 10), r.nextDouble(-10, 10), r.nextDouble(-10, 10));
+		}
+
+		// place the third point at a right angle to avoid degenerate triangles
+		vs[2] = vs[0].add(vs[0].crossNormalized(vs[1])).mult(r.nextDouble(0.1, 5));
+
+		var builder = new TriangleGeometry.Builder(0, Color.WHITE, FLAT);
+		builder.addTriangles(new TriangleXYZ(vs[0], vs[1], vs[2]));
+		return builder.build();
 
 	}
 

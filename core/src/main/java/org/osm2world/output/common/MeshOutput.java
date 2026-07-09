@@ -3,6 +3,7 @@ package org.osm2world.output.common;
 import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import org.osm2world.output.Output;
@@ -60,7 +61,7 @@ public class MeshOutput extends AbstractOutput implements DrawBasedOutput {
 
 	@Override
 	public void drawMesh(Mesh mesh) {
-		this.drawMesh(new MeshWithMetadata(mesh, new MeshMetadata(null, null)));
+		this.drawMesh(new MeshWithMetadata(mesh, new MeshMetadata(null, Map.of())));
 	}
 
 	public List<Mesh> getMeshes() {
