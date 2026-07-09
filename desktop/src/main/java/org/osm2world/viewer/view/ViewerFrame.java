@@ -135,6 +135,15 @@ public class ViewerFrame extends JFrame {
 			initAndAddDebugView(subMenu, -1, false,
 					new FaceDebugView());
 
+			JMenu metadataViewMenu = new JMenu("Mesh metadata");
+			initAndAddDebugView(metadataViewMenu, -1, false,
+					new MeshMetadataDebugView.OsmIdMetadataDebugView());
+			initAndAddDebugView(metadataViewMenu, -1, false,
+					new MeshMetadataDebugView.ModelClassMetadataDebugView());
+			initAndAddDebugView(metadataViewMenu, -1, false,
+					new MeshMetadataDebugView.LevelMetadataDebugView());
+			subMenu.add(metadataViewMenu);
+
 			subMenu.addSeparator();
 
 			initAndAddDebugView(subMenu, -1, false,
@@ -154,8 +163,6 @@ public class ViewerFrame extends JFrame {
 					new RoofDataDebugView());
 			initAndAddDebugView(subMenu, VK_B, false,
 					new GroundFootprintDebugView());
-			initAndAddDebugView(subMenu, -1, false,
-					new MeshMetadataDebugView.LevelMetadataDebugView());
 
 			initAndAddDebugView(subMenu, -1, false,
 					new AttachmentSurfaceDebugView());

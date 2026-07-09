@@ -16,8 +16,8 @@ import org.osm2world.scene.mesh.TriangleGeometry;
 
 public abstract class MeshMetadataDebugView extends StaticDebugView {
 
-	public MeshMetadataDebugView(String label, String description) {
-		super(label, description);
+	public MeshMetadataDebugView(String label) {
+		super(label, "colors meshes based on " + label);
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public abstract class MeshMetadataDebugView extends StaticDebugView {
 	public static class LevelMetadataDebugView extends MeshMetadataDebugView {
 
 		public LevelMetadataDebugView() {
-			super("Mesh metadata: Level", "colors meshes based on level metadata");
+			super("Level");
 		}
 
 		@Override
@@ -61,6 +61,34 @@ public abstract class MeshMetadataDebugView extends StaticDebugView {
 				}
 			}
 			return null;
+		}
+
+	}
+
+	public static class OsmIdMetadataDebugView extends MeshMetadataDebugView {
+
+		public OsmIdMetadataDebugView() {
+			super("OSM ID");
+		}
+
+		@Override
+		protected String metadataValueFor(MeshWithMetadata m) {
+			var mapElement = m.metadata().mapElement();
+			return mapElement != null ? mapElement.toString() : null;
+		}
+
+	}
+
+	public static class ModelClassMetadataDebugView extends MeshMetadataDebugView {
+
+		public ModelClassMetadataDebugView() {
+			super("Model class");
+		}
+
+		@Override
+		protected String metadataValueFor(MeshWithMetadata m) {
+			var modelClass = m.metadata().modelClass();
+			return modelClass != null ? modelClass.getSimpleName() : null;
 		}
 
 	}
