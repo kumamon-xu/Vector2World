@@ -1,4 +1,4 @@
-package org.osm2world;
+package org.osm2world.map_elevation.creation;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.junit.Test;
-import org.osm2world.map_elevation.creation.DelaunayTriangulation;
 import org.osm2world.map_elevation.creation.DelaunayTriangulation.DelaunayTriangle;
 import org.osm2world.math.VectorXYZ;
 import org.osm2world.math.VectorXZ;
