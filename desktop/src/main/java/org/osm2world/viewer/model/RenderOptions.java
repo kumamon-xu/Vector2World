@@ -1,6 +1,7 @@
 package org.osm2world.viewer.model;
 
 import java.util.HashSet;
+import java.util.Observable;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -14,7 +15,7 @@ import org.osm2world.output.common.rendering.Projection;
 import org.osm2world.scene.mesh.LevelOfDetail;
 import org.osm2world.viewer.view.debug.DebugView;
 
-public class RenderOptions {
+public class RenderOptions extends Observable {
 
 	public LevelOfDetail lod = LevelOfDetail.LOD4;
 
@@ -28,6 +29,8 @@ public class RenderOptions {
 
 	Class<? extends TerrainInterpolator> interpolatorClass = ZeroInterpolator.class;
 	Class<? extends EleCalculator> eleCalculatorClass = BridgeTunnelEleCalculator.class;
+
+	private int maxLevel = Integer.MAX_VALUE;
 
 	public boolean isWireframe() {
 		return wireframe;
@@ -63,6 +66,16 @@ public class RenderOptions {
 
 	public void setEleCalculatorClass(Class<? extends EleCalculator> eleCalculatorClass) {
 		this.eleCalculatorClass = eleCalculatorClass;
+	}
+
+	public int getMaxLevel() {
+		return maxLevel;
+	}
+
+	public void setMaxLevel(int maxLevel) {
+		this.maxLevel = maxLevel;
+		this.setChanged();
+		this.notifyObservers("maxLevel");
 	}
 
 }

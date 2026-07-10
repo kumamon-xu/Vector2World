@@ -4,10 +4,11 @@ import static org.osm2world.scene.mesh.MeshWithMetadata.MeshMetadata;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import org.osm2world.output.Output;
 import org.osm2world.scene.mesh.Mesh;
+import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
 import org.osm2world.scene.mesh.MeshStore;
 import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.world.data.WorldObject;
@@ -18,7 +19,7 @@ import org.osm2world.world.data.WorldObject;
  */
 public class MeshOutput extends AbstractOutput implements DrawBasedOutput {
 
-	private final Predicate<WorldObject> worldObjectFilter;
+	private final BiPredicate<WorldObject, MeshOrMeshWithMetadata> worldObjectFilter;
 
 	protected final MeshStore meshStore = new MeshStore();
 
@@ -27,17 +28,17 @@ public class MeshOutput extends AbstractOutput implements DrawBasedOutput {
 	/**
 	 * @param worldObjectFilter  only {@link WorldObject}s matching this filter will be included in the output
 	 */
-	public MeshOutput(Predicate<WorldObject> worldObjectFilter) {
+	public MeshOutput(BiPredicate<WorldObject, MeshOrMeshWithMetadata> worldObjectFilter) {
 		this.worldObjectFilter = worldObjectFilter;
 	}
 
 	public MeshOutput() {
-		this(x -> true);
+		this((o,m) -> true);
 	}
 
 	@Override
-	public boolean includeObject(WorldObject object) {
-		return worldObjectFilter.test(object);
+	public boolean includeMesh(WorldObject object, MeshOrMeshWithMetadata mesh) {
+		return worldObjectFilter.test(object, mesh);
 	}
 
 	@Override

@@ -10,7 +10,7 @@ import org.osm2world.viewer.model.Data;
 import org.osm2world.viewer.model.RenderOptions;
 import org.osm2world.viewer.view.ViewerFrame;
 import org.osm2world.viewer.view.debug.DebugView;
-
+import org.osm2world.viewer.view.debug.WorldObjectView;
 
 
 public class ToggleDebugViewAction extends AbstractAction implements Observer {
@@ -48,6 +48,9 @@ public class ToggleDebugViewAction extends AbstractAction implements Observer {
 		this.setEnabled(debugView.canBeUsed());
 
 		data.addObserver(this);
+		if (debugView instanceof WorldObjectView) {
+			renderOptions.addObserver(this);
+		}
 
 	}
 

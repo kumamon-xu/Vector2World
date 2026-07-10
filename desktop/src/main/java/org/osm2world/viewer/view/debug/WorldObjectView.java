@@ -1,17 +1,26 @@
 package org.osm2world.viewer.view.debug;
 
 import static org.osm2world.output.jogl.JOGLRenderingParameters.Winding.CCW;
+import static org.osm2world.util.FaultTolerantIterationUtil.forEach;
 
+import java.util.Arrays;
+
+import org.osm2world.output.common.MeshOutput;
 import org.osm2world.output.common.lighting.GlobalLightingParameters;
 import org.osm2world.output.common.rendering.Camera;
 import org.osm2world.output.common.rendering.Projection;
 import org.osm2world.output.jogl.JOGLOutput;
 import org.osm2world.output.jogl.JOGLRenderingParameters;
+import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
+import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.viewer.model.RenderOptions;
+import org.osm2world.world.data.WorldObject;
 
 public class WorldObjectView extends DebugView {
 
 	private final RenderOptions renderOptions;
+
+	private int previousMaxLevel = Integer.MAX_VALUE;
 
 	public WorldObjectView(RenderOptions renderOptions) {
 		super("World objects", "shows the world objects");
@@ -26,8 +35,26 @@ public class WorldObjectView extends DebugView {
 		if (output.isFinished()) return;
 
 		output.setXZBoundary(scene.getBoundary());
-		output.outputScene(scene, true);
 
+		// write scene to meshOutput first to allow filtering
+		MeshOutput meshOutput = new MeshOutput(this::includeMesh);
+		meshOutput.outputScene(scene);
+
+		forEach(meshOutput.getMeshesWithMetadata(), output::drawMesh);
+
+	}
+
+	/** Decides whether to include a mesh in the rendering based on the current {@link #renderOptions}. */
+	private boolean includeMesh(WorldObject worldObject, MeshOrMeshWithMetadata mesh) {
+		int maxLevel = renderOptions.getMaxLevel();
+		if (maxLevel != Integer.MAX_VALUE && mesh instanceof MeshWithMetadata mm) {
+			Object levelValue = mm.metadata().extraProperties().get("level");
+			if (levelValue instanceof String levelList) {
+				String[] levels = levelList.split(";");
+				return Arrays.stream(levels).allMatch(level -> Integer.parseInt(level) <= maxLevel);
+			}
+		}
+		return true;
 	}
 
 	private void setParameters(final JOGLOutput target) {

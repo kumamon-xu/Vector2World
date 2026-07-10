@@ -6,8 +6,8 @@ import static org.osm2world.scene.mesh.NameUtil.getMaterialName;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 
@@ -21,6 +21,7 @@ import org.osm2world.output.common.MeshOutput;
 import org.osm2world.scene.Scene;
 import org.osm2world.scene.material.*;
 import org.osm2world.scene.mesh.Mesh;
+import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
 import org.osm2world.scene.mesh.MeshStore;
 import org.osm2world.scene.mesh.TriangleGeometry;
 import org.osm2world.util.platform.json.JsonImplementationBrowser;
@@ -288,11 +289,11 @@ public class WebModule {
 
 		private static O2WMesh[] sceneToMeshArray(Scene scene, List<String> filterIds, O2WConfig config) {
 
-			Predicate<WorldObject> filter = x -> true;
+			BiPredicate<WorldObject, MeshOrMeshWithMetadata> filter = (w, m) -> true;
 
 			if (!filterIds.isEmpty()) {
 				List<String> expandedFilterIds = expandRelations(scene.getMapData(), filterIds);
-				filter = worldObject -> getAncestorsAndAttachmentTargets(worldObject).stream()
+				filter = (worldObject, m) -> getAncestorsAndAttachmentTargets(worldObject).stream()
 								.map(o -> o.getPrimaryMapElement().getElementWithId().toString())
 								.anyMatch(expandedFilterIds::contains);
 			}

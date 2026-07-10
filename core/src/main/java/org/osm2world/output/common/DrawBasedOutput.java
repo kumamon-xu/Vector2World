@@ -26,10 +26,10 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 	}
 
 	/**
-	 * Determines whether a particular {@link WorldObject} should be rendered.
+	 * Determines whether a particular mesh of a {@link WorldObject} should be rendered.
 	 * Allows implementors to filter out objects.
 	 */
-	default boolean includeObject(WorldObject object) {
+	default boolean includeMesh(WorldObject object, MeshOrMeshWithMetadata mesh) {
 		return true;
 	}
 
@@ -46,7 +46,7 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 	default void outputScene(Scene scene, boolean keepOpen) {
 
 		forEach(scene.getWorldObjects(), (WorldObject r) -> {
-			if (includeObject(r) && r.getParent() == null) {
+			if (r.getParent() == null) {
 				if (requireNonNullElse(getConfiguration(), new O2WConfig()).renderUnderground() || r.getGroundState() != GroundState.BELOW) {
 					renderObject(r);
 				}
@@ -66,10 +66,12 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 	private void renderObject(WorldObject object) {
 		beginObject(object);
 		object.buildMeshes().forEach(m -> {
-			if (m instanceof MeshWithMetadata mm) {
-				this.drawMesh(mm);
-			} else {
-				this.drawMesh(m.asMesh());
+			if (this.includeMesh(object, m)) {
+				if (m instanceof MeshWithMetadata mm) {
+					this.drawMesh(mm);
+				} else {
+					this.drawMesh(m.asMesh());
+				}
 			}
 		});
 		object.getSubModels().forEach(it -> it.render(this));

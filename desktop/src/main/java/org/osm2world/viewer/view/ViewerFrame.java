@@ -220,6 +220,17 @@ public class ViewerFrame extends JFrame {
 				lodMenu.add(item);
 			}
 
+			JMenu levelMenu = new JMenu("Maximum building level");
+			subMenu.add(levelMenu);
+
+			var levelGroup = new ButtonGroup();
+
+			for (Integer level : List.of(Integer.MAX_VALUE, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3)) {
+				var item = new JRadioButtonMenuItem(new SetMaxLevelAction(level, this, data, renderOptions));
+				levelGroup.add(item);
+				levelMenu.add(item);
+			}
+
 			JMenu interpolatorMenu = new JMenu("TerrainInterpolator");
 			subMenu.add(interpolatorMenu);
 
