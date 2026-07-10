@@ -9,9 +9,9 @@ import org.osm2world.map_elevation.creation.BridgeTunnelEleCalculator;
 import org.osm2world.map_elevation.creation.EleCalculator;
 import org.osm2world.map_elevation.creation.TerrainInterpolator;
 import org.osm2world.map_elevation.creation.ZeroInterpolator;
-import org.osm2world.scene.mesh.LevelOfDetail;
 import org.osm2world.output.common.rendering.MutableCamera;
 import org.osm2world.output.common.rendering.Projection;
+import org.osm2world.scene.mesh.LevelOfDetail;
 import org.osm2world.viewer.view.debug.DebugView;
 
 public class RenderOptions {
@@ -23,19 +23,12 @@ public class RenderOptions {
 
 	public Set<DebugView> activeDebugViews = new HashSet<>();
 
-	private boolean showWorldObjects = true;
 	private boolean wireframe = false;
 	private boolean backfaceCulling = true;
 
 	Class<? extends TerrainInterpolator> interpolatorClass = ZeroInterpolator.class;
 	Class<? extends EleCalculator> eleCalculatorClass = BridgeTunnelEleCalculator.class;
 
-	public boolean isShowWorldObjects() {
-		return showWorldObjects;
-	}
-	public void setShowWorldObjects(boolean showWorldObjects) {
-		this.showWorldObjects = showWorldObjects;
-	}
 	public boolean isWireframe() {
 		return wireframe;
 	}
