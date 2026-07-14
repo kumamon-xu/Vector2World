@@ -29,7 +29,7 @@ public class IndoorArea implements AreaWorldObject, ProceduralWorldObject {
         double floorHeight = data.getLevelHeightAboveBase();
 
         floor = new IndoorFloor(data.getBuildingPart(), data.getSurface(config), polygon, floorHeight,
-                data.getRenderableLevels().contains(data.getMinLevel()), data.getMinLevel());
+				data.getMinLevel());
     }
 
     public Collection<AttachmentSurface> getAttachmentSurfaces() {

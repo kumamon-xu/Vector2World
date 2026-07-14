@@ -807,7 +807,7 @@ public class IndoorWall {
 		Material material = BuildingPart.buildMaterial(data.getTags().getValue("material"), null,
 				DefaultMaterials.BRICK, false, config);
 
-		for (Integer level : data.getRenderableLevels()) {
+		for (Integer level : data.getLevels()) {
 
 			double ceilingHeight = baseEle + data.getBuildingPart().levelStructure.level(level).relativeEleTop();
 			double floorHeight = baseEle + data.getBuildingPart().levelStructure.level(level).relativeEle;

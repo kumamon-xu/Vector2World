@@ -25,21 +25,19 @@ public class Ceiling {
     private final Material material;
     private final PolygonWithHolesXZ polygon;
     private final double floorHeight;
-    private Boolean render;
-    final int level;
+	final int level;
 
-    Ceiling(BuildingPart buildingPart, Material material, PolygonWithHolesXZ polygon, double floorHeightAboveBase, Boolean renderable, int level){
+    Ceiling(BuildingPart buildingPart, Material material, PolygonWithHolesXZ polygon, double floorHeightAboveBase, int level) {
         this.buildingPart = buildingPart;
         this.material = material;
         this.polygon = polygon;
         this.floorHeight = floorHeightAboveBase;
-        this.render = renderable;
         this.level = level;
     }
 
     void renderTo(ProceduralWorldObject.Target target) {
 
-        if (render && polygon != null) {
+		if (polygon != null) {
 
             buildingPart.getBuilding().setLevelMetadataToTarget(target, List.of(level + 1));
 

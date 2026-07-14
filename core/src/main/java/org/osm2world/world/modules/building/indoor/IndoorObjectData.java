@@ -1,8 +1,6 @@
 package org.osm2world.world.modules.building.indoor;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
 import static org.osm2world.util.ValueParseUtil.parseLevels;
 
 import java.util.List;
@@ -22,7 +20,6 @@ public final class IndoorObjectData {
     private final BuildingPart buildingPart;
     private final MapElement mapElement;
     private final List<Integer> levels;
-    private List<Integer> renderableLevels;
     private final TagSet tags;
     private final double levelHeightAboveBase;
 
@@ -32,24 +29,6 @@ public final class IndoorObjectData {
         this.mapElement = mapElement;
 
         this.levels = parseLevels(mapElement.getTags().getValue("level"), emptyList());
-
-        O2WConfig config = buildingPart.getConfig();
-
-        if (config.getString("renderLevels") != null){
-            List<String> renLevels = asList(config.getString("renderLevels").split(","));
-            this.renderableLevels = levels.stream()
-                    .filter(i -> renLevels.contains(Integer.toString(i)))
-                    .collect(toList());
-        } else {
-            this.renderableLevels = this.levels;
-        }
-
-        if(config.getString("notRenderLevels") != null){
-            List<String> notRenLevels = asList(config.getString("notRenderLevels").split(","));
-            this.renderableLevels = renderableLevels.stream()
-                    .filter(i -> !notRenLevels.contains(Integer.toString(i)))
-                    .collect(toList());
-        }
 
         this.tags = mapElement.getTags();
         this.levelHeightAboveBase = (float) buildingPart.levelStructure.level(getMinLevel()).relativeEle;
@@ -64,8 +43,6 @@ public final class IndoorObjectData {
     public double getLevelHeightAboveBase() { return levelHeightAboveBase; }
 
     public List<Integer> getLevels() { return levels; }
-
-    public List<Integer> getRenderableLevels() { return renderableLevels; }
 
     public Integer getMinLevel(){ return levels.get(0); }
 

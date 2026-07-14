@@ -34,13 +34,13 @@ public class IndoorRoom implements AreaWorldObject, ProceduralWorldObject {
                 data.getSurface(config),
                 data.getPolygon(),
                 data.getLevelHeightAboveBase(),
-                data.getRenderableLevels().contains(data.getMinLevel()), data.getMinLevel());
+				data.getMinLevel());
 
         ceiling = new Ceiling(data.getBuildingPart(),
                 data.getMaterial(BuildingDefaults.getDefaultsFor(data.getBuildingPart().getTags()).materialWall, config),
                 data.getPolygon(),
                 data.getTopOfTopLevelHeightAboveBase(),
-                data.getRenderableLevels().contains(data.getMaxLevel()), data.getMaxLevel());
+                data.getMaxLevel());
 
     }
 
