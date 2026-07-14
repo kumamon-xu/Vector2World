@@ -453,17 +453,11 @@ public class BuildingPart implements AreaWorldObject, ProceduralWorldObject {
 			createComponents();
 		}
 
-		if (!config.getBoolean("noOuterWalls", false)){
-			walls.forEach(w -> w.renderTo(target, config));
-		}
+		walls.forEach(w -> w.renderTo(target, config));
 
-		if (!config.getBoolean("noRoofs", false)) {
-			roof.renderTo(target, building.getGroundLevelEle() + levelStructure.heightWithoutRoof());
-		}
-
+		roof.renderTo(target, building.getGroundLevelEle() + levelStructure.heightWithoutRoof());
 
 		// TODO don't render floors inside building
-
 		bottoms.forEach(f -> f.renderTo(target));
 
 		target.setCurrentLodRange(INDOOR_MIN_LOD, LOD4);
