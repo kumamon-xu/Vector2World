@@ -38,6 +38,10 @@ public class BuildingPartInterior {
 
 	}
 
+	public boolean isEmpty() {
+		return walls.isEmpty() && rooms.isEmpty() && areas.isEmpty();
+	}
+
 	public Collection<AttachmentSurface> getAttachmentSurfaces() {
 
 		if (surfaces == null) {

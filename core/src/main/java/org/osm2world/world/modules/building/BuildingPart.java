@@ -539,6 +539,10 @@ public class BuildingPart implements AreaWorldObject, ProceduralWorldObject {
 		return buildingPartInterior;
 	}
 
+	boolean hasIndoorFeatures() {
+		return buildingPartInterior != null && !buildingPartInterior.isEmpty();
+	}
+
 	protected Material createWallMaterial(TagSet tags, O2WConfig config) {
 
 		BuildingDefaults defaults = BuildingDefaults.getDefaultsFor(tags);

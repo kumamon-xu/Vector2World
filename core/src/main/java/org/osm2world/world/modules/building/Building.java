@@ -196,6 +196,15 @@ public class Building extends CachingProceduralWorldObject implements AreaWorldO
 		return config.lod();
 	}
 
+	/** Decides whether to export level metadata for this building */
+	protected boolean exportLevelMetadata() {
+		return switch (config.exportLevels()) {
+			case "true" -> true;
+			case "indoor" -> this.getParts().stream().anyMatch(BuildingPart::hasIndoorFeatures);
+			default -> false;
+		};
+	}
+
 	@Override
 	public void buildMeshesAndModels(Target target) {
 		forEach(parts, part -> part.buildMeshesAndModels(target));

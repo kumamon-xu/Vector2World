@@ -229,6 +229,7 @@ public class ExteriorBuildingWall {
 			boolean createRoofSurface;
 
 			boolean separateLevelSurfaces = FORCE_LEVEL_SPLIT
+					|| buildingPart.building.exportLevelMetadata()
 					// separate level surfaces significantly speed up the calculations for placing wall elements on large walls
 					|| hasWindows && EnumSet.of(WindowImplementation.FULL_GEOMETRY, WindowImplementation.INSET_TEXTURES).contains(windowImplementation);
 
@@ -396,8 +397,10 @@ public class ExteriorBuildingWall {
 				List<Level> levels = new ArrayList<>(levelsBySurface.get(surface));
 				levels.sort(comparingInt(l -> l.level));
 
-				target.setCurrentMetadata(Map.of("level", String.join(";",
-						levels.stream().map(l -> Integer.toString(l.level)).toList())));
+				if (buildingPart.building.exportLevelMetadata()) {
+					target.setCurrentMetadata(Map.of("level", String.join(";",
+							levels.stream().map(l -> Integer.toString(l.level)).toList())));
+				}
 
 				Level lowestLevel = levels.get(0);
 				double totalLevelHeight = levels.stream().mapToDouble(l -> l.height).sum();
