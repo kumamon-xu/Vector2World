@@ -130,10 +130,12 @@ public class RoadModule extends ConfigurableWorldModule {
 	}
 
 	public static boolean isRoad(TagSet tags) {
+		// check against list of know types. Intentionally omits corridor, ladder, via_ferrata and lifecycle values
 		if (tags.containsKey("highway")
-				&& !tags.contains("highway", "elevator")
-				&& !tags.containsAny(List.of("highway"), List.of("proposed", "planned", "construction",
-						"ruins", "demolished", "removed", "razed", "destroyed"))) {
+				&& tags.containsAny(List.of("highway"), List.of("motorway", "trunk", "primary", "secondary",
+				"tertiary", "unclassified", "residential", "motorway_link", "trunk_link", "primary_link",
+				"secondary_link", "tertiary_link", "living_street", "service", "pedestrian", "track", "bus_guideway",
+				"escape", "raceway", "road", "busway", "footway", "bridleway", "steps", "path", "platform"))) {
 			return true;
 		} else {
 			return tags.contains("railway", "platform")
