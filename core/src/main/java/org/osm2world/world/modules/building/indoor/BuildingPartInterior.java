@@ -30,8 +30,8 @@ public class BuildingPartInterior {
 
 			switch (element.getTags().getValue("indoor")) {
 			case "wall" -> walls.add(new IndoorWall(data, buildingPart.getConfig()));
-			case "room", "corridor" -> rooms.add(new IndoorRoom(data, buildingPart.getConfig()));
-			case "area" -> areas.add(new IndoorArea(data, buildingPart.getConfig()));
+			case "room" -> rooms.add(new IndoorRoom(data, buildingPart.getConfig()));
+			case "area", "corridor" -> areas.add(new IndoorArea(data, buildingPart.getConfig()));
 			}
 
 		}
