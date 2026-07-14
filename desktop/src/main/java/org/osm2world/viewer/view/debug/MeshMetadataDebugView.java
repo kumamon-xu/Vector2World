@@ -1,5 +1,7 @@
 package org.osm2world.viewer.view.debug;
 
+import static org.apache.commons.lang3.math.NumberUtils.toInt;
+
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -55,8 +57,8 @@ public abstract class MeshMetadataDebugView extends StaticDebugView {
 			Object levelValue = m.metadata().extraProperties().get("level");
 			if (levelValue instanceof String levelString) {
 				Set<String> values = Set.of(levelString.split(";"));
-				OptionalInt minValue = values.stream().mapToInt(Integer::parseInt).min();
-				if (minValue.isPresent()) {
+				OptionalInt minValue = values.stream().mapToInt(v -> toInt(v, Integer.MAX_VALUE)).min();
+				if (minValue.isPresent() && minValue.getAsInt() < Integer.MAX_VALUE) {
 					return String.valueOf(minValue.getAsInt());
 				}
 			}

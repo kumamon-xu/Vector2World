@@ -1,5 +1,6 @@
 package org.osm2world.viewer.view.debug;
 
+import static org.apache.commons.lang3.math.NumberUtils.toInt;
 import static org.osm2world.output.jogl.JOGLRenderingParameters.Winding.CCW;
 import static org.osm2world.util.FaultTolerantIterationUtil.forEach;
 
@@ -51,7 +52,7 @@ public class WorldObjectView extends DebugView {
 			Object levelValue = mm.metadata().extraProperties().get("level");
 			if (levelValue instanceof String levelList) {
 				String[] levels = levelList.split(";");
-				return Arrays.stream(levels).allMatch(level -> Integer.parseInt(level) <= maxLevel);
+				return Arrays.stream(levels).allMatch(level -> toInt(level, Integer.MAX_VALUE) <= maxLevel);
 			}
 		}
 		return true;
