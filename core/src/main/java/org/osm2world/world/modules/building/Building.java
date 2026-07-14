@@ -205,6 +205,22 @@ public class Building extends CachingProceduralWorldObject implements AreaWorldO
 		};
 	}
 
+	/**
+	 * Sets level metadata to the target if {@link #exportLevelMetadata()} is true.
+	 *
+	 * @param levels  list of {@link LevelAndHeightData.Level} objects or Integer values
+	 */
+	public void setLevelMetadataToTarget(Target target, List<?> levels) {
+		if (exportLevelMetadata()) {
+			List<String> levelValues = levels.stream()
+					.filter(l -> l instanceof LevelAndHeightData.Level || l instanceof Integer)
+					.mapToInt(l -> l instanceof LevelAndHeightData.Level level ? level.level : (int) l)
+					.mapToObj(Integer::toString)
+					.toList();
+			target.setCurrentMetadata(Map.of("level", String.join(";", levelValues)));
+		}
+	}
+
 	@Override
 	public void buildMeshesAndModels(Target target) {
 		forEach(parts, part -> part.buildMeshesAndModels(target));

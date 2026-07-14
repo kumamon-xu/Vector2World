@@ -58,9 +58,11 @@ public class IndoorFloor {
 
     void renderTo(ProceduralWorldObject.Target target) {
 
-        if (level != buildingPart.levelStructure.levels.get(0).level) {
+		if (level != buildingPart.levelStructure.levels.get(0).level) {
             ceiling.renderTo(target);
         }
+
+		buildingPart.getBuilding().setLevelMetadataToTarget(target, List.of(level));
 
         if (render && polygon != null) {
 
@@ -93,6 +95,9 @@ public class IndoorFloor {
                     triangleTexCoordLists(trianglesXYZ, material, GLOBAL_X_Z));
 
         }
+
+		target.setCurrentMetadata(null);
+
     }
 
 	private List<TriangleXYZ> triangulateFloorPolygons(Collection<? extends PolygonShapeXZ> polygons) {

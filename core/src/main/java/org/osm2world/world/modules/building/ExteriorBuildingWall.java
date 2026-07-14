@@ -397,10 +397,7 @@ public class ExteriorBuildingWall {
 				List<Level> levels = new ArrayList<>(levelsBySurface.get(surface));
 				levels.sort(comparingInt(l -> l.level));
 
-				if (buildingPart.building.exportLevelMetadata()) {
-					target.setCurrentMetadata(Map.of("level", String.join(";",
-							levels.stream().map(l -> Integer.toString(l.level)).toList())));
-				}
+				buildingPart.building.setLevelMetadataToTarget(target, levels);
 
 				Level lowestLevel = levels.get(0);
 				double totalLevelHeight = levels.stream().mapToDouble(l -> l.height).sum();

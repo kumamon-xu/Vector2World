@@ -800,6 +800,8 @@ public class IndoorWall {
 
 	void renderTo(ProceduralWorldObject.Target target) {
 
+		this.data.getBuildingPart().getBuilding().setLevelMetadataToTarget(target, this.data.getLevels());
+
 		double baseEle = data.getBuildingPart().getBuilding().getGroundLevelEle();
 
 		Material material = BuildingPart.buildMaterial(data.getTags().getValue("material"), null,
@@ -948,6 +950,9 @@ public class IndoorWall {
 			}
 
 		}
+
+		target.setCurrentMetadata(null);
+
 	}
 
 }

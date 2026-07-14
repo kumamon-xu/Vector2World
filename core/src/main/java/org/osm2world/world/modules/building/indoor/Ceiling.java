@@ -41,6 +41,8 @@ public class Ceiling {
 
         if (render && polygon != null) {
 
+            buildingPart.getBuilding().setLevelMetadataToTarget(target, List.of(level + 1));
+
             double floorEle = buildingPart.getBuilding().getGroundLevelEle() + floorHeight - 0.001;
 
             List<LineSegmentXZ> sides = new ArrayList<>(polygon.getOuter().makeCounterclockwise().getSegments());
@@ -49,6 +51,8 @@ public class Ceiling {
             renderSides(target, sides, floorEle);
 
             renderSurface(target, floorEle);
+
+            target.setCurrentAttachmentTypes(null);
 
         }
     }

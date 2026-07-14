@@ -453,12 +453,27 @@ public class BuildingPart implements AreaWorldObject, ProceduralWorldObject {
 			createComponents();
 		}
 
+		/* exterior walls */
+
 		walls.forEach(w -> w.renderTo(target, config));
+
+		/* roof */
+
+		List<Level> roofLevels = levelStructure.levels(EnumSet.of(LevelType.ROOF));
+		building.setLevelMetadataToTarget(target, (!roofLevels.isEmpty())
+				? roofLevels.stream().map(l -> l.level + 1).toList()
+				: List.of(levelStructure.levels.size()));
 
 		roof.renderTo(target, building.getGroundLevelEle() + levelStructure.heightWithoutRoof());
 
+		target.setCurrentMetadata(null);
+
+		/* bottom */
+
 		// TODO don't render floors inside building
 		bottoms.forEach(f -> f.renderTo(target));
+
+		/* indoor features */
 
 		target.setCurrentLodRange(INDOOR_MIN_LOD, LOD4);
 
