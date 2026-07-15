@@ -60,7 +60,7 @@ public class IndoorWallTest {
 
 		/* test basic case */
 
-		List<VectorXZ> endPointsList = wall.getNewEndPoints(wall.getWallSegmentNodes().get(0),2, 5, 7.5);
+		List<VectorXZ> endPointsList = wall.getNewEndPoints(wall.getWallSegments().get(0),2, 5, 7.5);
 
 		VectorXZ wallWayRightNormal = wallWayLineSegment.getDirection().rightNormal();
 
@@ -81,7 +81,7 @@ public class IndoorWallTest {
 		IndoorWall secondWall = new IndoorWall(new IndoorObjectData(buildingPart, secondWallWay.getWaySegments().get(0)), config);
 
 
-		List<VectorXZ> secondEndPointsList = secondWall.getNewEndPoints(secondWall.getWallSegmentNodes().get(0),2, 5, 7.5);
+		List<VectorXZ> secondEndPointsList = secondWall.getNewEndPoints(secondWall.getWallSegments().get(0),2, 5, 7.5);
 
 		double offset = secondWall.getWallThickness() / Math.sin(PI/2);
 
@@ -90,7 +90,7 @@ public class IndoorWallTest {
 		assertEquals(secondEndNodePos.add(secondRightNormal.mult(wall.getWallThickness())), secondEndPointsList.get(2));
 		assertEquals(secondEndNodePos.add(secondRightNormal.mult(-wall.getWallThickness())), secondEndPointsList.get(3));
 
-		endPointsList = wall.getNewEndPoints(wall.getWallSegmentNodes().get(0),2, 5, 7.5);
+		endPointsList = wall.getNewEndPoints(wall.getWallSegments().get(0),2, 5, 7.5);
 
 		assertEquals(0, endPointsList.get(3).subtract(secondEndPointsList.get(0)).length(), 0.05);
 		assertEquals(0, endPointsList.get(2).subtract(secondEndPointsList.get(1)).length(), 0.05);
@@ -106,9 +106,9 @@ public class IndoorWallTest {
 
 		IndoorWall thirdWall = new IndoorWall(new IndoorObjectData(buildingPart, thirdWallWay.getWaySegments().get(0)), config);
 
-		endPointsList = wall.getNewEndPoints(wall.getWallSegmentNodes().get(0),2, 5, 7.5);
-		secondEndPointsList = secondWall.getNewEndPoints(secondWall.getWallSegmentNodes().get(0),2, 5, 7.5);
-		List<VectorXZ> thirdEndPointsList = thirdWall.getNewEndPoints(thirdWall.getWallSegmentNodes().get(0),3, 7.5, 10);
+		endPointsList = wall.getNewEndPoints(wall.getWallSegments().get(0),2, 5, 7.5);
+		secondEndPointsList = secondWall.getNewEndPoints(secondWall.getWallSegments().get(0),2, 5, 7.5);
+		List<VectorXZ> thirdEndPointsList = thirdWall.getNewEndPoints(thirdWall.getWallSegments().get(0),3, 7.5, 10);
 
 		assertEquals(0, endPointsList.get(3).subtract(secondEndPointsList.get(0)).length(), 0.05);
 		assertEquals(0, endPointsList.get(2).subtract(secondEndPointsList.get(1)).length(), 0.05);

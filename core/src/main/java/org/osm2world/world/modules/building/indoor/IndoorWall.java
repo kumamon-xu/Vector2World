@@ -45,8 +45,8 @@ public class IndoorWall {
 	private final double wallThickness = 0.1;
 	static final double topOffset = 0.01;
 
-    private List<MapNode> nodes;
-    private List<SegmentNodes> wallSegmentNodes = new ArrayList<>();
+    private final List<MapNode> nodes;
+    private final List<WallSegment> wallSegments = new ArrayList<>();
 
     static List<SegmentLevelPair> allRenderedWallSegments = new ArrayList<>();
 
@@ -69,7 +69,7 @@ public class IndoorWall {
 			nodes = new ArrayList<>();
 		}
 
-        splitIntoWalls();
+        splitIntoWallSegments();
 
     }
 
@@ -84,7 +84,7 @@ public class IndoorWall {
         	nodes = new ArrayList<>();
 		}
 
-        splitIntoWalls();
+        splitIntoWallSegments();
 
     }
 
@@ -96,7 +96,7 @@ public class IndoorWall {
 		return segment.getWay().getNodes();
 	}
 
-	public List<SegmentNodes> getWallSegmentNodes() { return wallSegmentNodes; }
+	public List<WallSegment> getWallSegments() { return wallSegments; }
 
 	public double getWallThickness() { return wallThickness; }
 
@@ -108,18 +108,16 @@ public class IndoorWall {
 
         VectorXZ segmentBefore = nodes.get(index).getPos().subtract(nodes.get(index - 1).getPos());
         VectorXZ segmentAfter = nodes.get(index + 1).getPos().subtract(nodes.get(index).getPos());
-        double dot = segmentBefore.normalize().dot(segmentAfter.normalize());
+		return isCorner(segmentBefore, segmentAfter);
+	}
 
-        // TODO tolerance may need tweaking, possibly based on length of segment??
+	private boolean isCorner(VectorXZ segmentBefore, VectorXZ segmentAfter) {
+		double dot = segmentBefore.normalize().dot(segmentAfter.normalize());
+		// TODO tolerance may need tweaking, possibly based on length of segment??
+		return abs(dot - 1) >= straightnessTolerance;
+	}
 
-        if (abs(dot - 1) < straightnessTolerance) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private void splitIntoWalls(){
+	private void splitIntoWallSegments() {
 
     	if (!nodes.isEmpty()) {
 
@@ -131,7 +129,7 @@ public class IndoorWall {
 				MapNode node = nodes.get(i);
 
 				if (isCornerOrEnd(i)) {
-					wallSegmentNodes.add(new SegmentNodes(intermediateNodes, new LineSegmentXZ(prevNode.getPos(), node.getPos()), prevNode, node));
+					wallSegments.add(new WallSegment(intermediateNodes, prevNode, node));
 					prevNode = node;
 					intermediateNodes = new ArrayList<>();
 				} else {
@@ -140,26 +138,48 @@ public class IndoorWall {
 
 			}
 
+			/* special check for closed loops: might be able to merge first and last segment */
+
+			WallSegment firstSegment = wallSegments.get(0);
+			WallSegment lastSegment = wallSegments.get(wallSegments.size() - 1);
+
+			if (firstSegment.getStartNode().equals(lastSegment.getEndNode())
+				&& !isCorner(lastSegment.segment.getDirection(), firstSegment.segment.getDirection())) {
+
+				List<MapNode> mergedInnerNodes = new ArrayList<>(lastSegment.innerNodes);
+				mergedInnerNodes.add(firstSegment.startNode);
+				mergedInnerNodes.addAll(firstSegment.innerNodes);
+
+				WallSegment mergedSegment = new WallSegment(mergedInnerNodes, lastSegment.startNode, firstSegment.endNode);
+				wallSegments.set(0, mergedSegment);
+				wallSegments.remove(wallSegments.size() - 1);
+
+			}
+
     	}
     }
 
-	public class SegmentNodes {
+	public static class WallSegment {
 
-        private List<MapNode> nodes;
-        private LineSegmentXZ segment;
-        private MapNode startNode;
-        private MapNode endNode;
+        private final List<MapNode> innerNodes;
+        private final LineSegmentXZ segment;
+        private final MapNode startNode;
+        private final MapNode endNode;
 		List<VectorXZ> nodePositions;
 
-        SegmentNodes(List<MapNode> intermediateNodes, LineSegmentXZ segment, MapNode startNode, MapNode endNode){
-            nodes = intermediateNodes;
-            this.segment = segment;
-            this.startNode = startNode;
-            this.endNode = endNode;
-			this.nodePositions = nodes.stream().map(MapNode::getPos).collect(toList());
+        WallSegment(List<MapNode> innerNodes, MapNode startNode, MapNode endNode){
+            this(innerNodes, new LineSegmentXZ(startNode.getPos(), endNode.getPos()), startNode, endNode);
         }
 
-        List<MapNode> getNodes() { return nodes; }
+		WallSegment(List<MapNode> innerNodes, LineSegmentXZ segment, MapNode startNode, MapNode endNode) {
+			this.innerNodes = innerNodes;
+			this.segment = segment;
+			this.startNode = startNode;
+			this.endNode = endNode;
+			this.nodePositions = this.innerNodes.stream().map(MapNode::getPos).toList();
+		}
+
+        List<MapNode> getInnerNodes() { return innerNodes; }
 
         LineSegmentXZ getSegment() { return segment; }
 
@@ -382,7 +402,7 @@ public class IndoorWall {
 
 	}
 
-	private VectorXZ NormalIfOnBuildingEdge(SegmentNodes lineSegmentNodes){
+	private VectorXZ NormalIfOnBuildingEdge(WallSegment lineSegmentNodes){
 
 //		List<VectorXZ> buildingVertices = data.getBuildingPart().getBuilding().getOutlinePolygonXZ().getVertexList();
 
@@ -453,7 +473,7 @@ public class IndoorWall {
     	return new LineSegmentXZ(line.p1.add(rightNorm), line.p2.add(rightNorm));
 	}
 
-    private List<VectorXZ> getNewEndPoint(SegmentNodes wallSegData, boolean end, int level, double heightAboveGround, double ceilingHeightAboveGround){
+    private List<VectorXZ> getNewEndPoint(WallSegment wallSegData, boolean end, int level, double heightAboveGround, double ceilingHeightAboveGround){
 
 		MapNode startNode;
 		MapNode endNode;
@@ -592,7 +612,7 @@ public class IndoorWall {
 
 		/* move this wall segment if on outer edge of building */
 
-		final VectorXZ thisBuildingEdgeRightNorm = NormalIfOnBuildingEdge(new SegmentNodes(wallSegData.getNodes(), wallSegSegment, startNode, endNode) );
+		final VectorXZ thisBuildingEdgeRightNorm = NormalIfOnBuildingEdge(new WallSegment(wallSegData.getInnerNodes(), wallSegSegment, startNode, endNode) );
 
 		if (thisBuildingEdgeRightNorm != null) {
 			wallSegSegment = new LineSegmentXZ(wallSegSegment.p1.add(thisBuildingEdgeRightNorm), wallSegSegment.p2.add(thisBuildingEdgeRightNorm));
@@ -623,7 +643,7 @@ public class IndoorWall {
 				&& abs(abs(maxLineSegment.getLineSegment().getDirection().normalize().dot(wallSegSegment.getDirection().normalize())) - 1) >= straightnessTolerance) {
 
 			VectorXZ maxOnBuildingEdgeRightNorm = NormalIfOnBuildingEdge(
-					new SegmentNodes(asList(maxLineSegment.getStartNode(), maxLineSegment.getEndNode()),
+					new WallSegment(asList(maxLineSegment.getStartNode(), maxLineSegment.getEndNode()),
 							maxLineSegment.getLineSegment(), maxLineSegment.getStartNode(), maxLineSegment.getEndNode()));
 
 			if (maxOnBuildingEdgeRightNorm != null) {
@@ -651,7 +671,7 @@ public class IndoorWall {
 				&& abs(abs(minLineSegment.getLineSegment().getDirection().normalize().dot(wallSegSegment.getDirection().normalize())) - 1) >= straightnessTolerance) {
 
 			VectorXZ minOnBuildingEdgeRightNorm = NormalIfOnBuildingEdge(
-					new SegmentNodes(asList(minLineSegment.getStartNode(), minLineSegment.getEndNode()),
+					new WallSegment(asList(minLineSegment.getStartNode(), minLineSegment.getEndNode()),
 							minLineSegment.getLineSegment(), minLineSegment.getStartNode(), minLineSegment.getEndNode()));
 
 			if (minOnBuildingEdgeRightNorm != null) {
@@ -681,7 +701,7 @@ public class IndoorWall {
 	}
 
 
-    public List<VectorXZ> getNewEndPoints(SegmentNodes wallSegData, int level, double heightAboveGround, double ceilingHeightAboveGround){
+    public List<VectorXZ> getNewEndPoints(WallSegment wallSegData, int level, double heightAboveGround, double ceilingHeightAboveGround){
 
     	List<VectorXZ> result = new ArrayList<>();
 
@@ -811,7 +831,7 @@ public class IndoorWall {
 			double ceilingHeight = baseEle + data.getBuildingPart().levelStructure.level(level).relativeEleTop();
 			double floorHeight = baseEle + data.getBuildingPart().levelStructure.level(level).relativeEle;
 
-			for (SegmentNodes wallSegData : wallSegmentNodes) {
+			for (WallSegment wallSegData : wallSegments) {
 
 				SegmentLevelPair pair = new SegmentLevelPair(wallSegData.getSegment(), level, wallSegData.getStartNode(), wallSegData.getEndNode());
 
@@ -895,7 +915,7 @@ public class IndoorWall {
 						LineSegmentXZ frontLineSegment = new LineSegmentXZ(endPoints.get(3), endPoints.get(0));
 						LineSegmentXZ backLineSegment = new LineSegmentXZ(endPoints.get(1), endPoints.get(2));
 
-						for (MapNode node : wallSegData.getNodes()) {
+						for (MapNode node : wallSegData.getInnerNodes()) {
 
 							Set<Integer> objectLevels = new HashSet<>();
 							objectLevels.add(min(parseLevels(node.getTags().getValue("level"), singletonList(0))));
