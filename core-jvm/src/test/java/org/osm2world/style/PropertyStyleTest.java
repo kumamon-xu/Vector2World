@@ -1,18 +1,17 @@
 package org.osm2world.style;
 
 import static java.util.Objects.requireNonNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.osm2world.scene.material.DefaultMaterials.*;
+import static org.osm2world.util.test.TestFileUtil.getTestFile;
 
+import java.io.File;
 import java.util.Map;
 
 import org.junit.Test;
 import org.osm2world.conversion.O2WConfig;
 import org.osm2world.scene.color.Color;
-import org.osm2world.scene.material.TextureData;
-import org.osm2world.scene.material.TextureLayer;
-import org.osm2world.scene.material.UriTexture;
+import org.osm2world.scene.material.*;
 
 public class PropertyStyleTest {
 
@@ -57,6 +56,27 @@ public class PropertyStyleTest {
 		assertTrue(layerB.baseColorTexture instanceof UriTexture t && t.getUri().getPath().contains("right"));
 		assertEquals(1.2, layerB.baseColorTexture.dimensions.height(), 0);
 		assertEquals(TextureData.Wrap.CLAMP, layerB.baseColorTexture.wrap);
+
+	}
+
+	@Test
+	public void testGetTransparentVariant() {
+
+		var style = new PropertyStyle(new O2WConfig(Map.of(
+				"configBaseURI", "file:" + getTestFile("config").getAbsolutePath() + File.separator,
+				"material_GLASS_TRANSPARENT_texture0_dir", "./textures/Glass",
+				"material_GLASS_TRANSPARENT_texture0_color_file", "./textures/Glass/Glass_Transparent_Color.png"
+		)));
+
+		Material transparentVariant = style.getTransparentVariant(GLASS);
+		assertNotNull(transparentVariant);
+
+		TextureData colorTexture = transparentVariant.textureLayers().get(0).baseColorTexture;
+		if (colorTexture instanceof ImageFileTexture imageFileTexture) {
+			assertEquals("Glass_Transparent_Color.png", imageFileTexture.getFile().getName());
+		} else {
+			fail("Expected ImageFileTexture");
+		}
 
 	}
 
