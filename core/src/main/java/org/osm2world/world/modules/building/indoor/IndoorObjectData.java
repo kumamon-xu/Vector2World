@@ -44,6 +44,7 @@ public final class IndoorObjectData {
 
     public List<Integer> getLevels() { return levels; }
 
+
     public Integer getMinLevel(){ return levels.get(0); }
 
     public Integer getMaxLevel(){ return levels.get(levels.size() - 1); }

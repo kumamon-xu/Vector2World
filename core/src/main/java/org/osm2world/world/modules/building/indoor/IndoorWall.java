@@ -6,6 +6,7 @@ import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.math3.util.MathUtils.TWO_PI;
 import static org.osm2world.math.VectorXZ.listXYZ;
+import static org.osm2world.math.algorithms.GeometryUtil.closeLoop;
 import static org.osm2world.scene.texcoord.NamedTexCoordFunction.GLOBAL_X_Z;
 import static org.osm2world.scene.texcoord.TexCoordUtil.triangleTexCoordLists;
 import static org.osm2world.util.ValueParseUtil.parseLevels;
@@ -42,10 +43,7 @@ public class IndoorWall {
 
 	private final double straightnessTolerance = 0.001;
 	private final double wallThickness = 0.1;
-	private final double topOffset = 0.001;
-
-    private final Float wallHeight;
-    private final Float floorHeight;
+	static final double topOffset = 0.01;
 
     private List<MapNode> nodes;
     private List<SegmentNodes> wallSegmentNodes = new ArrayList<>();
@@ -61,9 +59,6 @@ public class IndoorWall {
 
         this.data = objectData;
 		this.config = config;
-
-        this.wallHeight = data.getTopOfTopLevelHeightAboveBase().floatValue();
-		this.floorHeight = data.getBuildingPart() == null ? 0 : (float) data.getLevelHeightAboveBase();
 
 		if (data.getMapElement() instanceof MapWaySegment) {
 			nodes = waySegmentNodes((MapWaySegment) data.getMapElement());
@@ -81,12 +76,10 @@ public class IndoorWall {
     public IndoorWall(BuildingPart buildingPart, MapElement element, O2WConfig config) {
 
         data = new IndoorObjectData(buildingPart, element);
-        this.floorHeight = (float) buildingPart.levelStructure.bottomHeight();
-        this.wallHeight = data.getTopOfTopLevelHeightAboveBase().floatValue();
 		this.config = config;
 
-        if (element instanceof MapArea) {
-			nodes = areaNodes((MapArea) element);
+        if (element instanceof MapArea area) {
+			nodes = areaNodes(area);
 		} else {
         	nodes = new ArrayList<>();
 		}
@@ -322,6 +315,15 @@ public class IndoorWall {
         return limitedHeights;
 
     }
+
+	static double roofEleAt(BuildingPart buildingPart, VectorXZ pos) {
+
+		Roof roof = buildingPart.getRoof();
+		double heightWithoutRoof = buildingPart.levelStructure.heightWithoutRoof();
+
+		return roof.getRoofHeightAt(pos) + heightWithoutRoof;
+
+	}
 
 	private class TagLineSegPair{
 
@@ -670,7 +672,9 @@ public class IndoorWall {
 
 		result.add(tempResult);
 
-		data.getBuildingPart().getBuilding().addLineSegmentToPolygonMap(endNode, level, new LineSegmentXZ(result.get(0), result.get(1)), heightAboveGround, ceilingHeightAboveGround);
+		data.getBuildingPart().getBuilding().addLineSegmentToPolygonMap(endNode, level,
+				new LineSegmentXZ(result.get(0), result.get(1)), heightAboveGround, ceilingHeightAboveGround,
+				roofEleAt(data.getBuildingPart(), endNode.getPos()));
 
 		return result;
 
@@ -753,34 +757,29 @@ public class IndoorWall {
 				n++;
 			}
 
-			if (!vertices.get(0).equals(vertices.get(vertices.size() - 1))) {
-				vertices.add(vertices.get(0));
-			}
-
 			if (vertices.size() > 3) {
 
 				/* render polygon */
 
 				try {
 
-					SimplePolygonXZ polygon = new SimplePolygonXZ(vertices).makeCounterclockwise();
+					SimplePolygonXZ polygon = new SimplePolygonXZ(closeLoop(vertices));
 
 					Collection<TriangleXZ> triangles = TriangulationUtil.triangulate(polygon);
 
 					List<TriangleXYZ> trianglesXYZBottom = triangles.stream()
 							.map(t -> t.makeClockwise().xyz(nodeAndLevel.heightAboveGround()))
-							.collect(toList());
+							.toList();
 
 					List<TriangleXYZ> trianglesXYZTop = triangles.stream()
-							.map(t -> t.makeCounterclockwise().xyz(nodeAndLevel.ceilingHeightAboveGround() - 0.0001))
-							.collect(toList());
+							.map(TriangleXZ::makeCounterclockwise)
+							.map(t -> t.xyz(p -> p.xyz(Math.min(
+									nodeAndLevel.ceilingHeightAboveGround(), nodeAndLevel.roofHeightAboveGround()) - topOffset)))
+							.toList();
 
-					VectorXYZ bottom = new VectorXYZ(0, nodeAndLevel.heightAboveGround(),0);
-					VectorXYZ top = new VectorXYZ(0, nodeAndLevel.ceilingHeightAboveGround() - 0.0001,0);
-
-					List<VectorXYZ> path = new ArrayList<>();
-					path.add(bottom);
-					path.add(top);
+					List<VectorXYZ> path = List.of(
+							new VectorXYZ(0, nodeAndLevel.heightAboveGround(),0),
+							new VectorXYZ(0, trianglesXYZTop.stream().mapToDouble(t -> t.getCenter().y).min().getAsDouble(), 0));
 
 					Material material = defaultInnerMaterial.get(config);
 
@@ -863,21 +862,21 @@ public class IndoorWall {
 							List<VectorXZ> bottomVertexLoop = new ArrayList<>(endPoints);
 							bottomVertexLoop.add(endPoints.get(0));
 
-							SimplePolygonXZ bottomPolygonXZ = new SimplePolygonXZ(bottomVertexLoop);
-							List<TriangleXYZ> bottomTriangles = TriangulationUtil.
-									triangulate(bottomPolygonXZ.asPolygonWithHolesXZ())
-									.stream()
-									.map(t -> t.makeClockwise().xyz(baseEle + data.getBuildingPart().levelStructure.level(level).relativeEle))
-									.collect(toList());
+							SimplePolygonXZ polygonXZ = new SimplePolygonXZ(bottomVertexLoop);
+							List<TriangleXZ> trianglesXZ = TriangulationUtil.triangulate(polygonXZ);
 
-							List<TriangleXYZ> tempTopTriangles = TriangulationUtil.
-									triangulate(bottomPolygonXZ.asPolygonWithHolesXZ())
-									.stream()
-									.map(t -> t.makeCounterclockwise().xyz(ceilingHeight - topOffset))
+							List<TriangleXYZ> bottomTriangles = trianglesXZ.stream()
+									.map(TriangleXZ::makeClockwise)
+									.map(t -> t.xyz(baseEle + data.getBuildingPart().levelStructure.level(level).relativeEle))
+									.toList();
+
+							List<TriangleXYZ> topTriangles = trianglesXZ.stream()
+									.map(TriangleXZ::makeCounterclockwise)
+									.map(t -> t.xyz(p -> p.xyz(Math.min(ceilingHeight, roofEleAt(data.getBuildingPart(), p)) - topOffset)))
 									.toList();
 
 							target.drawTriangles(innerMaterial, bottomTriangles, triangleTexCoordLists(bottomTriangles, material, GLOBAL_X_Z));
-							target.drawTriangles(innerMaterial, tempTopTriangles, triangleTexCoordLists(tempTopTriangles, material, GLOBAL_X_Z));
+							target.drawTriangles(innerMaterial, topTriangles, triangleTexCoordLists(topTriangles, material, GLOBAL_X_Z));
 
 
 							rightSurface = new WallSurface(data.getBuildingPart(), material,

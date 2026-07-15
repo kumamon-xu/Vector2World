@@ -296,14 +296,6 @@ public class SimplePolygonXZ implements SimplePolygonShapeXZ {
 	}
 
 	/**
-	 * @return  a {@link PolygonWithHolesXZ}
-	 * with this polygon as the outer polygon and no holes
-	 */
-	public PolygonWithHolesXZ asPolygonWithHolesXZ() {
-		return new PolygonWithHolesXZ(this, Collections.<SimplePolygonXZ>emptyList());
-	}
-
-	/**
 	 * returns this polygon if it is counterclockwise,
 	 * or the reversed polygon if it is clockwise.
 	 */

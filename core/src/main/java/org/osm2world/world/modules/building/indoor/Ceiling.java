@@ -1,6 +1,5 @@
 package org.osm2world.world.modules.building.indoor;
 
-import static java.util.stream.Collectors.toList;
 import static org.osm2world.scene.texcoord.NamedTexCoordFunction.GLOBAL_X_Z;
 import static org.osm2world.scene.texcoord.TexCoordUtil.triangleTexCoordLists;
 
@@ -18,6 +17,7 @@ import org.osm2world.output.CommonTarget;
 import org.osm2world.scene.material.Material;
 import org.osm2world.world.data.ProceduralWorldObject;
 import org.osm2world.world.modules.building.BuildingPart;
+import org.osm2world.world.modules.building.LevelAndHeightData;
 
 public class Ceiling {
 
@@ -46,7 +46,9 @@ public class Ceiling {
             List<LineSegmentXZ> sides = new ArrayList<>(polygon.getOuter().makeCounterclockwise().getSegments());
             polygon.getHoles().forEach(p -> sides.addAll(p.makeClockwise().getSegments()));
 
-            renderSides(target, sides, floorEle);
+            if (buildingPart.levelStructure.level(level).type != LevelAndHeightData.Level.LevelType.ROOF) {
+                renderSides(target, sides, floorEle);
+            }
 
             renderSurface(target, floorEle);
 
@@ -59,8 +61,10 @@ public class Ceiling {
         Collection<TriangleXZ> triangles = TriangulationUtil.triangulate(polygon);
 
         List<TriangleXYZ> trianglesXYZ = triangles.stream()
-                .map(t -> t.makeClockwise().xyz(floorEle - 0.2))
-                .collect(toList());
+                .map(TriangleXZ::makeClockwise)
+                .map(t -> t.xyz(p -> p.xyz(Math.min(floorEle - 0.2,
+                        IndoorWall.roofEleAt(buildingPart, p) - IndoorWall.topOffset))))
+                .toList();
 
         target.setCurrentAttachmentTypes(buildingPart, "ceiling" + this.level);
         target.drawTriangles(material, trianglesXYZ,

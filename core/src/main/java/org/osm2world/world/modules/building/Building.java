@@ -240,14 +240,16 @@ public class Building extends CachingProceduralWorldObject implements AreaWorldO
 	}
 
 	public record NodeWithLevelAndHeights(
-			MapNode node, Integer level, double heightAboveGround, double ceilingHeightAboveGround
+			MapNode node, Integer level, double heightAboveGround, double ceilingHeightAboveGround, double roofHeightAboveGround
 	) {}
 
-	public void addLineSegmentToPolygonMap(MapNode node, Integer level, LineSegmentXZ line, double heightAboveGround, double ceilingHeightAboveGround){
-		if (wallNodePolygonSegments.get(new NodeWithLevelAndHeights(node, level, heightAboveGround, ceilingHeightAboveGround)) != null) {
-			wallNodePolygonSegments.get(new NodeWithLevelAndHeights(node, level, heightAboveGround, ceilingHeightAboveGround)).add(line);
+	public void addLineSegmentToPolygonMap(MapNode node, Integer level, LineSegmentXZ line,
+			double heightAboveGround, double ceilingHeightAboveGround, double roofHeightAboveGround) {
+		var newNode = new NodeWithLevelAndHeights(node, level, heightAboveGround, ceilingHeightAboveGround, roofHeightAboveGround);
+		if (wallNodePolygonSegments.get(newNode) != null) {
+			wallNodePolygonSegments.get(newNode).add(line);
 		} else {
-			wallNodePolygonSegments.put(new NodeWithLevelAndHeights(node, level, heightAboveGround, ceilingHeightAboveGround), new ArrayList<>(Arrays.asList(line)));
+			wallNodePolygonSegments.put(newNode, new ArrayList<>(List.of(line)));
 		}
 	}
 
