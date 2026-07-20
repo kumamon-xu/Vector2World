@@ -1,5 +1,7 @@
 package org.osm2world.output;
 
+import javax.annotation.Nonnull;
+
 import org.osm2world.conversion.O2WConfig;
 import org.osm2world.scene.Scene;
 import org.osm2world.world.data.WorldObject;
@@ -10,7 +12,7 @@ import org.osm2world.world.data.WorldObject;
 public interface Output {
 
 	void setConfiguration(O2WConfig config);
-	O2WConfig getConfiguration();
+	@Nonnull O2WConfig getConfig();
 
 	/**
 	 * writes an entire {@link Scene} to this output.

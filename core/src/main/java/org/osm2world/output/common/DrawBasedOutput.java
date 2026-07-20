@@ -22,7 +22,7 @@ import org.osm2world.world.data.WorldObject;
 public interface DrawBasedOutput extends Output, CommonTarget {
 
 	default LevelOfDetail getLod() {
-		return getConfiguration().lod();
+		return getConfig().lod();
 	}
 
 	/**
@@ -47,7 +47,7 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 
 		forEach(scene.getWorldObjects(), (WorldObject r) -> {
 			if (r.getParent() == null) {
-				if (requireNonNullElse(getConfiguration(), new O2WConfig()).renderUnderground() || r.getGroundState() != GroundState.BELOW) {
+				if (requireNonNullElse(getConfig(), new O2WConfig()).renderUnderground() || r.getGroundState() != GroundState.BELOW) {
 					renderObject(r);
 				}
 			}

@@ -100,11 +100,6 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 	}
 
 	@Override
-	public O2WConfig getConfiguration() {
-		return config;
-	}
-
-	@Override
 	public void setConfiguration(O2WConfig config) {
 		if (config != null) {
 			this.config = config;

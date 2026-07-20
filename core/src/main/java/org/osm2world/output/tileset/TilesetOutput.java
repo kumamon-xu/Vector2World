@@ -18,7 +18,7 @@ import org.osm2world.math.geo.MapProjection;
 import org.osm2world.math.shapes.AxisAlignedBoundingBoxXYZ;
 import org.osm2world.math.shapes.AxisAlignedRectangleXZ;
 import org.osm2world.math.shapes.SimpleClosedShapeXZ;
-import org.osm2world.output.common.MeshOutput;
+import org.osm2world.output.common.AbstractOutput;
 import org.osm2world.output.common.compression.Compression;
 import org.osm2world.output.gltf.GltfFlavor;
 import org.osm2world.output.gltf.GltfOutput;
@@ -26,6 +26,8 @@ import org.osm2world.output.tileset.tiles_data.TilesetAsset;
 import org.osm2world.output.tileset.tiles_data.TilesetEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetParentEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetRoot;
+import org.osm2world.scene.Scene;
+import org.osm2world.scene.mesh.MeshStore;
 import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.util.platform.json.JsonUtil;
 
@@ -34,7 +36,7 @@ import org.osm2world.util.platform.json.JsonUtil;
  * Uses {@link GltfOutput} to generate the tile content,
  * and creates matching tileset.json files.
  */
-public class TilesetOutput extends MeshOutput {
+public class TilesetOutput extends AbstractOutput {
 
 	//TODO: Make configurable
 	private static final int NUM_MESHES_FOR_SUBDIVISION_TOP = 100;
@@ -70,14 +72,14 @@ public class TilesetOutput extends MeshOutput {
 	}
 
 	@Override
-	public void finish() {
-		createTileset();
+	public void outputScene(Scene scene) {
+		createTileset(new MeshStore(scene.getMeshesWithMetadata(this.getConfig())));
 	}
 
 	/**
 	 * creates both the tileset JSON and the glTF contents
 	 */
-	private void createTileset() {
+	private void createTileset(MeshStore meshStore) {
 
 		var dataBounds = new AxisAlignedBoundingBoxXYZ(
 				meshStore.meshesWithMetadata().stream()

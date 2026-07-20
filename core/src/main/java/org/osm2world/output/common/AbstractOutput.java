@@ -15,7 +15,7 @@ public abstract class AbstractOutput implements Output {
 	protected @Nonnull O2WConfig config = new O2WConfig();
 
 	@Override
-	public O2WConfig getConfiguration() {
+	public @Nonnull O2WConfig getConfig() {
 		return config;
 	}
 

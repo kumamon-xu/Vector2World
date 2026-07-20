@@ -85,7 +85,7 @@ public class StatisticsOutput extends AbstractOutput {
 		if (lod != null) {
 			return lod;
 		} else {
-			return getConfiguration().lod();
+			return getConfig().lod();
 		}
 	}
 
