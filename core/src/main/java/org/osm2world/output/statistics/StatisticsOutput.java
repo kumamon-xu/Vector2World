@@ -1,25 +1,27 @@
 package org.osm2world.output.statistics;
 
+import static org.osm2world.util.FaultTolerantIterationUtil.forEach;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import org.osm2world.math.VectorXYZ;
-import org.osm2world.math.VectorXZ;
-import org.osm2world.output.common.Primitive.Type;
-import org.osm2world.output.common.PrimitiveOutput;
+import org.osm2world.output.common.AbstractOutput;
+import org.osm2world.scene.Scene;
 import org.osm2world.scene.material.Material;
+import org.osm2world.scene.mesh.ExtrusionGeometry;
 import org.osm2world.scene.mesh.LevelOfDetail;
+import org.osm2world.scene.mesh.Mesh;
+import org.osm2world.scene.mesh.ShapeGeometry;
 import org.osm2world.world.data.WorldObject;
 
 /**
  * a target that simply counts the primitives that are sent to it
  * to create statistics.
  */
-public class StatisticsOutput extends PrimitiveOutput {
+public class StatisticsOutput extends AbstractOutput {
 
 	public final @Nullable LevelOfDetail lod;
 
@@ -27,9 +29,7 @@ public class StatisticsOutput extends PrimitiveOutput {
 	private final Map<Material, long[]> countsPerMaterial = new HashMap<>();
 	private final Map<Class<? extends WorldObject>, long[]> countsPerClass = new HashMap<>();
 
-	private WorldObject currentObject = null;
-
-	public StatisticsOutput(LevelOfDetail lod) {
+	public StatisticsOutput(@Nullable LevelOfDetail lod) {
 		this.lod = lod;
 	}
 
@@ -45,108 +45,94 @@ public class StatisticsOutput extends PrimitiveOutput {
 			}
 		},
 
-		PRIMITIVE_COUNT {
-			@Override public long countPrimitive(Type type, Material material,
-					List<VectorXYZ> vs, List<VectorXYZ> normals,
-					List<List<VectorXZ>> texCoordLists) {
-				return 1;
-			}
-		},
-
 		TOTAL_TRIANGLE_COUNT {
-			@Override public long countPrimitive(Type type, Material material,
-					List<VectorXYZ> vs, List<VectorXYZ> normals,
-					List<List<VectorXZ>> texCoordLists) {
-				if (type == Type.TRIANGLES) {
-					return vs.size() / 3;
+			@Override public long countMesh(Mesh mesh, int triangles) {
+				return triangles;
+			}
+		},
+
+		EXTRUSION_TRIANGLE_COUNT {
+			@Override public long countMesh(Mesh mesh, int triangles) {
+				if (mesh.geometry instanceof ExtrusionGeometry) {
+					return triangles;
 				} else {
-					return vs.size() - 2;
+					return 0;
 				}
 			}
 		},
 
-		TRIANGLES_COUNT {
-			@Override public long countPrimitive(Type type, Material material,
-					List<VectorXYZ> vs, List<VectorXYZ> normals,
-					List<List<VectorXZ>> texCoordLists) {
-				return type == Type.TRIANGLES ? 1 : 0;
-			}
-		},
-
-		TRIANGLE_STRIP_COUNT {
-			@Override public long countPrimitive(Type type, Material material,
-					List<VectorXYZ> vs, List<VectorXYZ> normals,
-					List<List<VectorXZ>> texCoordLists) {
-				return type == Type.TRIANGLE_STRIP ? 1 : 0;
-			}
-		},
-
-		TRIANGLE_FAN_COUNT {
-			@Override public long countPrimitive(Type type, Material material,
-					List<VectorXYZ> vs, List<VectorXYZ> normals,
-					List<List<VectorXZ>> texCoordLists) {
-				return type == Type.TRIANGLE_FAN ? 1 : 0;
-			}
-		},
-
-		CONVEX_POLYGON_COUNT {
-			@Override public long countPrimitive(Type type, Material material,
-					List<VectorXYZ> vs, List<VectorXYZ> normals,
-					List<List<VectorXZ>> texCoordLists) {
-				return type == Type.CONVEX_POLYGON ? 1 : 0;
-			}
-		};
-
-		/*
-		VBO_VALUE_COUNT {
-			@Override public long countPrimitive(Type type, Material material,
-					List<VectorXYZ> vs, List<VectorXYZ> normals,
-					List<List<VectorXZ>> texCoordLists) {
-
-				int vertexCount;
-
-				if (type == Type.TRIANGLES) {
-					vertexCount = vs.size();
+		SHAPE_TRIANGLE_COUNT {
+			@Override public long countMesh(Mesh mesh, int triangles) {
+				if (mesh.geometry instanceof ShapeGeometry) {
+					return triangles;
 				} else {
-					vertexCount = 3 * (vs.size() - 2);
+					return 0;
 				}
-
-				return (long) vertexCount *
-					JOGLRendererVBO.getValuesPerVertex(material);
-
 			}
 		};
-		*/
 
 		public long countObject(WorldObject object) {
 			return 0;
 		}
 
-		public long countPrimitive(Type type, Material material,
-									List<VectorXYZ> vs, List<VectorXYZ> normals,
-									List<List<VectorXZ>> texCoordLists) {
+		public long countMesh(Mesh mesh, int triangles) {
 			return 0;
 		}
 
 	}
 
-	@Override
 	public LevelOfDetail getLod() {
 		if (lod != null) {
 			return lod;
 		} else {
-			return super.getLod();
+			return getConfiguration().lod();
 		}
 	}
 
 	@Override
-	public void beginObject(WorldObject object) {
+	public void outputScene(Scene scene) {
 
-		currentObject = object;
+		forEach(scene.getWorldObjects(false), (WorldObject object) -> {
 
-		if (currentObject != null) {
+			handleObject(object);
 
-			Class<? extends WorldObject> currentClass = currentObject.getClass();
+			for (var m : object.buildMeshesForModelHierarchy()) {
+				if (getLod() == null || m.asMesh().lodRange.contains(getLod())) {
+					handleMesh(object, m.asMesh());
+				}
+			}
+
+		});
+
+	}
+
+	private void handleMesh(WorldObject object, Mesh mesh) {
+
+		Material material = mesh.material;
+		int triangles = mesh.geometry.asTriangles().triangles.size();
+
+		countsPerMaterial.putIfAbsent(material, new long[Stat.values().length]);
+
+		for (Stat stat : Stat.values()) {
+
+			long count = stat.countMesh(mesh, triangles);
+
+			globalCounts[stat.ordinal()] += count;
+
+			if (material != null) {
+				countsPerMaterial.get(material)[stat.ordinal()] += count;
+			}
+
+			countsPerClass.get(object.getClass())[stat.ordinal()] += count;
+
+		}
+	}
+
+	public void handleObject(WorldObject object) {
+
+		if (object != null) {
+
+			Class<? extends WorldObject> currentClass = object.getClass();
 
 			countsPerClass.putIfAbsent(currentClass, new long[Stat.values().length]);
 
@@ -156,38 +142,8 @@ public class StatisticsOutput extends PrimitiveOutput {
 
 				globalCounts[stat.ordinal()] += count;
 
-				if (currentObject != null) {
-					countsPerClass.get(currentClass)[stat.ordinal()] += count;
-				}
+				countsPerClass.get(currentClass)[stat.ordinal()] += count;
 
-			}
-
-
-		}
-
-		super.beginObject(object);
-
-	}
-
-	@Override
-	protected void drawPrimitive(Type type, Material material,
-			List<VectorXYZ> vs, List<VectorXYZ> normals,
-			List<List<VectorXZ>> texCoordLists) {
-
-		countsPerMaterial.putIfAbsent(material, new long[Stat.values().length]);
-
-		for (Stat stat : Stat.values()) {
-
-			long count = stat.countPrimitive(type, material, vs, normals, texCoordLists);
-
-			globalCounts[stat.ordinal()] += count;
-
-			if (material != null) {
-				countsPerMaterial.get(material)[stat.ordinal()] += count;
-			}
-
-			if (currentObject != null) {
-				countsPerClass.get(currentObject.getClass())[stat.ordinal()] += count;
 			}
 
 		}

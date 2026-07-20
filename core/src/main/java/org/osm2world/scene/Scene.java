@@ -65,6 +65,18 @@ public final class Scene {
 	}
 
 	/**
+	 * returns all {@link WorldObject}s in this scene
+	 * @param includeChildObjects  whether the result should include child objects (true), or only top-level objects
+	 */
+	public Iterable<WorldObject> getWorldObjects(boolean includeChildObjects) {
+		if (includeChildObjects) {
+			return getWorldObjects();
+		} else {
+			return Iterables.filter(getWorldObjects(), it -> it.getParent() == null);
+		}
+	}
+
+	/**
 	 * returns all {@link WorldObject}s in this scene which are instances of a certain type.
 	 */
 	public <T> Iterable<T> getWorldObjects(Class<T> type) {

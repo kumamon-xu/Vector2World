@@ -27,13 +27,9 @@ public class StatisticsDialog extends JDialog {
 
 	private static final Map<Stat, String> statNames = Map.ofEntries(
 			entry(OBJECT_COUNT, "objects"),
-			entry(PRIMITIVE_COUNT, "primitives"),
 			entry(TOTAL_TRIANGLE_COUNT, "triangles"),
-			entry(TRIANGLES_COUNT, "t. groups"),
-			entry(TRIANGLE_STRIP_COUNT, "t. strips"),
-			entry(TRIANGLE_FAN_COUNT, "t. fans"),
-			entry(CONVEX_POLYGON_COUNT, "polygons")
-//			entry(VBO_VALUE_COUNT, "vbo values")
+			entry(EXTRUSION_TRIANGLE_COUNT, "t. in ExtrusionGeom"),
+			entry(SHAPE_TRIANGLE_COUNT, "t. in ShapeGeom")
 	);
 
 	public StatisticsDialog(JFrame owner, StatisticsOutput stats, O2WConfig config) {
