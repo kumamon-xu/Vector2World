@@ -4,8 +4,10 @@ import static org.junit.Assert.*;
 import static org.osm2world.util.test.TestFileUtil.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -41,6 +43,44 @@ public class OSM2WorldTest {
 
 				assertTrue(Files.size(outputFile.toPath()) > 0);
 
+			}
+
+		}
+
+	}
+
+	@Test
+	public void testTileset() throws Exception {
+
+		for (boolean precompressed : List.of(false, true)) {
+
+			File inputFile = getTestFile("simpleTest01.osm");
+			File outputDir = createTempDirectory();
+
+			var options = List.of(
+					"tileset",
+					"-i", inputFile.getAbsolutePath(),
+					"--baseDir", outputDir.getAbsolutePath(),
+					"--bboxTiles", "13_4402_2828"
+			);
+
+			if (precompressed) {
+				options = new ArrayList<>(options);
+				options.add("--precompressedTiles");
+			}
+
+			OSM2World.main(options.toArray(new String[0]), false);
+
+			for (String ext : List.of("tileset.json", precompressed ? "glb.gz" : "glb")) {
+				try (Stream<Path> outputFileStream = Files.walk(outputDir.toPath(), 4)) {
+					assertTrue(outputFileStream.anyMatch(it -> {
+						try {
+							return it.toString().endsWith("." + ext) && Files.size(it) > 0;
+						} catch (IOException e) {
+							return false;
+						}
+					}));
+				}
 			}
 
 		}
