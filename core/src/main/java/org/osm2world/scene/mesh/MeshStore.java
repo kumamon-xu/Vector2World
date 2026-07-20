@@ -4,6 +4,8 @@ import static java.lang.Math.min;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.nCopies;
+import static java.util.Objects.hash;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.toList;
 import static org.osm2world.math.algorithms.GeometryUtil.isRightOf;
 import static org.osm2world.scene.color.Color.WHITE;
@@ -68,7 +70,10 @@ public class MeshStore {
 	}
 
 	public Multimap<MeshWithMetadata.ElementMetadata, MeshWithMetadata> meshesByElementMetadata() {
-		return Multimaps.index(meshes, m -> m.metadata().elementMetadata());
+		return Multimaps.index(meshes, m -> {
+			var metadata = m.metadata().elementMetadata();
+			return requireNonNullElse(metadata, new MeshWithMetadata.ElementMetadata(null, null));
+		});
 	}
 
 	public MeshStore process(List<MeshProcessingStep> processingSteps) {
@@ -211,7 +216,7 @@ public class MeshStore {
 
 				int hashCode = mesh.mesh().material.textureLayers().hashCode();
 				if (!options.contains(MergeOption.MERGE_ELEMENTS)) {
-					hashCode ^= Objects.hash(mesh.metadata().mapElement(), mesh.metadata().modelClass());
+					hashCode ^= hash(mesh.metadata().mapElement(), mesh.metadata().modelClass());
 				}
 				if (!options.contains(MergeOption.MERGE_METADATA_PROPERTIES)) {
 					hashCode ^= mesh.metadata().extraProperties().hashCode();
