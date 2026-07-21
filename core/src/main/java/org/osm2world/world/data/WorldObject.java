@@ -6,6 +6,7 @@ import static org.osm2world.map_elevation.data.GroundState.ON;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -18,6 +19,7 @@ import org.osm2world.math.algorithms.CAGUtil;
 import org.osm2world.math.shapes.PolygonShapeXZ;
 import org.osm2world.math.shapes.SimplePolygonShapeXZ;
 import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
+import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.scene.model.Model;
 import org.osm2world.scene.model.ModelInstance;
 import org.osm2world.util.exception.InvalidGeometryException;
@@ -29,15 +31,46 @@ public interface WorldObject {
 	/**
 	 * returns the meshes making up this {@link WorldObject}.
 	 */
-	public List<? extends MeshOrMeshWithMetadata> buildMeshes();
+	List<? extends MeshOrMeshWithMetadata> buildMeshes();
 
 	/**
-	 * returns the meshes making up this {@link WorldObject}, including {@link #getSubModels()}.
+	 * Alternative to {@link #buildMeshes()} which can optionally also include the meshes for {@link #getSubModels()}.
 	 */
-	public default List<? extends MeshOrMeshWithMetadata> buildMeshesForModelHierarchy() {
+	default List<? extends MeshOrMeshWithMetadata> buildMeshes(boolean includeSubModels) {
 		List<MeshOrMeshWithMetadata> result = new ArrayList<>(buildMeshes());
-		getSubModels().forEach(it -> result.addAll(it.getMeshes()));
+		if (includeSubModels) {
+			getSubModels().forEach(it -> result.addAll(it.getMeshes()));
+		}
 		return result;
+	}
+
+	/**
+	 * Returns the same meshes as {@link #buildMeshes(boolean)}, but with metadata attached.
+	 */
+	default List<MeshWithMetadata> buildMeshesWithMetadata(boolean includeSubModels) {
+
+		var elementMetadata = MeshWithMetadata.ElementMetadata.forWorldObject(this);
+
+		List<? extends MeshOrMeshWithMetadata> meshes = buildMeshes(includeSubModels);
+		List<MeshWithMetadata> result = new ArrayList<>(meshes.size());
+
+		for (MeshOrMeshWithMetadata m : meshes) {
+
+			if (m instanceof MeshWithMetadata mm) {
+				if (mm.metadata().elementMetadata() != null) {
+					result.add(mm);
+				} else {
+					var metadata = new MeshWithMetadata.MeshMetadata(elementMetadata, mm.metadata().extraProperties());
+					result.add(new MeshWithMetadata(mm.mesh(), metadata));
+				}
+			} else {
+				result.add(new MeshWithMetadata(m.asMesh(), new MeshWithMetadata.MeshMetadata(elementMetadata, Map.of())));
+			}
+
+		}
+
+		return result;
+
 	}
 
 	/**

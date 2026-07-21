@@ -96,7 +96,7 @@ public class StatisticsOutput extends AbstractOutput {
 
 			handleObject(object);
 
-			for (var m : object.buildMeshesForModelHierarchy()) {
+			for (var m : object.buildMeshes(true)) {
 				if (getLod() == null || m.asMesh().lodRange.contains(getLod())) {
 					handleMesh(object, m.asMesh());
 				}

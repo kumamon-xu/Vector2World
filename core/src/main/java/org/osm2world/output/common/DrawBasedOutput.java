@@ -1,13 +1,9 @@
 package org.osm2world.output.common;
 
-import static java.util.Objects.requireNonNullElse;
-import static org.osm2world.util.FaultTolerantIterationUtil.DEFAULT_EXCEPTION_HANDLER;
 import static org.osm2world.util.FaultTolerantIterationUtil.forEach;
 
 import javax.annotation.Nullable;
 
-import org.osm2world.conversion.O2WConfig;
-import org.osm2world.map_elevation.data.GroundState;
 import org.osm2world.output.CommonTarget;
 import org.osm2world.output.Output;
 import org.osm2world.scene.Scene;
@@ -25,14 +21,6 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 		return getConfig().lod();
 	}
 
-	/**
-	 * Determines whether a particular mesh of a {@link WorldObject} should be rendered.
-	 * Allows implementors to filter out objects.
-	 */
-	default boolean includeMesh(WorldObject object, MeshOrMeshWithMetadata mesh) {
-		return true;
-	}
-
 	@Override
 	default void outputScene(Scene scene) {
 		this.outputScene(scene, false);
@@ -45,36 +33,14 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 	 */
 	default void outputScene(Scene scene, boolean keepOpen) {
 
-		forEach(scene.getWorldObjects(), (WorldObject r) -> {
-			if (r.getParent() == null) {
-				if (requireNonNullElse(getConfig(), new O2WConfig()).renderUnderground() || r.getGroundState() != GroundState.BELOW) {
-					renderObject(r);
-				}
-			}
-		}, (e, r) -> DEFAULT_EXCEPTION_HANDLER.accept(e, r.getPrimaryMapElement()));
+		MeshStore meshes = Scene.sceneToMeshes(scene, this.getConfig(), null);
+
+		forEach(meshes.meshesWithMetadata(), this::drawMesh);
 
 		if (!keepOpen) {
 			finish();
 		}
 
-	}
-
-	/**
-	 * renders one {@link WorldObject} to this output.
-	 * Also sends {@link #beginObject(WorldObject)} calls.
-	 */
-	private void renderObject(WorldObject object) {
-		beginObject(object);
-		object.buildMeshes().forEach(m -> {
-			if (this.includeMesh(object, m)) {
-				if (m instanceof MeshWithMetadata mm) {
-					this.drawMesh(mm);
-				} else {
-					this.drawMesh(m.asMesh());
-				}
-			}
-		});
-		object.getSubModels().forEach(it -> it.render(this));
 	}
 
 	/**
@@ -90,6 +56,7 @@ public interface DrawBasedOutput extends Output, CommonTarget {
 		this.drawMesh(mesh.asMesh());
 	}
 
+	@Override
 	default void drawMesh(Mesh mesh) {
 		if (mesh.lodRange.contains(getLod())) {
 			var converter = new MeshStore.ConvertToTriangles(getLod());

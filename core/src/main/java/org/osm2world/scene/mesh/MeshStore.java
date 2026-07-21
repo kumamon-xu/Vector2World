@@ -57,8 +57,12 @@ public class MeshStore {
 		addMesh(new MeshWithMetadata(mesh, metadata != null ? metadata : new MeshMetadata(null, Map.of())));
 	}
 
-	public void addMesh(MeshWithMetadata meshWithMetadata) {
-		meshes.add(meshWithMetadata);
+	public void addMesh(MeshOrMeshWithMetadata mesh) {
+		if (mesh instanceof MeshWithMetadata meshWithMetadata) {
+			meshes.add(meshWithMetadata);
+		} else {
+			addMesh(mesh.asMesh(), null);
+		}
 	}
 
 	public List<Mesh> meshes() {

@@ -18,7 +18,11 @@ public record MeshWithMetadata(@Nonnull Mesh mesh, @Nonnull MeshMetadata metadat
 	public record ElementMetadata(
 			@Nullable MapRelationElement mapElement,
 			@Nullable Class<? extends WorldObject> modelClass
-	) {}
+	) {
+		public static ElementMetadata forWorldObject(WorldObject object) {
+			return new ElementMetadata(object.getPrimaryMapElement().getElementWithId(), object.getClass());
+		}
+	}
 
 	public record MeshMetadata(@Nullable ElementMetadata elementMetadata,
 			@Nonnull Map<String, Object> extraProperties) {

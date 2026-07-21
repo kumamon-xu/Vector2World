@@ -21,8 +21,8 @@ import org.osm2world.output.common.MeshOutput;
 import org.osm2world.scene.Scene;
 import org.osm2world.scene.material.*;
 import org.osm2world.scene.mesh.Mesh;
-import org.osm2world.scene.mesh.MeshOrMeshWithMetadata;
 import org.osm2world.scene.mesh.MeshStore;
+import org.osm2world.scene.mesh.MeshWithMetadata;
 import org.osm2world.scene.mesh.TriangleGeometry;
 import org.osm2world.util.platform.json.JsonImplementationBrowser;
 import org.osm2world.util.platform.uri.HttpUriImplementationBrowser;
@@ -289,7 +289,7 @@ public class WebModule {
 
 		private static O2WMesh[] sceneToMeshArray(Scene scene, List<String> filterIds, O2WConfig config) {
 
-			BiPredicate<WorldObject, MeshOrMeshWithMetadata> filter = (w, m) -> true;
+			BiPredicate<WorldObject, MeshWithMetadata> filter = (w, m) -> true;
 
 			if (!filterIds.isEmpty()) {
 				List<String> expandedFilterIds = expandRelations(scene.getMapData(), filterIds);

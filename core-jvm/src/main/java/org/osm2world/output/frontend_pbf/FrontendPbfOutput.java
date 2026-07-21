@@ -75,6 +75,9 @@ import com.google.common.collect.Multimap;
 
 /**
  * Writes experimental Protobuf tiles in a custom format for WebGL rendering.
+ *
+ * @deprecated  WebGL rendering clients should use a standard format for 3D tiles, e.g. through
+ * {@link org.osm2world.output.tileset.TilesetOutput} or {@link org.osm2world.output.gltf.GltfOutput}.
  */
 public class FrontendPbfOutput extends AbstractOutput {
 

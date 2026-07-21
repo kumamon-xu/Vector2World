@@ -86,6 +86,10 @@ public interface ProceduralWorldObject extends WorldObject {
 			subModels.add(subModel);
 		}
 
+		public List<Mesh> meshes() {
+			return meshes.stream().map(MeshOrMeshWithMetadata::asMesh).toList();
+		}
+
 		List<MeshWithMetadata> meshesWithMetadata(ProceduralWorldObject worldObject) {
 			List<MeshWithMetadata> result = new ArrayList<>(meshes.size());
 			for (MeshWithMetadata m : meshes) {
