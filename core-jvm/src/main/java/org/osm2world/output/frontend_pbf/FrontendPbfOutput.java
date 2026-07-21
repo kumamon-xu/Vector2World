@@ -4,6 +4,7 @@ import static java.lang.Math.round;
 import static java.util.Arrays.asList;
 import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNullElse;
 import static org.osm2world.math.VectorXYZ.NULL_VECTOR;
 import static org.osm2world.output.common.ExtrudeOption.END_CAP;
 import static org.osm2world.output.common.ExtrudeOption.START_CAP;
@@ -14,6 +15,8 @@ import static org.osm2world.scene.mesh.MeshStore.ReplaceTexturesWithAtlas.genera
 import static org.osm2world.scene.mesh.MeshWithMetadata.ElementMetadata;
 import static org.osm2world.scene.texcoord.NamedTexCoordFunction.GLOBAL_X_Z;
 import static org.osm2world.scene.texcoord.TexCoordUtil.triangleTexCoordLists;
+import static org.osm2world.util.FaultTolerantIterationUtil.DEFAULT_EXCEPTION_HANDLER;
+import static org.osm2world.util.FaultTolerantIterationUtil.forEach;
 import static org.osm2world.world.modules.common.WorldModuleParseUtil.parseDirection;
 
 import java.io.*;
@@ -24,15 +27,17 @@ import javax.annotation.Nullable;
 import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.triangulate.ConstraintEnforcementException;
 import org.osm2world.conversion.ConversionLog;
+import org.osm2world.conversion.O2WConfig;
 import org.osm2world.map_data.data.MapArea;
 import org.osm2world.map_data.data.MapNode;
 import org.osm2world.map_data.data.MapRelationElement;
 import org.osm2world.map_data.data.MapWay;
+import org.osm2world.map_elevation.data.GroundState;
 import org.osm2world.math.Vector3D;
 import org.osm2world.math.VectorXYZ;
 import org.osm2world.math.VectorXZ;
 import org.osm2world.math.shapes.*;
-import org.osm2world.output.common.MeshOutput;
+import org.osm2world.output.common.AbstractOutput;
 import org.osm2world.output.common.compression.Compression;
 import org.osm2world.output.common.compression.CompressionUtil;
 import org.osm2world.output.frontend_pbf.FrontendPbf.*;
@@ -43,6 +48,7 @@ import org.osm2world.output.frontend_pbf.FrontendPbf.Material.TextureLayer.Wrap;
 import org.osm2world.output.frontend_pbf.FrontendPbf.Material.Transparency;
 import org.osm2world.output.frontend_pbf.FrontendPbf.Shape.ShapeType;
 import org.osm2world.output.gltf.GltfModel;
+import org.osm2world.scene.Scene;
 import org.osm2world.scene.color.LColor;
 import org.osm2world.scene.material.ImageFileTexture;
 import org.osm2world.scene.material.Material;
@@ -70,7 +76,7 @@ import com.google.common.collect.Multimap;
 /**
  * Writes experimental Protobuf tiles in a custom format for WebGL rendering.
  */
-public class FrontendPbfOutput extends MeshOutput {
+public class FrontendPbfOutput extends AbstractOutput {
 
 	/**
 	 * whether gaps in the terrain should be concealed with a big rectangle slightly below other ground-level geometries
@@ -226,10 +232,13 @@ public class FrontendPbfOutput extends MeshOutput {
 	private final Block<Material> materialBlock = new SimpleBlock<>();
 	private final Block<Model> modelBlock = new SimpleBlock<>();
 
+	private final MeshStore meshStore = new MeshStore();
+	private WorldObject currentWorldObject = null;
+
 	private final Map<ElementMetadata, Multimap<Model, InstanceParameters>> modelInstancesByWO = new HashMap<>();
 
 	/**
-	 * Creates a {@link FrontendPbfOutput}. Writing only completes once {@link #finish()} is called.
+	 * Creates a {@link FrontendPbfOutput}. Writing is performed in {@link #outputScene(Scene)}.
 	 *
 	 * @param outputFile  the file to write protobuf data to
 	 * @param bbox  the desired bounding box for the output.
@@ -269,8 +278,7 @@ public class FrontendPbfOutput extends MeshOutput {
 
 	}
 
-	@Override
-	public void drawModel(ModelInstance modelInstance) {
+	private void drawModel(ModelInstance modelInstance) {
 
 		if (!bbox.contains(modelInstance.params().position().xz())) return;
 
@@ -436,8 +444,6 @@ public class FrontendPbfOutput extends MeshOutput {
 	 */
 	private FrontendPbf.WorldObject buildFloorPlate() throws InvalidGeometryException {
 
-		var output = new MeshOutput();
-
 		Collection<TriangleXZ> triangles = bbox.getTriangulation();
 
 		List<TriangleXYZ> trianglesXYZ = new ArrayList<>(triangles.size());
@@ -446,10 +452,13 @@ public class FrontendPbfOutput extends MeshOutput {
 			trianglesXYZ.add(triangle.xyz(FLOOR_PLATE_Y));
 		}
 
-		output.drawTriangles(TERRAIN_DEFAULT.get(config), trianglesXYZ,
-				triangleTexCoordLists(trianglesXYZ, TERRAIN_DEFAULT.get(config), GLOBAL_X_Z));
+		Material material = TERRAIN_DEFAULT.get(config);
 
-		return buildWorldObject(null, output.getMeshes(), HashMultimap.create());
+		var geometryBuilder = new TriangleGeometry.Builder(material.textureLayers().size(),
+				null, material.interpolation());
+		geometryBuilder.addTriangles(trianglesXYZ, triangleTexCoordLists(trianglesXYZ, material, GLOBAL_X_Z));
+
+		return buildWorldObject(null, List.of(new Mesh(geometryBuilder.build(), material)), HashMultimap.create());
 
 	}
 
@@ -689,7 +698,48 @@ public class FrontendPbfOutput extends MeshOutput {
 	}
 
 	@Override
-	public void finish() {
+	public void outputScene(Scene scene) {
+
+		forEach(scene.getWorldObjects(false), (WorldObject r) -> {
+			if (requireNonNullElse(getConfig(), new O2WConfig()).renderUnderground() || r.getGroundState() != GroundState.BELOW) {
+				renderObject(r);
+			}
+		}, (e, r) -> DEFAULT_EXCEPTION_HANDLER.accept(e, r.getPrimaryMapElement()));
+
+		finish();
+
+	}
+
+	private void renderObject(WorldObject object) {
+		this.currentWorldObject = object;
+		object.buildMeshes().forEach(m -> {
+			if (m instanceof MeshWithMetadata mm) {
+				this.drawMesh(mm);
+			} else {
+				this.drawMesh(m.asMesh());
+			}
+		});
+		object.getSubModels().forEach(it -> it.getMeshes().forEach(this::drawMesh));
+	}
+
+	private void drawMesh(MeshWithMetadata mesh) {
+
+		MeshWithMetadata.MeshMetadata metadata = mesh.metadata();
+
+		if (currentWorldObject != null && metadata.modelClass() == null && metadata.mapElement() == null) {
+			metadata = new MeshWithMetadata.MeshMetadata(currentWorldObject.getPrimaryMapElement().getElementWithId(),
+					currentWorldObject.getClass(), metadata.extraProperties());
+		}
+
+		meshStore.addMesh(mesh.mesh(), metadata);
+
+	}
+
+	private void drawMesh(Mesh mesh) {
+		this.drawMesh(new MeshWithMetadata(mesh, new MeshWithMetadata.MeshMetadata(null, Map.of())));
+	}
+
+	private void finish() {
 
 		List<FrontendPbf.WorldObject> objects = new ArrayList<>();
 
