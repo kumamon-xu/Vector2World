@@ -17,7 +17,6 @@ import org.osm2world.map_data.data.overlaps.MapElementId;
 import org.osm2world.math.VectorXYZ;
 import org.osm2world.math.VectorXZ;
 import org.osm2world.osm.creation.JsonStringReader;
-import org.osm2world.output.common.MeshOutput;
 import org.osm2world.scene.Scene;
 import org.osm2world.scene.material.*;
 import org.osm2world.scene.mesh.Mesh;
@@ -298,8 +297,7 @@ public class WebModule {
 								.anyMatch(expandedFilterIds::contains);
 			}
 
-			var meshOutput = new MeshOutput(filter);
-			meshOutput.outputScene(scene);
+			MeshStore meshStore = Scene.sceneToMeshes(scene, config.config, filter);
 
 			var mergeOptions = EnumSet.of(MeshStore.MergeMeshes.MergeOption.SINGLE_COLOR_MESHES);
 			if (!config.config.keepOsmElements()) {
@@ -308,8 +306,6 @@ public class WebModule {
 			if ("false".equals(config.config.exportLevels())) {
 				mergeOptions.add(MeshStore.MergeMeshes.MergeOption.MERGE_METADATA_PROPERTIES);
 			}
-
-			var meshStore = new MeshStore(meshOutput.getMeshesWithMetadata());
 
 			meshStore = meshStore.process(List.of(
 					new MeshStore.EmulateDoubleSidedMaterials(),
