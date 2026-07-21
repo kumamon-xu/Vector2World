@@ -716,10 +716,10 @@ public class FrontendPbfOutput extends AbstractOutput {
 			if (m instanceof MeshWithMetadata mm) {
 				this.drawMesh(mm);
 			} else {
-				this.drawMesh(m.asMesh());
+				this.drawMesh(new MeshWithMetadata(m.asMesh(), new MeshWithMetadata.MeshMetadata(null, Map.of())));
 			}
 		});
-		object.getSubModels().forEach(it -> it.getMeshes().forEach(this::drawMesh));
+		object.getSubModels().forEach(this::drawModel);
 	}
 
 	private void drawMesh(MeshWithMetadata mesh) {
@@ -733,10 +733,6 @@ public class FrontendPbfOutput extends AbstractOutput {
 
 		meshStore.addMesh(mesh.mesh(), metadata);
 
-	}
-
-	private void drawMesh(Mesh mesh) {
-		this.drawMesh(new MeshWithMetadata(mesh, new MeshWithMetadata.MeshMetadata(null, Map.of())));
 	}
 
 	private void finish() {
