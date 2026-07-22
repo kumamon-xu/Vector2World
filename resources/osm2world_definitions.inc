@@ -28,7 +28,6 @@
 
 // texture definitions
 
-#declare texture_ASPHALT=texture { pigment { color rgb <0.2, 0.2, 0.2> } }
 #declare texture_WATER=texture { T_Chrome_2D normal { waves 0.2 frequency 1000.0 scale 4.0 turbulence 0.1 rotate <0,-45,0> } }
 #declare texture_WOOD=texture { T_Wood5 }
 #declare texture_TERRAIN_DEFAULT=texture { pigment { color rgb <0.2, 0.73, 0.2> } finish { ambient 0.5 diffuse 0.5 } }

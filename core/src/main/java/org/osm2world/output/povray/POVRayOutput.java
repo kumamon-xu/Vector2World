@@ -12,28 +12,27 @@ import java.util.*;
 import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
 
-import org.osm2world.conversion.O2WConfig;
 import org.osm2world.math.VectorXYZ;
 import org.osm2world.math.VectorXZ;
 import org.osm2world.math.shapes.TriangleXYZ;
 import org.osm2world.output.common.AbstractOutput;
-import org.osm2world.output.common.DrawBasedOutput;
 import org.osm2world.output.common.lighting.GlobalLightingParameters;
 import org.osm2world.output.common.rendering.Camera;
 import org.osm2world.output.common.rendering.OrthographicProjection;
 import org.osm2world.output.common.rendering.Projection;
+import org.osm2world.scene.Scene;
 import org.osm2world.scene.color.Color;
-import org.osm2world.scene.material.Material;
-import org.osm2world.scene.material.TextTexture;
-import org.osm2world.scene.material.TextureData;
-import org.osm2world.scene.material.TextureLayer;
+import org.osm2world.scene.material.*;
+import org.osm2world.scene.mesh.MeshStore;
+import org.osm2world.scene.mesh.TriangleGeometry;
 import org.osm2world.util.GlobalValues;
 
 /**
  * Writes models to files for the POVRay ray tracer.
  */
-public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
+public class POVRayOutput extends AbstractOutput {
 
+	private static final boolean TERRAIN_PLANE = true;
 	protected static final float AMBIENT_FACTOR = 0.5f;
 
 	private static final String INDENT = "  ";
@@ -42,18 +41,23 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 	private static final double SMALL_OFFSET = 1e-3;
 
 	private final PrintStream output;
+	private final Camera camera;
+	private final Projection projection;
 
-	private Map<TextureData, String> textureNames = new HashMap<TextureData, String>();
-
-	protected @Nonnull O2WConfig config = new O2WConfig();
+	private final Map<TextureData, String> textureNames = new HashMap<>();
 
 	public POVRayOutput(File file, Camera camera, Projection projection) throws FileNotFoundException {
 		this(new PrintStream(file), camera, projection);
 	}
 
 	public POVRayOutput(PrintStream output, Camera camera, Projection projection) {
-
 		this.output = output;
+		this.camera = camera;
+		this.projection = projection;
+	}
+
+	@Override
+	public void outputScene(Scene scene) {
 
 		appendCommentHeader();
 
@@ -66,10 +70,10 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 		append("//\n// global scene parameters\n//\n\n");
 
-		appendLightingDefinition( GlobalLightingParameters.DEFAULT);
+		appendLightingDefinition(GlobalLightingParameters.DEFAULT);
 
-		appendDefaultParameterValue("season", "summer");
-		appendDefaultParameterValue("time", "day");
+		appendDefaultParameterValue("season", "\"summer\"");
+		appendDefaultParameterValue("time", "\"day\"");
 
 		append("//\n// material and object definitions\n//\n\n");
 
@@ -77,39 +81,37 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 				"sky_sphere {\n pigment { Blue_Sky3 }\n} ");
 		append("sky_sphere {sky_sphere_def}\n\n");
 
-		appendMaterialDefinitions();
+		Material terrainMaterial = DefaultMaterials.TERRAIN_DEFAULT.get(config.mapStyle());
 
-		//TODO get terrain boundary elsewhere
-//		if (terrain != null) {
-//
-//			append("//\n// empty ground around the scene\n//\n\n");
-//
-//			append("difference {\n");
-//			append("  plane { y, -0.001 }\n  ");
-//			VectorXZ[] boundary = eleData.getBoundaryPolygon().getXZPolygon()
-//				.getVertexLoop().toArray(new VectorXZ[0]);
-//			appendPrism( -100, 1, boundary);
-//			append("\n");
-//			appendMaterialOrName(Materials.TERRAIN_DEFAULT);
-//			append("\n}\n\n");
-//
-//		}
+		Set<Material> materials = new HashSet<>(Set.of(terrainMaterial));
+		scene.getMeshes().stream().map(it -> it.material).forEach(materials::add);
+		appendMaterialDefinitions(materials);
+
+		if (TERRAIN_PLANE) {
+
+			append("//\n// empty ground around the scene\n//\n\n");
+
+			append("difference {\n");
+			append("  plane { y, -0.001 }\n  ");
+			VectorXZ[] boundary = scene.getBoundary().vertices().toArray(new VectorXZ[0]);
+			appendPrism( -100, 1, boundary);
+			append("\n");
+			appendMaterialOrName(terrainMaterial);
+			append("\n}\n\n");
+
+		}
 
 		append("\n\n//\n//Map data\n//\n\n");
 
-	}
+		MeshStore meshStore = Scene.sceneToMeshes(scene, this.getConfig(), null);
 
-	@Override
-	public void setConfiguration(O2WConfig config) {
-		if (config != null) {
-			this.config = config;
-		} else {
-			this.config = new O2WConfig();
+		for (var mesh : meshStore.meshes()) {
+
+			TriangleGeometry triangleGeometry = mesh.geometry.asTriangles();
+			this.drawTriangles(mesh.material, triangleGeometry.triangles, triangleGeometry.texCoords);
+
 		}
-	}
 
-	@Override
-	public void finish() {
 		output.close();
 	}
 
@@ -124,11 +126,7 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 //		}
 //	}
 
-	/**
-	 * provides direct write access to the generated source code.
-	 * This is intended for Renderables using special POVRay features.
-	 */
-	public void append(String code) {
+	private void append(String code) {
 		output.print(code);
 //		if (code.contains("union") && openBrackets > 0) {
 //			System.out.println(openBrackets);
@@ -143,11 +141,7 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 //		}
 	}
 
-	public void append(int value) {
-		output.print(value);
-	}
-
-	public void append(double value) {
+	private void append(double value) {
 		output.print(value);
 	}
 
@@ -155,20 +149,20 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 //
 //	int openBrackets = 0;
 //
-//	public void append(int value) {
+//	private void append(int value) {
 //		stack.peek().append(value);
 //	}
 //
-//	public void append(double value) {
+//	private void append(double value) {
 //		stack.peek().append(value);
 //	}
 //
-//	public void startBlock(String s) {
+//	private void startBlock(String s) {
 //		StringBuilder newBlock = new StringBuilder(s + "{");
 //		stack.push(newBlock);
 //	}
 //
-//	public void endBlock(String block) {
+//	private void endBlock(String block) {
 //		StringBuilder closedBlock = stack.poll();
 //		if (stack.isEmpty()) {
 //			output.append(closedBlock);
@@ -177,7 +171,7 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 //		}
 //	}
 
-	public void appendDefaultParameterValue(String name, String value) {
+	private void appendDefaultParameterValue(String name, String value) {
 
 		append("#ifndef (" + name + ")\n");
 		append("#declare " + name + " = " + value);
@@ -233,7 +227,7 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 			append("\n  right ");
 			double width = proj.volumeWidth();
-			appendVector(camera.getRight().mult(width).invert()); //invert compensates for left-handed vs. right handed coordinates
+			appendVector(camera.getRight().mult(width).invert()); //invert compensates for left-handed vs. right-handed coordinates
 
 			append("\n  up ");
 			VectorXYZ up = camera.up();
@@ -256,11 +250,14 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 	}
 
-	private void appendMaterialDefinitions() {
+	private void appendMaterialDefinitions(Collection<Material> materials) {
 
-		for (Material material : config.mapStyle().getMaterials()) {
+		for (Material material : materials) {
 
 			String uniqueName = config.mapStyle().getMaterialName(material);
+
+			if (uniqueName == null) continue;
+
 			String name = "texture_" + uniqueName;
 
 			append("#ifndef (" + name + ")\n");
@@ -283,17 +280,9 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 	}
 
-	@Override
-	public void drawTriangles(@Nonnull Material material,
+	private void drawTriangles(@Nonnull Material material,
 							  @Nonnull List<? extends TriangleXYZ> triangles,
 							  @Nonnull List<List<VectorXZ>> texCoordLists) {
-
-		if (!checkMeshValidity(triangles))
-			return;
-
-		for (TriangleXYZ triangle : triangles) {
-			performNaNCheck(triangle);
-		}
 
 		if (material.textureLayers().size() > 1) {
 
@@ -319,7 +308,7 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 				append("mesh {\n");
 
-				if (texCoordLists.size() > 0) {
+				if (!texCoordLists.isEmpty()) {
 					drawTriangleMesh(triangles, texCoordLists.get(0), 0);
 				} else {
 					for (TriangleXYZ triangle : triangles) {
@@ -367,183 +356,6 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 						null, null, null, tex1, tex2, tex3, false, true);
 			}
 		}
-	}
-
-//	@Override
-//	public void drawTriangleStrip(Material material, VectorXYZ... vectors) {
-//
-//		for (VectorXYZ vector : vectors) {
-//			performNaNCheck(vector);
-//		}
-//
-//		append("union {\n");
-//
-//		for (int triangle = 0; triangle + 2 < vectors.length; triangle++) {
-//
-//			append(INDENT);
-//
-//			appendTriangle(
-//					vectors[triangle],
-//					vectors[triangle + 1],
-//					vectors[triangle + 2]);
-//
-//		}
-//
-//		appendMaterial(material);
-//
-//		append("}\n");
-//
-//	}
-
-//	@Override
-//	public void drawTriangleFan(Material material, List<? extends VectorXYZ> vs) {
-//		for (VectorXYZ vector : vs) {
-//			performNaNCheck(vector);
-//		}
-//
-//		append("union {\n");
-//
-//		VectorXYZ center = vs.get(0);
-//
-//		for (int triangle = 0; triangle + 2 < vs.size(); triangle ++) {
-//
-//			append(INDENT);
-//
-//			appendTriangle(
-//					center,
-//					vs.get(triangle + 1),
-//					vs.get(triangle + 2));
-//
-//		}
-//
-//		appendMaterial(material);
-//
-//		append("}\n");
-//
-//	}
-
-	@Override
-	public void drawConvexPolygon(@Nonnull Material material, @Nonnull List<VectorXYZ> vs,
-								  @Nonnull List<List<VectorXZ>> texCoordLists) {
-
-		for (VectorXYZ vector : vs) {
-			performNaNCheck(vector);
-		}
-
-		append("polygon {\n  ");
-		append(vs.size());
-		append(", ");
-		for (VectorXYZ v : vs) {
-			appendVector(v);
-		}
-
-		appendMaterialOrName(material);
-
-		append("}\n");
-
-	}
-
-	@Override
-	public void drawColumn(@Nonnull Material material, Integer corners, @Nonnull VectorXYZ base,
-						   double height, double radiusBottom, double radiusTop,
-						   boolean drawBottom, boolean drawTop) {
-
-		performNaNCheck(base);
-
-		if (height <= 0) return;
-
-		if (corners == null) {
-
-			if (radiusBottom == radiusTop) { // cylinder
-
-				append("cylinder {\n  ");
-				appendVector(base);
-				append(", ");
-				appendVector(base.y(base.y + height));
-				append(", ");
-				append(radiusTop);
-
-			} else { // (truncated) cone
-
-				append("cone {\n  ");
-				appendVector(base);
-				append(", "); append(radiusBottom); append(", ");
-				appendVector(base.y(base.y + height));
-				append(", "); append(radiusTop);
-
-			}
-
-			if (!drawBottom && !drawTop) {
-				// TODO: incorrect if only one is false
-				append(" open");
-			}
-
-			appendMaterialOrName(material);
-
-			append("}\n");
-
-		} else { // not round
-
-			DrawBasedOutput.super.drawColumn(material, corners, base, height, radiusBottom, radiusTop, drawBottom, drawTop);
-
-		}
-
-	}
-
-	/**
-	 * variant of {@link #drawColumn(Material, Integer, VectorXYZ, double, double, double, boolean, boolean)}
-	 * that allows arbitrarily placed columns
-	 */
-	public void drawColumn(Material material, Integer corners, VectorXYZ base,
-			VectorXYZ cap, double radiusBottom, double radiusTop,
-			boolean drawBottom, boolean drawTop) {
-
-		performNaNCheck(base);
-		performNaNCheck(cap);
-
-		if (cap.equals(base))
-			return;
-
-		if (corners == null) {
-
-			if (radiusBottom == radiusTop) { // cylinder
-
-				append("cylinder {\n  ");
-				appendVector(base);
-				append(", ");
-				appendVector(cap);
-				append(", "); append(radiusTop);
-
-			} else { // (truncated) cone
-
-				append("cone {\n  ");
-				appendVector(base);
-				append(", "); append(radiusBottom); append(", ");
-				appendVector(cap);
-				append(", "); append(radiusTop);
-
-			}
-
-			if (!drawBottom && !drawTop) {
-				// TODO: incorrect if only one is false
-				append(" open");
-			}
-
-		} else { // not round
-
-			throw new UnsupportedOperationException(
-					"drawing non-round columns isn't implemented yet");
-
-		}
-
-		appendMaterialOrName(material);
-
-		append("}\n");
-
-	}
-
-	private boolean checkMeshValidity(Collection<? extends TriangleXYZ> triangles) {
-		return (triangles.size() >= 0);
 	}
 
 	private void appendTriangle(VectorXYZ a, VectorXYZ b, VectorXYZ c) {
@@ -610,7 +422,7 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 
 	/**
-	 * adds a color. Syntax is "color rgb &lt;x, y, z&gt;".
+	 * Adds a color. Syntax is "color rgb &lt;x, y, z>".
 	 */
 	private void appendRGBColor(Color color) {
 
@@ -624,7 +436,11 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 	private void appendMaterialOrName(Material material) {
 
-		String materialName = config.mapStyle().getMaterialName(material);
+		String materialName = null;
+
+		if (material.textureLayers().size() == 1) {
+			materialName = textureNames.get(material.textureLayers().get(0).baseColorTexture);
+		}
 
 		if (materialName != null) {
 			append(" texture { texture_" + materialName + " }");
@@ -636,7 +452,7 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 	private void appendMaterial(Material material) {
 
-		if (material.textureLayers().size() == 0) {
+		if (material.textureLayers().isEmpty()) {
 
 			append("  texture {\n");
 			append("    pigment { ");
@@ -714,8 +530,8 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 	}
 
 	/**
-	 * adds a vector to the String built by a StringBuilder.
-	 * Syntax is "&lt;x, y, z&gt;".
+	 * Adds a vector to the String built by a StringBuilder.
+	 * Syntax is "&lt;x, y, z>".
 	 */
 	private void appendVector(float x, float y, float z) {
 
@@ -758,8 +574,8 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 	}
 
 	/**
-	 * adds a vector to the String built by a StringBuilder.
-	 * Syntax is "&lt;v1, v2&gt;".
+	 * Adds a vector to the String built by a StringBuilder.
+	 * Syntax is "&lt;v1, v2>".
 	 */
 	private void appendVector(double x, double z) {
 
@@ -779,31 +595,6 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 		appendVector(vector.x, vector.z);
 	}
 
-	/**
-	 * append a vector with inverted coordinates
-	 */
-	private void appendInverseVector(VectorXZ vector) {
-		appendVector(-vector.x, -vector.z);
-	}
-
-	/**
-	 *
-	 * @param vs  polygon vertices; first and last should be equal
-	 */
-	private void appendPolygon(VectorXYZ... vs) {
-
-		assert !vs[0].equals(vs[vs.length-1]) : "polygon not closed";
-
-		append("polygon {\n  ");
-		append(vs.length);
-		append(", ");
-		for (VectorXYZ v : vs) {
-			appendVector(v);
-		}
-		append("}\n");
-
-	}
-
 	private void appendPrism(float y1, float y2, VectorXZ... vs) {
 
 		append("prism {\n  ");
@@ -820,37 +611,29 @@ public class POVRayOutput extends AbstractOutput implements DrawBasedOutput {
 
 	}
 
-	//TODO: avoid having to do this
-	private void performNaNCheck(TriangleXYZ triangle) {
-		performNaNCheck(triangle.v1);
-		performNaNCheck(triangle.v2);
-		performNaNCheck(triangle.v3);
-	}
-
-	private void performNaNCheck(VectorXYZ v) {
-		if (Double.isNaN(v.x) || Double.isNaN(v.y) || Double.isNaN(v.z)) {
-			throw new IllegalArgumentException("NaN vector " + v.x + ", " + v.y + ", " + v.z);
-		}
-	}
-
 	private final Map<TextureData, File> textureFileMap = new HashMap<>();
 
 	private File getTextureFile(TextureData texture) throws IOException {
 
 		if (!textureFileMap.containsKey(texture)) {
 
-			BufferedImage image = texture.getBufferedImage();
-			String prefix = "o2w-";
+			if (texture instanceof RasterImageFileTexture rasterImageFileTexture) {
+				textureFileMap.put(texture, rasterImageFileTexture.getFile());
+			} else {
 
-			File textureFile = File.createTempFile(prefix, ".png");
-			ImageIO.write(image, "png", textureFile);
+				BufferedImage image = texture.getBufferedImage();
+				String prefix = "o2w-";
 
-			textureFileMap.put(texture, textureFile);
+				File textureFile = File.createTempFile(prefix, ".png");
+				ImageIO.write(image, "png", textureFile);
+
+				textureFileMap.put(texture, textureFile);
+
+			}
 
 		}
 
 		return textureFileMap.get(texture);
-
 
 	}
 
