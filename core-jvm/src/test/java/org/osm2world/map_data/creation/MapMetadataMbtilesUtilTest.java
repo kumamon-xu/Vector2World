@@ -10,8 +10,13 @@ import org.imintel.mbtiles4j.MBTilesReadException;
 import org.junit.Test;
 import org.osm2world.map_data.data.MapMetadata;
 import org.osm2world.math.geo.TileNumber;
+import org.osm2world.util.platform.json.JsonImplementationJvm;
 
 public class MapMetadataMbtilesUtilTest {
+
+	static {
+		JsonImplementationJvm.register();
+	}
 
 	@Test
 	public void testMetadataForTile() throws MBTilesReadException, IOException {

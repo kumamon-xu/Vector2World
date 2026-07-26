@@ -15,8 +15,13 @@ import org.osm2world.scene.color.Color;
 import org.osm2world.util.enums.ForwardBackward;
 import org.osm2world.util.enums.LeftRight;
 import org.osm2world.util.enums.LeftRightBoth;
+import org.osm2world.util.platform.uri.HttpUriImplementationJvm;
 
 public class O2WConfigTest {
+
+	static {
+		HttpUriImplementationJvm.register();
+	}
 
 	@Test
 	public void testLoadConfigFiles() {

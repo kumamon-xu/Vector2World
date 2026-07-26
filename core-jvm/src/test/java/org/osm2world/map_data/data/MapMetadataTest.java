@@ -7,8 +7,13 @@ import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.osm2world.util.platform.json.JsonImplementationJvm;
 
 public class MapMetadataTest {
+
+	static {
+		JsonImplementationJvm.register();
+	}
 
 	@Test
 	public void testMetadataFromJson() throws IOException {
