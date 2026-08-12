@@ -103,14 +103,27 @@ public class O2WConfig {
 	 * @param value the new value; can be set to null to delete an existing property
 	 */
 	public O2WConfig withProperty(String key, @Nullable Object value) {
-		Properties copy = new Properties();
-		copy.putAll(this.props);
-		if (value == null) {
-			copy.remove(key);
+		return withProperties(Collections.singletonMap(key, value));
+	}
+
+	/**
+	 * Variant of {@link #withProperty(String, Object)} that can set more than one key at once
+	 */
+	public O2WConfig withProperties(Map<String, Object> keyValueMap) {
+		if (keyValueMap.isEmpty()) {
+			return this;
 		} else {
-			copy.setProperty(key, String.valueOf(value));
+			Properties copy = new Properties();
+			copy.putAll(this.props);
+			for (var entry : keyValueMap.entrySet()) {
+				if (entry.getValue() == null) {
+					copy.remove(entry.getKey());
+				} else {
+					copy.setProperty(entry.getKey(), String.valueOf(entry.getValue()));
+				}
+			}
+			return new O2WConfig(copy);
 		}
-		return new O2WConfig(copy);
 	}
 
 	public Set<String> getKeys() {

@@ -36,7 +36,7 @@ public class O2WConfigTest {
 		assertTrue(result.getBoolean("keepOsmElements"));
 
 		result = result.withProperty("treesPerSquareMeter", null);
-		result = result.withProperty("stringProperty", "baz");
+		result = result.withProperties(Map.of("stringProperty", "baz"));
 
 		assertEquals(0.42, result.getDouble("treesPerSquareMeter", 0.42), 0);
 		assertEquals("baz", result.getString("stringProperty", "something"));
