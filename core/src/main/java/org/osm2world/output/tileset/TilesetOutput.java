@@ -11,10 +11,9 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.cesiumjs.WGS84Util;
-import org.osm2world.math.VectorXYZ;
 import org.osm2world.math.geo.LatLon;
 import org.osm2world.math.geo.MapProjection;
+import org.osm2world.math.geo.WGS84Util;
 import org.osm2world.math.shapes.AxisAlignedBoundingBoxXYZ;
 import org.osm2world.math.shapes.AxisAlignedRectangleXZ;
 import org.osm2world.math.shapes.SimpleClosedShapeXZ;
@@ -176,8 +175,7 @@ public class TilesetOutput extends AbstractOutput {
 					.toList();
 		}
 
-		VectorXYZ cartesianOrigin = WGS84Util.cartesianFromLatLon(origin, 0.0);
-		double[] transform = WGS84Util.eastNorthUpToFixedFrame(cartesianOrigin);
+		double[] transform = WGS84Util.eastNorthUpToEcefMatrix(origin, 0.0);
 
 		AxisAlignedRectangleXZ bbox = bounds.boundingBox();
 
