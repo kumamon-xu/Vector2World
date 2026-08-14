@@ -20,7 +20,9 @@ import javax.annotation.Nullable;
 import org.junit.Test;
 import org.osm2world.math.geo.LatLonBounds;
 import org.osm2world.math.geo.TileNumber;
+import org.osm2world.output.tileset.tiles_data.TilesetAsset;
 import org.osm2world.output.tileset.tiles_data.TilesetEntry;
+import org.osm2world.output.tileset.tiles_data.TilesetParentEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetRoot;
 import org.osm2world.util.platform.json.JsonImplementationJvm;
 import org.osm2world.util.platform.json.JsonUtil;
@@ -130,6 +132,7 @@ public class TilesetTreeUtilTest {
 		var tile = new TileNumber(15, 17608, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile));
 		generateTilesetTree(dir, List.of(tile));
 
 		/* the tile is its own smallest common ancestor, so the root refers to it directly */
@@ -140,7 +143,7 @@ public class TilesetTreeUtilTest {
 		assertEquals(25.0, tileset.getGeometricError().doubleValue(), 1e-9);
 
 		TilesetEntry root = tileset.getRoot();
-		assertRegionOf(tile, root);
+		assertRegion(root, tile);
 		assertEquals(25.0, root.getGeometricError().doubleValue(), 1e-9);
 		assertEquals("15/17608/11312.tileset.json", root.getContent().getUri());
 		assertNull(root.getChildren());
@@ -156,6 +159,7 @@ public class TilesetTreeUtilTest {
 		var tile1 = new TileNumber(15, 17609, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile0, tile1));
 		generateTilesetTree(dir, List.of(tile0, tile1));
 
 		/* both tiles share a parent at zoom 14, so the whole tree fits into a single file */
@@ -165,7 +169,7 @@ public class TilesetTreeUtilTest {
 		TilesetRoot tileset = readTileset(dir.resolve("tileset.json"));
 
 		TilesetEntry root = tileset.getRoot();
-		assertRegionOf(new TileNumber(14, 8804, 5656), root);
+		assertRegion(root, tile0, tile1);
 		assertEquals(50.0, root.getGeometricError().doubleValue(), 1e-9);
 		assertEquals(50.0, tileset.getGeometricError().doubleValue(), 1e-9);
 		assertNull(root.getContent());
@@ -182,8 +186,8 @@ public class TilesetTreeUtilTest {
 		assertEquals(List.of("15/17608/11312.tileset.json", "15/17609/11312.tileset.json"),
 				root.getChildren().stream().map(it -> it.getContent().getUri()).sorted().toList());
 
-		assertRegionOf(tile0, root.getChildren().get(0));
-		assertRegionOf(tile1, root.getChildren().get(1));
+		assertRegion(root.getChildren().get(0), tile0);
+		assertRegion(root.getChildren().get(1), tile1);
 
 	}
 
@@ -194,6 +198,7 @@ public class TilesetTreeUtilTest {
 		var tile1 = new TileNumber(15, 17620, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile0, tile1));
 		generateTilesetTree(dir, List.of(tile0, tile1));
 
 		/* the smallest common ancestor is at zoom 10, i.e. 5 levels above the tiles.
@@ -202,7 +207,7 @@ public class TilesetTreeUtilTest {
 		TilesetRoot tileset = readTileset(dir.resolve("tileset.json"));
 
 		TilesetEntry entry = tileset.getRoot();
-		assertRegionOf(new TileNumber(10, 550, 353), entry);
+		assertRegion(entry, tile0, tile1);
 		assertEquals(25.0 * 32, entry.getGeometricError().doubleValue(), 1e-9);
 
 		/* descend the three levels within the root file.
@@ -223,7 +228,7 @@ public class TilesetTreeUtilTest {
 		/* the zoom 13 tile refers to the file continuing the tree as an external tileset */
 
 		var splitTile = new TileNumber(13, 4402, 2828);
-		assertRegionOf(splitTile, entry);
+		assertRegion(entry, tile0);
 		assertEquals("index/13/4402/2828.tileset.json", entry.getContent().getUri());
 		assertNull(entry.getChildren());
 
@@ -232,13 +237,13 @@ public class TilesetTreeUtilTest {
 		TilesetRoot subTileset = readTileset(dir.resolve("index/13/4402/2828.tileset.json"));
 
 		TilesetEntry subRoot = subTileset.getRoot();
-		assertRegionOf(splitTile, subRoot);
+		assertRegion(subRoot, tile0);
 		assertEquals(100.0, subRoot.getGeometricError().doubleValue(), 1e-9);
 		assertEquals(100.0, subTileset.getGeometricError().doubleValue(), 1e-9);
 
 		assertEquals(1, subRoot.getChildren().size());
 		TilesetEntry leaf = subRoot.getChildren().get(0).getChildren().get(0);
-		assertRegionOf(tile0, leaf);
+		assertRegion(leaf, tile0);
 		assertEquals("../../../15/17608/11312.tileset.json", leaf.getContent().getUri());
 
 		/* the second tile is reached through a file of its own */
@@ -253,6 +258,7 @@ public class TilesetTreeUtilTest {
 		var tile = new TileNumber(15, 17608, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile));
 		generateTilesetTree(dir, List.of(tile, tile));
 
 		assertEquals("15/17608/11312.tileset.json",
@@ -262,14 +268,73 @@ public class TilesetTreeUtilTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testGenerateTilesetTreeNestedTiles() throws IOException {
+		List<TileNumber> tiles = List.of(new TileNumber(13, 4402, 2828), new TileNumber(15, 17608, 11312));
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		generateTilesetTree(dir, List.of(new TileNumber(13, 4402, 2828), new TileNumber(15, 17608, 11312)));
+		writeTileTilesets(dir, tiles);
+		generateTilesetTree(dir, tiles);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testGenerateTilesetTreeEmpty() throws IOException {
 		Path dir = TestFileUtil.createTempDirectory().toPath();
 		generateTilesetTree(dir, emptyList());
+	}
+
+	@Test
+	public void testGenerateTilesetTreeUsesContentBounds() throws IOException {
+
+		var tile0 = new TileNumber(15, 17608, 11312);
+		var tile1 = new TileNumber(15, 17609, 11313);
+
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile0, tile1));
+		generateTilesetTree(dir, List.of(tile0, tile1));
+
+		TilesetEntry root = readTileset(dir.resolve("tileset.json")).getRoot();
+		double[] region = root.getBoundingVolume().getRegion();
+
+		/* the bounds are those of the content, not those of the zoom 14 tile containing both tiles */
+
+		LatLonBounds tileBounds = new TileNumber(14, 8804, 5656).latLonBounds();
+
+		assertTrue("south of the content bounds is north of the south edge of the tile",
+				region[1] > toRadians(tileBounds.minlat));
+		assertEquals(toRadians(tileBounds.maxlat), region[3], 1e-12);
+
+		/* the height range is the union of the heights of the two tiles, rather than a fixed range */
+
+		assertEquals(-1, region[4], 1e-12);
+		assertEquals(Math.max(contentRegion(tile0)[5], contentRegion(tile1)[5]), region[5], 1e-12);
+		assertTrue("height range is tight", region[5] - region[4] < 100);
+
+	}
+
+	@Test
+	public void testGenerateTilesetTreeSkipsMissingTiles() throws IOException {
+
+		var tile0 = new TileNumber(15, 17608, 11312);
+		var tile1 = new TileNumber(15, 17609, 11312);
+		var missingTile = new TileNumber(15, 17609, 11313);
+
+		/* the tileset of one of the requested tiles is missing, e.g. because the tile failed to render */
+
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile0, tile1));
+		generateTilesetTree(dir, List.of(tile0, tile1, missingTile));
+
+		/* the missing tile is left out of the tree instead of being referenced but unavailable */
+
+		var reachedTiles = new HashSet<TileNumber>();
+		walk(dir.resolve("tileset.json"), dir, null, reachedTiles);
+
+		assertEquals(Set.of(tile0, tile1), reachedTiles);
+
+	}
+
+	@Test(expected = IOException.class)
+	public void testGenerateTilesetTreeNoTilesExist() throws IOException {
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		generateTilesetTree(dir, List.of(new TileNumber(15, 17608, 11312)));
 	}
 
 	@Test
@@ -281,6 +346,7 @@ public class TilesetTreeUtilTest {
 		assertTrue("test covers several tiles", tiles.size() > 20);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, tiles);
 		generateTilesetTree(dir, tiles);
 
 		/* walking the tree from the entry point must reach every tile exactly once,
@@ -331,7 +397,7 @@ public class TilesetTreeUtilTest {
 				assertTrue("content path refers to a tile: " + relativePath, m.matches());
 				var tile = new TileNumber(Integer.parseInt(m.group(1)),
 						Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3)));
-				assertRegionOf(tile, entry);
+				assertRegion(entry, tile);
 				assertTrue("each tile is reachable only once: " + tile, reachedTiles.add(tile));
 			}
 
@@ -356,17 +422,79 @@ public class TilesetTreeUtilTest {
 
 	}
 
-	/** asserts that the entry's bounding volume is the region covered by the tile, in radians */
-	private static void assertRegionOf(TileNumber tile, TilesetEntry entry) {
+	/**
+	 * asserts that the entry's bounding volume is the union of the bounds of the given tiles' content, in radians.
+	 * Assumes the content of each tile has been written with {@link #writeTileTilesets(Path, List)}.
+	 */
+	private static void assertRegion(TilesetEntry entry, TileNumber... tiles) {
+
+		double[] expected = null;
+
+		for (TileNumber tile : tiles) {
+			double[] tileRegion = contentRegion(tile);
+			if (expected == null) {
+				expected = tileRegion;
+			} else {
+				expected[0] = Math.min(expected[0], tileRegion[0]);
+				expected[1] = Math.min(expected[1], tileRegion[1]);
+				expected[2] = Math.max(expected[2], tileRegion[2]);
+				expected[3] = Math.max(expected[3], tileRegion[3]);
+				expected[4] = Math.min(expected[4], tileRegion[4]);
+				expected[5] = Math.max(expected[5], tileRegion[5]);
+			}
+		}
+
+		assertArrayEquals(expected, entry.getBoundingVolume().getRegion(), 1e-12);
+
+	}
+
+	/**
+	 * the bounding volume which {@link #writeTileTilesets(Path, List)} writes for a tile.
+	 * The content covers the northern half of the tile, so that it can be told apart from the full tile bounds,
+	 * and its height range differs from tile to tile.
+	 */
+	private static double[] contentRegion(TileNumber tile) {
 
 		LatLonBounds bounds = tile.latLonBounds();
-		double[] region = entry.getBoundingVolume().getRegion();
+		double midLat = (bounds.minlat + bounds.maxlat) / 2;
 
-		assertEquals(toRadians(bounds.minlon), region[0], 1e-12);
-		assertEquals(toRadians(bounds.minlat), region[1], 1e-12);
-		assertEquals(toRadians(bounds.maxlon), region[2], 1e-12);
-		assertEquals(toRadians(bounds.maxlat), region[3], 1e-12);
-		assertTrue(region[4] < region[5]);
+		return new double[] {
+				toRadians(bounds.minlon),
+				toRadians(midLat),
+				toRadians(bounds.maxlon),
+				toRadians(bounds.maxlat),
+				-1,
+				10 + tile.y % 7};
+
+	}
+
+	/** writes the tileset.json of each individual tile, as {@link TilesetOutput} would */
+	private static void writeTileTilesets(Path dir, List<TileNumber> tiles) throws IOException {
+
+		for (TileNumber tile : tiles) {
+
+			var root = new TilesetParentEntry();
+			root.setGeometricError(25);
+			root.setBoundingVolume(contentRegion(tile));
+			root.setContent(tile.y + ".glb");
+
+			var tileset = new TilesetRoot();
+			tileset.setAsset(new TilesetAsset());
+			tileset.setGeometricError(25);
+			tileset.setRoot(root);
+
+			Path file = dir
+					.resolve(Integer.toString(tile.zoom))
+					.resolve(Integer.toString(tile.x))
+					.resolve(tile.y + ".tileset.json");
+
+			Files.createDirectories(file.getParent());
+
+			try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+				JsonUtil.toJson(tileset, writer, false);
+			}
+
+		}
 
 	}
 

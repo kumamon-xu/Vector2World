@@ -117,7 +117,19 @@ public class TilesetCommand implements Callable<Integer> {
 
 		}
 
-		/* create the tileset.json files tying the individual tiles together */
+		/* create the tiles for this tileset (unless they already exist and should not be overwritten */
+
+		List<TileNumber> filteredTileNumbers = filterTileNumbers(tileNumbers);
+
+		int skippedTiles = tileNumbers.size() - filteredTileNumbers.size();
+		if (skippedTiles > 0) {
+			System.out.println("Skipping " + skippedTiles + " existing tiles");
+		}
+
+		createTiles(filteredTileNumbers);
+
+		/* create the tileset.json files tying the individual tiles together.
+		 * This happens after the tiles because it uses the bounds of the actual tile content. */
 
 		if (!noJson) {
 			try {
@@ -129,17 +141,6 @@ public class TilesetCommand implements Callable<Integer> {
 				return 1;
 			}
 		}
-
-		/* create the tiles for this tileset (unless they already exist and should not be overwritten */
-
-		List<TileNumber> filteredTileNumbers = filterTileNumbers(tileNumbers);
-
-		int skippedTiles = tileNumbers.size() - filteredTileNumbers.size();
-		if (skippedTiles > 0) {
-			System.out.println("Skipping " + skippedTiles + " existing tiles");
-		}
-
-		createTiles(filteredTileNumbers);
 
 		return 0;
 

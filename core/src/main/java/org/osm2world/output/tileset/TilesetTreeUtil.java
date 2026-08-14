@@ -1,6 +1,7 @@
 package org.osm2world.output.tileset;
 
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.lang.Math.pow;
 
 import java.io.IOException;
@@ -9,11 +10,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import org.osm2world.math.geo.LatLonBounds;
 import org.osm2world.math.geo.TileNumber;
 import org.osm2world.output.tileset.tiles_data.TilesetAsset;
 import org.osm2world.output.tileset.tiles_data.TilesetEntry;
@@ -26,14 +28,17 @@ import org.osm2world.util.platform.json.JsonUtil;
  * according to the Cesium 3D Tiles specification.
  * The tiles themselves are not created by this class, use {@link TilesetOutput} for that.
  *
- * <p>The tree consists of explicit tiles all the way down: every tile of the pyramid is described by its own entry,
- * with the exact bounds of the {@link TileNumber} it represents. Implicit tiling is deliberately not used because it
- * derives the bounds of descendant tiles by subdividing the root's bounding volume linearly. For a {@code region}
- * bounding volume that subdivision is linear in latitude, whereas tile numbers follow Web Mercator.
+ * <p>The tree consists of explicit tiles all the way down: every tile of the pyramid is described by its own entry.
+ * Implicit tiling is deliberately not used because it derives the bounds of descendant tiles by subdividing the
+ * root's bounding volume linearly. For a {@code region} bounding volume that subdivision is linear in latitude,
+ * whereas tile numbers follow Web Mercator. Explicit tiles also allow the bounds to be taken from the actual content
+ * of each tile rather than from the full extent of the {@link TileNumber}.
  *
  * <p>To keep individual files small, the tree is split across several tileset.json files, each spanning at most
  * {@link #MAX_LEVELS_PER_FILE} levels. A tile at the bottom of such a file refers to the file continuing below it as
  * an external tileset. The bottom-most tiles refer to the per-tile tileset.json written by {@link TilesetOutput}.
+ *
+ * <p>Because the bounds are read from the individual tiles, the tiles need to exist before this class is used.
  */
 public final class TilesetTreeUtil {
 
@@ -50,9 +55,6 @@ public final class TilesetTreeUtil {
 	 */
 	private static final double LEAF_GEOMETRIC_ERROR = 25;
 
-	/** elevation range (in meters) used for the bounding volumes of the tiles in the tree */
-	private static final double MIN_HEIGHT = -100, MAX_HEIGHT = 9000;
-
 	/** name of the tileset.json at the top of the tree, the entry point for clients */
 	private static final String ROOT_FILE_NAME = "tileset.json";
 
@@ -64,13 +66,15 @@ public final class TilesetTreeUtil {
 	/**
 	 * generates the tileset.json files which make the tiles with the given tile numbers reachable from a single
 	 * entry point at {@code <tilesetDir>/tileset.json}.
+	 * The tiles themselves must already have been written, any tile without a tileset.json of its own is skipped.
 	 *
 	 * @param tilesetDir  directory containing the tiles, with the tileset.json of each individual tile at
-	 *                    {@code <tilesetDir>/<zoom>/<x>/<y>.tileset.json}. Created if it does not exist.
-	 * @param tileNumbers  the tiles which exist in this tileset, must not be empty.
+	 *                    {@code <tilesetDir>/<zoom>/<x>/<y>.tileset.json}
+	 * @param tileNumbers  the tiles which should be part of this tileset, must not be empty.
 	 *                     No tile may be an ancestor of another tile in this list.
 	 * @throws IllegalArgumentException  if the list of tile numbers is empty or contains a tile
 	 *                                   which is an ancestor of another tile in the list
+	 * @throws IOException  if none of the tiles exists, or if reading or writing a tileset.json fails
 	 */
 	public static void generateTilesetTree(Path tilesetDir, List<TileNumber> tileNumbers) throws IOException {
 		new Generator(tilesetDir, tileNumbers).run();
@@ -117,8 +121,12 @@ public final class TilesetTreeUtil {
 		/** the tiles with content, i.e. the tiles the tree is built for */
 		private final Set<TileNumber> contentTiles;
 
-		/** the tiles making up the tree: the content tiles and all of their ancestors down to (and including) {@link #rootTile} */
-		private final Set<TileNumber> treeTiles;
+		/**
+		 * bounding volume of each tile making up the tree, i.e. of the content tiles and of all their ancestors
+		 * down to (and including) {@link #rootTile}. The bounds of a content tile are those of its own tileset.json,
+		 * the bounds of any other tile are the union of the bounds of the content tiles below it.
+		 */
+		private final Map<TileNumber, double[]> regions;
 
 		private final TileNumber rootTile;
 		private final int maxZoom;
@@ -126,12 +134,37 @@ public final class TilesetTreeUtil {
 		/** number of levels described by each tileset.json file, at most {@link #MAX_LEVELS_PER_FILE} */
 		private final int levelsPerFile;
 
-		Generator(Path tilesetDir, List<TileNumber> tileNumbers) {
+		Generator(Path tilesetDir, List<TileNumber> tileNumbers) throws IOException {
+
+			if (tileNumbers.isEmpty()) {
+				throw new IllegalArgumentException("at least one tile number is required");
+			}
 
 			this.tilesetDir = tilesetDir.toAbsolutePath().normalize();
-			this.contentTiles = Set.copyOf(tileNumbers);
-			this.rootTile = smallestCommonAncestor(tileNumbers);
-			this.maxZoom = tileNumbers.stream().mapToInt(it -> it.zoom).max().getAsInt();
+
+			/* only include tiles which actually exist. Tiles may be missing because they failed to render. */
+
+			this.contentTiles = new HashSet<>(tileNumbers);
+			this.contentTiles.removeIf(it -> !Files.isRegularFile(tileFile(it)));
+
+			if (contentTiles.isEmpty()) {
+				throw new IOException("none of the " + tileNumbers.size()
+						+ " tiles has a tileset.json in " + this.tilesetDir);
+			}
+
+			/* a tile with content is a leaf of the tree, so it must not contain another tile with content */
+
+			for (TileNumber tile : contentTiles) {
+				for (int zoom = tile.zoom - 1; zoom >= 0; zoom--) {
+					if (contentTiles.contains(tile.ancestor(zoom))) {
+						throw new IllegalArgumentException("tile " + tile.ancestor(zoom)
+								+ " is an ancestor of tile " + tile);
+					}
+				}
+			}
+
+			this.rootTile = smallestCommonAncestor(List.copyOf(contentTiles));
+			this.maxZoom = contentTiles.stream().mapToInt(it -> it.zoom).max().getAsInt();
 
 			/* spread the levels evenly across as few files as possible.
 			 * Filling up every file except the last one would put the split close to the bottom of the tree,
@@ -141,28 +174,51 @@ public final class TilesetTreeUtil {
 			int numFiles = max(1, ceilDiv(totalLevels, MAX_LEVELS_PER_FILE));
 			this.levelsPerFile = max(1, ceilDiv(totalLevels, numFiles));
 
-			/* collect the content tiles along with all of their ancestors */
+			/* take the bounds of each content tile from its tileset.json and propagate them up to the root.
+			 * Using the actual bounds of the content, rather than the bounds of the entire tile, keeps the
+			 * bounding volumes tight. This matters because clients derive the screen space error from the
+			 * distance to the bounding volume, and a tile appears closer than it is if its bounds are too large. */
 
-			this.treeTiles = new HashSet<>();
+			this.regions = new HashMap<>();
 
 			for (TileNumber tile : contentTiles) {
+
+				double[] region = readContentRegion(tile);
+
 				for (int zoom = tile.zoom; zoom >= rootTile.zoom; zoom--) {
-					if (!treeTiles.add(tile.ancestor(zoom))) {
-						break; // this tile, and therefore all of its ancestors, has already been added
+					double[] existingRegion = regions.get(tile.ancestor(zoom));
+					if (existingRegion == null) {
+						regions.put(tile.ancestor(zoom), region.clone());
+					} else {
+						expandRegion(existingRegion, region);
 					}
 				}
+
 			}
 
-			/* a tile with content is a leaf of the tree, so it must not contain another tile with content */
+		}
 
-			for (TileNumber tile : contentTiles) {
-				for (int zoom = rootTile.zoom; zoom < tile.zoom; zoom++) {
-					if (contentTiles.contains(tile.ancestor(zoom))) {
-						throw new IllegalArgumentException("tile " + tile.ancestor(zoom)
-								+ " is an ancestor of tile " + tile);
-					}
-				}
+		/** reads the bounding volume from the tileset.json which {@link TilesetOutput} has written for a tile */
+		private double[] readContentRegion(TileNumber tile) throws IOException {
+
+			Path file = tileFile(tile);
+
+			TilesetRoot tileset;
+			try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+				tileset = JsonUtil.fromJson(reader, TilesetRoot.class);
 			}
+
+			if (tileset == null || tileset.getRoot() == null || tileset.getRoot().getBoundingVolume() == null) {
+				throw new IOException("tileset for tile " + tile + " has no bounding volume: " + file);
+			}
+
+			double[] region = tileset.getRoot().getBoundingVolume().getRegion();
+
+			if (region.length != 6) {
+				throw new IOException("tileset for tile " + tile + " has an invalid region: " + file);
+			}
+
+			return region;
 
 		}
 
@@ -200,7 +256,7 @@ public final class TilesetTreeUtil {
 				throws IOException {
 
 			entry.setGeometricError(geometricError(tile.zoom));
-			entry.setBoundingVolume(regionOf(tile));
+			entry.setBoundingVolume(new TilesetEntry.Region(regions.get(tile).clone()));
 
 			if (contentTiles.contains(tile)) {
 
@@ -236,7 +292,7 @@ public final class TilesetTreeUtil {
 			List<TileNumber> result = new ArrayList<>(4);
 
 			for (TileNumber child : tile.children()) {
-				if (treeTiles.contains(child)) {
+				if (regions.containsKey(child)) {
 					result.add(child);
 				}
 			}
@@ -274,9 +330,14 @@ public final class TilesetTreeUtil {
 		return (x + y - 1) / y;
 	}
 
-	private static TilesetEntry.Region regionOf(TileNumber tile) {
-		LatLonBounds bounds = tile.latLonBounds();
-		return new TilesetEntry.Region(bounds.getMin(), bounds.getMax(), MIN_HEIGHT, MAX_HEIGHT);
+	/** grows a region (in the format used by 3D Tiles) to also contain another region */
+	private static void expandRegion(double[] region, double[] otherRegion) {
+		region[0] = min(region[0], otherRegion[0]);
+		region[1] = min(region[1], otherRegion[1]);
+		region[2] = max(region[2], otherRegion[2]);
+		region[3] = max(region[3], otherRegion[3]);
+		region[4] = min(region[4], otherRegion[4]);
+		region[5] = max(region[5], otherRegion[5]);
 	}
 
 	/** builds a URI for a file, relative to the directory of the tileset.json referring to it */
