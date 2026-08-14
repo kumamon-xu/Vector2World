@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -36,9 +35,6 @@ import org.osm2world.util.platform.json.JsonUtil;
  * and creates matching tileset.json files.
  */
 public class TilesetOutput extends AbstractOutput {
-
-	//TODO: Make configurable
-	private static final int NUM_MESHES_FOR_SUBDIVISION_TOP = 100;
 
 	/**
 	 * omit the file extension indicating a compressed file from the tileset JSON,
@@ -87,41 +83,19 @@ public class TilesetOutput extends AbstractOutput {
 
 		SimpleClosedShapeXZ bounds = requireNonNullElse(this.bounds, dataBounds.xz());
 
-		/* write one or more glTF files */
-
-		List<File> tileContentFiles = new ArrayList<>();
+		/* write the glTF file */
 
 		Path outputDir = outputFile.toPath().toAbsolutePath().getParent();
 		String extension = gltfFlavor.extension() + gltfCompression.extension();
 		String baseFileName = outputFile.getName();
 		baseFileName = baseFileName.replaceAll("(?:\\.tileset)?\\.json$", "");
 
-		if (config.getBoolean("subdivideTiles", false)) {
+		File gltfFile = outputDir.resolve(baseFileName + extension).toFile();
+		writeGltf(gltfFile, meshStore.meshesWithMetadata(), bounds);
 
-			List<MeshWithMetadata> meshes = meshStore.meshesWithMetadata();
-			meshes.sort(new MeshHeightAndSizeComparator());
+		/* write a tileset JSON referencing the written glTF file */
 
-			File gltfFile0 = outputDir.resolve(baseFileName + "_0" + extension).toFile();
-			List<MeshWithMetadata> topMeshes = meshes.subList(0, Math.min(meshes.size(), NUM_MESHES_FOR_SUBDIVISION_TOP));
-			writeGltf(gltfFile0, topMeshes, bounds);
-			tileContentFiles.add(gltfFile0);
-
-			File gltfFile1 = outputDir.resolve(baseFileName + "_1" + extension).toFile();
-			List<MeshWithMetadata> restMeshes = meshes.subList(Math.min(meshes.size(), 100), meshes.size());
-			writeGltf(gltfFile1, restMeshes, bounds);
-			tileContentFiles.add(gltfFile1);
-
-		} else {
-
-			File gltfFile = outputDir.resolve(baseFileName + extension).toFile();
-			writeGltf(gltfFile, meshStore.meshesWithMetadata(), bounds);
-			tileContentFiles.add(gltfFile);
-
-		}
-
-		/* write a tileset JSON referencing all written glTF files */
-
-		writeTilesetJson(outputFile, tileContentFiles, mapProjection.getOrigin(), bounds, dataBounds.minY, dataBounds.maxY);
+		writeTilesetJson(outputFile, gltfFile, mapProjection.getOrigin(), bounds, dataBounds.minY, dataBounds.maxY);
 
 	}
 
@@ -143,7 +117,7 @@ public class TilesetOutput extends AbstractOutput {
 		},
 		"root": {
 			"content": {
-				"uri": "14_5298_5916_0.glb"
+				"uri": "14_5298_5916.glb"
 			},
 			"refine": "ADD",
 			"geometricError": 25,
@@ -155,24 +129,13 @@ public class TilesetOutput extends AbstractOutput {
 				-0.31269461895546163, 0.6293090971636892,  0.7114718093525005, 0.0,
 				0.3165913926274654,   -0.6371514934593837, 0.7027146394495273, 0.0,
 				2022609.150078308,    -4070573.2078238726, 4459382.83869308,   1.0
-			],
-			"children": [{
-				"boundingVolume": {
-					"region": [-1.1098350999480917,0.7790694465970149,-1.1094516048185785,0.779342292568195,0.0,97.49999999999997]
-				},
-				"geometricError": 0,
-				"content": {
-					"uri": "14_5298_5916.glb"
-				}
-			}]
+			]
 		}
 	}*/
-	private void writeTilesetJson(File outFile, List<File> tileContentFiles, LatLon origin, SimpleClosedShapeXZ bounds, double minY, double maxY) {
+	private void writeTilesetJson(File outFile, File tileContentFile, LatLon origin, SimpleClosedShapeXZ bounds, double minY, double maxY) {
 
 		if (TRANSPARENT_COMPRESSION) {
-			tileContentFiles = tileContentFiles.stream()
-					.map(f -> new File(f.getPath().replaceAll("\\.(?:gz|zip)$", "")))
-					.toList();
+			tileContentFile = new File(tileContentFile.getPath().replaceAll("\\.(?:gz|zip)$", ""));
 		}
 
 		double[] transform = WGS84Util.eastNorthUpToEcefMatrix(origin, 0.0);
@@ -194,11 +157,7 @@ public class TilesetOutput extends AbstractOutput {
 		root.setTransform(transform);
 		root.setGeometricError(25);
 		root.setBoundingVolume(boundingRegion);
-		root.setContent(tileContentFiles.get(0).getName());
-
-		if (tileContentFiles.size() > 1) {
-			root.addChild(tileContentFiles.get(1).getName());
-		}
+		root.setContent(tileContentFile.getName());
 
 		try (var writer = new PrintWriter(outFile)) {
 			JsonUtil.toJson(tileset, writer, false);

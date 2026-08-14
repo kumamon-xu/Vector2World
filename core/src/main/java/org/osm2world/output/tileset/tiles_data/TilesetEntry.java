@@ -25,7 +25,6 @@ import org.osm2world.math.geo.LatLon;
         2022609.150078308,    -4070573.2078238726, 4459382.83869308,   1.0
     ],
 
-    // This TilesetEntry covers children entries
     "children": [{
         "boundingVolume": {
             "region": [-1.1098350999480917,0.7790694465970149,-1.1094516048185785,0.779342292568195,0.0,97.49999999999997]
@@ -42,10 +41,7 @@ public class TilesetEntry {
 
     public static final class Region {
 
-        private double[] region = new double[6];
-
-        public Region() {
-        }
+        private double[] region;
 
         public Region(double[] region) {
             if (region.length != 6) throw new IllegalArgumentException("region array must be of length 6");
@@ -88,9 +84,6 @@ public class TilesetEntry {
             this.uri = uri;
         }
 
-        public TilesetContent() {
-        }
-
         public String getUri() {
             return uri;
         }
@@ -106,12 +99,6 @@ public class TilesetEntry {
     private List<TilesetEntry> children = null;
 
     public TilesetEntry() {
-    }
-
-    public TilesetEntry(Number geometricError, double[] boundingVolume, String contentUri) {
-        this.geometricError = geometricError;
-        this.boundingVolume = new Region(boundingVolume);
-        this.content = new TilesetContent(contentUri);
     }
 
     public Number getGeometricError() {
@@ -153,13 +140,5 @@ public class TilesetEntry {
             this.children = new ArrayList<>();
         }
         this.children.add(child);
-    }
-
-    public void addChild(String contentUri) {
-        this.addChild(new TilesetEntry(
-            0,
-            this.getBoundingVolume().getRegion(),
-            contentUri
-        ));
     }
 }
