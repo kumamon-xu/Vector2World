@@ -186,6 +186,7 @@ public class TilesetOutput extends AbstractOutput {
 
 		TilesetRoot tileset = new TilesetRoot();
 		tileset.setAsset(new TilesetAsset());
+		tileset.setGeometricError(25);
 
 		TilesetParentEntry root = new TilesetParentEntry();
 		tileset.setRoot(root);

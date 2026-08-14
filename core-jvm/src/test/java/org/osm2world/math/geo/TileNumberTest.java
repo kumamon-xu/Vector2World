@@ -2,6 +2,7 @@ package org.osm2world.math.geo;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.osm2world.math.geo.TileNumber.tilesForBounds;
 import static org.osm2world.test.TestUtil.assertAlmostEquals;
 
@@ -71,6 +72,22 @@ public class TileNumberTest {
 
 		assertEquals(new TileNumber(13, 4402, 2828),
 				new TileNumber(15, 17608, 11312).ancestor(13));
+
+	}
+
+	@Test
+	public void testChildren() {
+
+		for (int zoom = 0; zoom < 20; zoom++) {
+			TileNumber t00 = new TileNumber(zoom, 0, 0);
+			var children = t00.children();
+			assertEquals(4, children.size());
+			assertTrue(children.contains(new TileNumber(zoom + 1, 0, 0)));
+			assertTrue(children.contains(new TileNumber(zoom + 1, 0, 1)));
+			assertTrue(children.contains(new TileNumber(zoom + 1, 1, 0)));
+			assertTrue(children.contains(new TileNumber(zoom + 1, 1, 1)));
+			children.forEach(it -> assertEquals(t00, it.ancestor(t00.zoom)));
+		}
 
 	}
 

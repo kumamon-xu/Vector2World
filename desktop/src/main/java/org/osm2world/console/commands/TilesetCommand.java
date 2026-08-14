@@ -26,6 +26,7 @@ import org.osm2world.output.Output;
 import org.osm2world.output.common.compression.Compression;
 import org.osm2world.output.gltf.GltfOutput;
 import org.osm2world.output.tileset.TilesetOutput;
+import org.osm2world.output.tileset.TilesetTreeUtil;
 import org.osm2world.scene.Scene;
 import org.osm2world.scene.mesh.LevelOfDetail;
 import org.osm2world.util.exception.InvalidGeometryException;
@@ -100,10 +101,6 @@ public class TilesetCommand implements Callable<Integer> {
 
 	public Integer call() {
 
-		if (!noJson && lod.size() > 1) {
-			System.err.println("Multiple LOD are currently only supported in --noJson mode");
-		}
-
 		/* determine the list of tiles which should exist in this tileset */
 
 		List<TileNumber> tileNumbers = new ArrayList<>();
@@ -120,6 +117,19 @@ public class TilesetCommand implements Callable<Integer> {
 
 		}
 
+		/* create the tileset.json files tying the individual tiles together */
+
+		if (!noJson) {
+			try {
+				for (LevelOfDetail lod : this.lod) {
+					TilesetTreeUtil.generateTilesetTree(baseDir.resolve("lod" + lod.ordinal()), tileNumbers);
+				}
+			} catch (IOException e) {
+				System.err.println("Error writing tileset json files: " + e.getMessage());
+				return 1;
+			}
+		}
+
 		/* create the tiles for this tileset (unless they already exist and should not be overwritten */
 
 		List<TileNumber> filteredTileNumbers = filterTileNumbers(tileNumbers);
@@ -130,8 +140,6 @@ public class TilesetCommand implements Callable<Integer> {
 		}
 
 		createTiles(filteredTileNumbers);
-
-		// TODO merge tilesets
 
 		return 0;
 

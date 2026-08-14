@@ -3,6 +3,9 @@ package org.osm2world.output.tileset.tiles_data;
 
 import static java.lang.Math.toRadians;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.osm2world.math.geo.LatLon;
 
 /**
@@ -100,6 +103,7 @@ public class TilesetEntry {
     private Number geometricError = 0;
     private Region boundingVolume = null;
     private TilesetContent content = null;
+    private List<TilesetEntry> children = null;
 
     public TilesetEntry() {
     }
@@ -135,5 +139,27 @@ public class TilesetEntry {
     }
     public void setContent(String contentUri) {
         this.content = new TilesetContent(contentUri);
+    }
+
+    public List<TilesetEntry> getChildren() {
+        return children;
+    }
+    public void setChildren(List<TilesetEntry> children) {
+        this.children = children;
+    }
+
+    public void addChild(TilesetEntry child) {
+        if (this.children == null) {
+            this.children = new ArrayList<>();
+        }
+        this.children.add(child);
+    }
+
+    public void addChild(String contentUri) {
+        this.addChild(new TilesetEntry(
+            0,
+            this.getBoundingVolume().getRegion(),
+            contentUri
+        ));
     }
 }

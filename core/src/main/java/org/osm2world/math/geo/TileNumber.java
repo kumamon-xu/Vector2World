@@ -112,6 +112,15 @@ public class TileNumber implements TileBounds {
 		return new TileNumber(zoom, x >> levels, y >> levels);
 	}
 
+	/** returns the tile's four children in a deterministic order */
+	public List<TileNumber> children() {
+		return List.of(
+				new TileNumber(this.zoom + 1, 2 * this.x, 2 * this.y),
+				new TileNumber(this.zoom + 1, 2 * this.x, 2 * this.y + 1),
+				new TileNumber(this.zoom + 1, 2 * this.x + 1, 2 * this.y),
+				new TileNumber(this.zoom + 1, 2 * this.x + 1, 2 * this.y + 1));
+	}
+
 	public LatLonBounds latLonBounds() {
 		LatLon min = new LatLon(tile2lat(y + 1, zoom), tile2lon(x, zoom));
 		LatLon max = new LatLon(tile2lat(y, zoom), tile2lon(x + 1, zoom));

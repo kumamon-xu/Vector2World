@@ -1,8 +1,5 @@
 package org.osm2world.output.tileset.tiles_data;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * // Example tileset
     "content": {
@@ -34,7 +31,6 @@ public class TilesetParentEntry extends TilesetEntry {
 
     private String refine = "ADD";
     private double[] transform;
-    private List<TilesetEntry> children;
 
     public TilesetParentEntry() {
     }
@@ -51,29 +47,6 @@ public class TilesetParentEntry extends TilesetEntry {
     }
     public void setTransform(double[] transform) {
         this.transform = transform;
-    }
-    
-    public List<TilesetEntry> getChildren() {
-        return children;
-    }
-    public void setChildren(List<TilesetEntry> children) {
-        this.children = children;
-    }
-
-    public void addChild(TilesetEntry chld) {
-        if (this.children == null) {
-            this.children = new ArrayList<>();
-        }
-        this.children.add(chld);
-    }
-    
-    public void addChild(String contentUri) {
-        this.addChild(new TilesetEntry(
-            0,
-            this.getBoundingVolume().getRegion(),
-            contentUri
-        ));
-        
     }
 
 }
