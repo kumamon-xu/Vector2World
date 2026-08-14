@@ -19,4 +19,15 @@ public class ResolutionTest {
 
 	}
 
+	@Test
+	public void testScale() {
+
+		var r512 = new Resolution("512x512");
+		var r2048 = new Resolution(2048, 2048);
+
+		assertEquals(r512, r2048.scale(0.25));
+		assertEquals(r2048, r512.scale(4.0));
+
+	}
+
 }

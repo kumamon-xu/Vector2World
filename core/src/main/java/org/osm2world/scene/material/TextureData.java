@@ -97,22 +97,32 @@ public abstract class TextureData {
 		return ImageUtil.loadTextureImage(this);
 	}
 
+
+
 	/**
-	 * returns the texture as a data URI containing a raster image.
+	 * variant of {@link #getDataUri()} which allows more fine-grained control.
+	 * See {@link #writeRasterImageToStream(OutputStream, float, Integer)} for the meaning of the parameters.
 	 */
-	public String getDataUri() {
+	public String getDataUri(float compressionQuality, @Nullable Integer maxResolution) {
 		RasterImageFormat format = getRasterImageFormat();
 		try (var stream = new ByteArrayOutputStream()) {
-		    writeRasterImageToStream(stream);
-		    return "data:" + format.mimeType() + ";base64," + Base64.getEncoder().encodeToString(stream.toByteArray());
+			writeRasterImageToStream(stream, compressionQuality, maxResolution);
+			return "data:" + format.mimeType() + ";base64," + Base64.getEncoder().encodeToString(stream.toByteArray());
 		} catch (IOException e) {
-		    throw new Error(e);
+			throw new Error(e);
 		}
 	}
 
 	/**
+	 * returns the texture as a data URI containing a raster image.
+	 */
+	public String getDataUri() {
+		return getDataUri(0.75f, null);
+	}
+
+	/**
 	 * returns the format this texture should have when written as a raster image,
-	 * e.g. with {@link #getDataUri()} or {@link #writeRasterImageToStream(OutputStream, float)}
+	 * e.g. with {@link #getDataUri()} or {@link #writeRasterImageToStream(OutputStream, float, Integer)}
 	 */
 	public RasterImageFormat getRasterImageFormat() {
 		return getBufferedImage().getColorModel().hasAlpha() ? PNG : JPEG;
@@ -123,10 +133,19 @@ public abstract class TextureData {
 	 * Uses the format returned by {@link #getRasterImageFormat()}
 	 *
 	 * @param compressionQuality  value between 0 and 1 indicating the desired quality
+	 * @param maxResolution  maximum number of pixels in each dimension; can be null for unlimited
 	 */
-	public void writeRasterImageToStream(OutputStream stream, float compressionQuality) throws IOException {
+	public void writeRasterImageToStream(OutputStream stream, float compressionQuality,
+			@Nullable Integer maxResolution) throws IOException {
 
 		BufferedImage bufferedImage = getBufferedImage();
+		Resolution nativeRes = Resolution.of(bufferedImage);
+
+		if (maxResolution != null && (nativeRes.width > maxResolution || nativeRes.height > maxResolution)) {
+			Resolution scaledRes = nativeRes.scale(maxResolution / (double) nativeRes.maxDimension());
+			bufferedImage = getBufferedImage(scaledRes);
+		}
+
 		RasterImageFormat format = getRasterImageFormat();
 
 		if (format == JPEG) {
@@ -151,9 +170,12 @@ public abstract class TextureData {
 
 	}
 
-	/** variant of {@link #writeRasterImageToStream(OutputStream, float)} with default compression quality */
+	/**
+	 * variant of {@link #writeRasterImageToStream(OutputStream, float, Integer)}
+	 * with default compression quality and unlimited resolution
+	 */
 	public void writeRasterImageToStream(OutputStream stream) throws IOException {
-		writeRasterImageToStream(stream, 0.75f);
+		writeRasterImageToStream(stream, 0.75f, null);
 	}
 
 	/** averages the color values (in linear color space) */

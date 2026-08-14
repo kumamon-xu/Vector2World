@@ -391,14 +391,14 @@ public class GltfOutput extends AbstractOutput {
 
 		if (flavor == GltfFlavor.GLB && mode == EMBED) {
 			try (var stream = new ByteArrayOutputStream()) {
-				textureData.writeRasterImageToStream(stream, config.textureQuality());
+				textureData.writeRasterImageToStream(stream, config.textureQuality(), config.maxTextureResolution());
 				image.bufferView = createBufferView(asPaddedByteBuffer(stream.toByteArray(), (byte) 0x00), null);
 				image.mimeType = textureData.getRasterImageFormat().mimeType();
 			}
 		} else {
 			image.uri = switch (mode) {
 				case REFERENCE -> resourceOutputSettings.buildTextureReference(textureData);
-				case STORE_SEPARATELY_AND_REFERENCE -> resourceOutputSettings.storeTexture(textureData, outputDir().toURI());
+				case STORE_SEPARATELY_AND_REFERENCE -> resourceOutputSettings.storeTexture(textureData, outputDir().toURI(), config);
 				case EMBED -> textureData.getDataUri();
 			};
 		}

@@ -504,6 +504,16 @@ public class O2WConfig {
 	}
 
 	/**
+	 * Maximum resolution for textures.
+	 * This limits texture size for better performance even if the map style uses higher-res textures.
+	 *
+	 * @return maximum number of pixels in each dimension
+	 */
+	public @Nullable Integer maxTextureResolution() {
+		return getInteger("maxTextureResolution", 512);
+	}
+
+	/**
 	 * A directory with locally stored 3DMR models. Models are stored as "id.glb" or "id_version.glb".
 	 * If there are multiple versions of a model, the highest version should be used.
 	 */
@@ -545,7 +555,7 @@ public class O2WConfig {
 	}
 
 	/**
-	 * Image quality for embedded textures.
+	 * Image quality for embedded or copied textures.
 	 */
 	public float textureQuality() {
 		return getFloat("textureQuality", 0.75f);

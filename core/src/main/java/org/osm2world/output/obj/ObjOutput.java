@@ -283,7 +283,7 @@ public class ObjOutput extends FaceOutput {
 
 			String path = switch (resourceOutputSettings.modeForTexture(texture)) {
 				case REFERENCE -> resourceOutputSettings.buildTextureReference(texture);
-				case STORE_SEPARATELY_AND_REFERENCE -> resourceOutputSettings.storeTexture(texture, objDirectory.toURI());
+				case STORE_SEPARATELY_AND_REFERENCE -> resourceOutputSettings.storeTexture(texture, objDirectory.toURI(), config);
 				case EMBED -> throw new UnsupportedOperationException("unsupported output mode");
 			};
 

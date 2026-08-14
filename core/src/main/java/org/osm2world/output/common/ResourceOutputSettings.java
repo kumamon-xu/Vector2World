@@ -53,7 +53,7 @@ public record ResourceOutputSettings(
 	 * Stores a texture and returns the path to it.
 	 * This can be used to implement {@link ResourceOutputMode#STORE_SEPARATELY_AND_REFERENCE})
 	 */
-	public String storeTexture(TextureData texture, @Nullable URI baseForRelativePaths) throws IOException {
+	public String storeTexture(TextureData texture, @Nullable URI baseForRelativePaths, O2WConfig config) throws IOException {
 
 		File textureDir = new File(textureDirectory);
 		boolean textureDirCreated = textureDir.mkdir();
@@ -66,7 +66,7 @@ public record ResourceOutputSettings(
 		File textureFile = File.createTempFile(prefix, "." + texture.getRasterImageFormat().fileExtension(), textureDir);
 
 		try (var stream = new FileOutputStream(textureFile)) {
-			texture.writeRasterImageToStream(stream);
+			texture.writeRasterImageToStream(stream, config.textureQuality(), config.maxTextureResolution());
 		}
 
 		if (baseForRelativePaths == null) {

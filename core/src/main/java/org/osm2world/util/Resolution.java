@@ -1,5 +1,8 @@
 package org.osm2world.util;
 
+import static java.lang.Math.floor;
+import static java.lang.Math.max;
+
 import java.awt.image.BufferedImage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,9 +52,20 @@ public class Resolution {
 		return new Resolution(image.getWidth(), image.getHeight());
 	}
 
+	/** returns width or height, whichever is larger */
+	public int maxDimension() {
+		return max(width, height);
+	}
+
 	/** returns the ratio of width to height for this resolution */
 	public float getAspectRatio() {
 		return width / (float) height;
+	}
+
+	public Resolution scale(double factor) {
+		return new Resolution(
+				max(1, (int)floor(width * factor)),
+				max(1, (int)floor(height * factor)));
 	}
 
 	@Override
