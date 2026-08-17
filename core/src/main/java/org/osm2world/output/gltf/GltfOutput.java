@@ -2,7 +2,6 @@ package org.osm2world.output.gltf;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNullElse;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.osm2world.conversion.O2WConfig.ObjectMetadataType;
 import static org.osm2world.math.algorithms.NormalCalculationUtil.calculateTriangleNormals;
@@ -69,7 +68,10 @@ public class GltfOutput extends AbstractOutput {
 	/** the gltf asset under construction */
 	private final Gltf gltf = new Gltf();
 
-	private final Map<Material, Integer> materialIndexMap = new HashMap<>();
+	/** key for {@link #materialIndexMap}, see {@link #createMaterial(Material, TextureLayer, LColor)} */
+	private record MaterialWithColor(Material material, @Nullable LColor color) {}
+
+	private final Map<MaterialWithColor, Integer> materialIndexMap = new HashMap<>();
 	private final Map<TextureData, Integer> textureIndexMap = new HashMap<>();
 
 	/** data for the glb BIN chunk, only used if {@link #flavor} is {@link GltfFlavor#GLB} */
@@ -184,39 +186,159 @@ public class GltfOutput extends AbstractOutput {
 		GltfMesh.Primitive primitive = new GltfMesh.Primitive();
 		gltfMesh.primitives.add(primitive);
 
+		/* if all vertices have the same color, put it into the material instead of into a vertex attribute.
+		 * This is a common case, and vertex colors would take up as much space as the vertex positions. */
+
+		@Nullable LColor constantColor = null;
+
+		if (colors != null && !colors.isEmpty() && colors.get(0) != null
+				&& colors.stream().distinct().count() == 1) {
+			constantColor = colors.get(0);
+			colors = null;
+		}
+
 		/* convert material */
 
 		int materialIndex;
 		if (material.textureLayers().size() == 0) {
-			materialIndex = createMaterial(material, null);
+			materialIndex = createMaterial(material, null, constantColor);
 		} else {
-			materialIndex = createMaterial(material, material.textureLayers().get(0));
+			materialIndex = createMaterial(material, material.textureLayers().get(0), constantColor);
 		}
 		primitive.material = materialIndex;
 
-		/* put geometry into buffers and set up accessors */
-		// TODO consider using indices
+		/* collect the attributes of each vertex */
 
 		primitive.mode = GltfMesh.TRIANGLES;
 
 		List<VectorXYZ> positions = new ArrayList<>(3 * triangles.size());
 		triangles.forEach(t -> positions.addAll(t.verticesNoDup()));
-		primitive.attributes.put("POSITION", createAccessor(3, positions));
 
 		List<VectorXYZ> normals = calculateTriangleNormals(triangles, material.interpolation() == SMOOTH);
-		primitive.attributes.put("NORMAL", createAccessor(3, normals));
 
-		if (material.textureLayers().size() > 0) {
-			primitive.attributes.put("TEXCOORD_0", createAccessor(2, texCoordLists.get(0)));
+		@Nullable List<VectorXZ> texCoords = material.textureLayers().isEmpty() ? null : texCoordLists.get(0);
+
+		@Nullable List<VectorXYZ> colorsAsVectors = colors == null ? null
+				: colors.stream().map(c -> new VectorXYZ(c.red, c.green, -c.blue)).toList();
+
+		/* use indices, so that vertices shared by multiple triangles are only stored once.
+		 * Vertices are compared by the values which will actually be written, not by the original coordinates,
+		 * because only those decide whether the resulting vertices are identical. */
+
+		int[] vertexIndices = new int[positions.size()];
+		var indexForVertex = new HashMap<VertexKey, Integer>();
+
+		var uniquePositions = new ArrayList<VectorXYZ>();
+		var uniqueNormals = new ArrayList<VectorXYZ>();
+		@Nullable var uniqueTexCoords = texCoords == null ? null : new ArrayList<VectorXZ>();
+		@Nullable var uniqueColors = colorsAsVectors == null ? null : new ArrayList<VectorXYZ>();
+
+		for (int i = 0; i < positions.size(); i++) {
+
+			var key = new VertexKey(positions.get(i), normals.get(i),
+					texCoords == null ? null : texCoords.get(i),
+					colorsAsVectors == null ? null : colorsAsVectors.get(i));
+
+			Integer index = indexForVertex.get(key);
+
+			if (index == null) {
+				index = uniquePositions.size();
+				indexForVertex.put(key, index);
+				uniquePositions.add(positions.get(i));
+				uniqueNormals.add(normals.get(i));
+				if (uniqueTexCoords != null) { uniqueTexCoords.add(texCoords.get(i)); }
+				if (uniqueColors != null) { uniqueColors.add(colorsAsVectors.get(i)); }
+			}
+
+			vertexIndices[i] = index;
+
 		}
 
-		if (colors != null) {
-			List<VectorXYZ> colorsAsVectors = colors.stream().map(c -> new VectorXYZ(c.red, c.green, -c.blue)).collect(toList());
-			primitive.attributes.put("COLOR_0", createAccessor(3, colorsAsVectors));
+		/* put geometry into buffers and set up accessors */
+
+		primitive.indices = createIndexAccessor(vertexIndices, uniquePositions.size());
+		primitive.attributes.put("POSITION", createAccessor(3, uniquePositions));
+		primitive.attributes.put("NORMAL", createAccessor(3, uniqueNormals));
+
+		if (uniqueTexCoords != null) {
+			primitive.attributes.put("TEXCOORD_0", createAccessor(2, uniqueTexCoords));
+		}
+
+		if (uniqueColors != null) {
+			primitive.attributes.put("COLOR_0", createAccessor(3, uniqueColors));
 		}
 
 		gltf.meshes.add(gltfMesh);
 		return gltf.meshes.size() - 1;
+
+	}
+
+	/** the values written to the output for a single vertex, used to identify vertices which can be shared */
+	private record VertexKey(float[] componentArray) {
+
+		VertexKey(VectorXYZ position, VectorXYZ normal, @Nullable VectorXZ texCoord, @Nullable VectorXYZ color) {
+
+			this(new float[6 + (texCoord != null ? 2 : 0) + (color != null ? 3 : 0)]);
+
+			System.arraycopy(components(3, position), 0, componentArray, 0, 3);
+			System.arraycopy(components(3, normal), 0, componentArray, 3, 3);
+
+			int offset = 6;
+
+			if (texCoord != null) {
+				System.arraycopy(components(2, texCoord), 0, componentArray, offset, 2);
+				offset += 2;
+			}
+
+			if (color != null) {
+				System.arraycopy(components(3, color), 0, componentArray, offset, 3);
+			}
+
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof VertexKey other && Arrays.equals(componentArray, other.componentArray);
+		}
+
+		@Override
+		public int hashCode() {
+			return Arrays.hashCode(componentArray);
+		}
+
+	}
+
+	/**
+	 * creates an accessor for the indices of a primitive
+	 *
+	 * @param numVertices  number of vertices the indices refer to, decides the component type
+	 */
+	private int createIndexAccessor(int[] indices, int numVertices) {
+
+		// unsigned short can be used for up to 65535 vertices (the largest value is reserved for primitive restart)
+		boolean unsignedShort = numVertices <= 65535;
+
+		int byteLengthRaw = indices.length * (unsignedShort ? 2 : 4);
+		int byteLength = (byteLengthRaw + 3) / 4 * 4; // pad to multiple of 4 bytes, so later buffer views stay aligned
+
+		ByteBuffer byteBuffer = ByteBuffer.allocate(byteLength);
+		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+		for (int index : indices) {
+			if (unsignedShort) {
+				byteBuffer.putShort((short) index);
+			} else {
+				byteBuffer.putInt(index);
+			}
+		}
+
+		var accessor = new GltfAccessor(
+				unsignedShort ? GltfAccessor.TYPE_UNSIGNED_SHORT : GltfAccessor.TYPE_UNSIGNED_INT,
+				indices.length, "SCALAR");
+		accessor.bufferView = createBufferView(byteBuffer, GltfBufferView.TARGET_ELEMENT_ARRAY_BUFFER);
+		gltf.accessors.add(accessor);
+
+		return gltf.accessors.size() - 1;
 
 	}
 
@@ -293,12 +415,24 @@ public class GltfOutput extends AbstractOutput {
 
 	}
 
-	private int createMaterial(Material m, @Nullable TextureLayer textureLayer) throws IOException {
+	/**
+	 * creates a glTF material, or returns the index of an existing one if an equivalent material exists
+	 *
+	 * @param color  color to multiply the material's base color with, e.g. from vertex colors.
+	 *               Materials with different colors cannot share a glTF material.
+	 */
+	private int createMaterial(Material m, @Nullable TextureLayer textureLayer, @Nullable LColor color)
+			throws IOException {
 
-		if (materialIndexMap.containsKey(m)) return materialIndexMap.get(m);
+		var key = new MaterialWithColor(m, color);
+		if (materialIndexMap.containsKey(key)) return materialIndexMap.get(key);
 
 		GltfMaterial material = new GltfMaterial();
 		material.pbrMetallicRoughness = new PbrMetallicRoughness();
+
+		if (color != null) {
+			material.pbrMetallicRoughness.baseColorFactor = color.componentsRGBA();
+		}
 
 		material.name = NameUtil.getMaterialName(m, textureLayer, config);
 
@@ -346,7 +480,7 @@ public class GltfOutput extends AbstractOutput {
 
 		gltf.materials.add(material);
 		int index = gltf.materials.size() - 1;
-		materialIndexMap.put(m, index);
+		materialIndexMap.put(key, index);
 		return index;
 
 	}
