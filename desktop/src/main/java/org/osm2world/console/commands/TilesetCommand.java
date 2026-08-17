@@ -1,6 +1,7 @@
 package org.osm2world.console.commands;
 
 import static org.osm2world.output.gltf.GltfFlavor.GLB;
+import static org.osm2world.output.tileset.TilesetTreeUtil.generateTilesetTree;
 
 import java.io.File;
 import java.io.IOException;
@@ -133,9 +134,7 @@ public class TilesetCommand implements Callable<Integer> {
 
 		if (!noJson) {
 			try {
-				for (LevelOfDetail lod : this.lod) {
-					TilesetTreeUtil.generateTilesetTree(baseDir.resolve("lod" + lod.ordinal()), tileNumbers);
-				}
+				generateTilesetTree(baseDir, tileNumbers, lod);
 			} catch (IOException e) {
 				System.err.println("Error writing tileset json files: " + e.getMessage());
 				return 1;
@@ -152,10 +151,11 @@ public class TilesetCommand implements Callable<Integer> {
 
 		for (TileNumber tile : tileNumbers) {
 			for (LevelOfDetail lod : this.lod) {
-				if (fileIsMissingOrOverwritable(getTileFilename(tile, lod, ".glb" + getCompression().extension()))
-						&& fileIsMissingOrOverwritable(getTileFilename(tile, lod, ".tileset.json"))) {
-					result.add(tile);
-					break;
+				if (fileIsMissingOrOverwritable(TilesetTreeUtil.tilePath(baseDir, tile, lod, ".glb" + getCompression().extension()))) {
+					if (fileIsMissingOrOverwritable(TilesetTreeUtil.tilePath(baseDir, tile, lod, ".tileset.json"))) {
+						result.add(tile);
+						break;
+					}
 				}
 			}
 		}
@@ -215,12 +215,12 @@ public class TilesetCommand implements Callable<Integer> {
 
 						if (noJson) {
 
-							File glbFile = getTileFilename(tile, lod, ".glb" + getCompression().extension());
+							File glbFile = TilesetTreeUtil.tilePath(baseDir, tile, lod, ".glb" + getCompression().extension()).toFile();
 							output = new GltfOutput(glbFile, GLB, null);
 
 						} else {
 
-							File tilesetJsonFile = getTileFilename(tile, lod, ".tileset.json");
+							File tilesetJsonFile = TilesetTreeUtil.tilePath(baseDir, tile, lod, ".tileset.json").toFile();
 							output = new TilesetOutput(tilesetJsonFile, GLB, getCompression(), mapProjection, scene.getBoundary());
 
 						}
@@ -245,20 +245,11 @@ public class TilesetCommand implements Callable<Integer> {
 		return precompressedTiles ? Compression.GZ : Compression.NONE;
 	}
 
-	private File getTileFilename(TileNumber tile, LevelOfDetail lod, String extension) {
-		return baseDir
-				.resolve("lod" + lod.ordinal())
-				.resolve("" + tile.zoom)
-				.resolve("" + tile.x)
-				.resolve(tile.y + extension)
-				.toFile();
-	}
+	private boolean fileIsMissingOrOverwritable(Path path) {
 
-	private boolean fileIsMissingOrOverwritable(File file) {
+		if (!path.toFile().exists()) { return true; }
 
-		if (!file.exists()) { return true; }
-
-		Instant fileTimestamp = Instant.ofEpochMilli(file.lastModified());
+		Instant fileTimestamp = Instant.ofEpochMilli(path.toFile().lastModified());
 
 		return switch (overwriteFiles) {
 			case ALWAYS -> true;

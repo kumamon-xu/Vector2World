@@ -29,7 +29,12 @@ package org.osm2world.output.tileset.tiles_data;
  */
 public class TilesetParentEntry extends TilesetEntry {
 
-    private String refine = "ADD";
+    /**
+     * refinement strategy, "REPLACE" or "ADD".
+     * Replacement refinement is the default because tiles with content at multiple levels of detail
+     * are meant to be shown instead of each other, not on top of each other.
+     */
+    private String refine = "REPLACE";
     private double[] transform;
 
     public TilesetParentEntry() {

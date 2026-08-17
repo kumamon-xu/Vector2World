@@ -2,45 +2,67 @@ package org.osm2world.output.tileset;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.lang.Math.pow;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.osm2world.math.geo.TileNumber;
 import org.osm2world.output.tileset.tiles_data.TilesetAsset;
 import org.osm2world.output.tileset.tiles_data.TilesetEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetParentEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetRoot;
+import org.osm2world.scene.mesh.LevelOfDetail;
 import org.osm2world.util.platform.json.JsonUtil;
 
 /**
- * Utility class for generating the tree of tileset.json files which ties the individual tiles of a tileset together,
+ * Utility class for generating the tileset.json files which tie the individual tiles of a tileset together,
  * according to the Cesium 3D Tiles specification.
  * The tiles themselves are not created by this class, use {@link TilesetOutput} for that.
  *
- * <p>The tree consists of explicit tiles all the way down: every tile of the pyramid is described by its own entry.
- * Implicit tiling is deliberately not used because it derives the bounds of descendant tiles by subdividing the
- * root's bounding volume linearly. For a {@code region} bounding volume that subdivision is linear in latitude,
- * whereas tile numbers follow Web Mercator. Explicit tiles also allow the bounds to be taken from the actual content
- * of each tile rather than from the full extent of the {@link TileNumber}.
+ * <p>Two kinds of files are generated, both of them in the {@value #INDEX_DIR_NAME} directory:
  *
- * <p>To keep individual files small, the tree is split across several tileset.json files, each spanning at most
- * {@link #MAX_LEVELS_PER_FILE} levels. A tile at the bottom of such a file refers to the file continuing below it as
- * an external tileset. The bottom-most tiles refer to the per-tile tileset.json written by {@link TilesetOutput}.
+ * <ul>
+ * <li>For each tile, a file describing the {@link LevelOfDetail versions} of that tile which exist.
+ *     They form a chain of tiles which all cover the same area, with each one refining the one above it.</li>
+ * <li>The tree tying those tiles together, with one file per {@link #MAX_LEVELS_PER_FILE} levels of the
+ *     tile pyramid. The entry point for clients is the {@value #ROOT_FILE_NAME} at the top of the tree.</li>
+ * </ul>
+ *
+ * <p>Both kinds of file use explicit tiles rather than implicit tiling, which derives the bounds of descendant
+ * tiles by subdividing the root's bounding volume linearly. For a {@code region} bounding volume that subdivision
+ * is linear in latitude, whereas tile numbers follow Web Mercator. Explicit tiles also allow the bounds to be taken
+ * from the actual content of each tile, in particular the minimum and maximum elevation.
  *
  * <p>Because the bounds are read from the individual tiles, the tiles need to exist before this class is used.
  */
 public final class TilesetTreeUtil {
+
+	/** name of the tileset.json at the top of the tree, the entry point for clients */
+	public static final String ROOT_FILE_NAME = "tileset.json";
+
+	/** subdirectory for the generated tileset.json files, keeps them separate from the tiles themselves */
+	public static final String INDEX_DIR_NAME = "index";
+
+	/**
+	 * geometric error (in meters) of a tile of the tree at the highest zoom level,
+	 * doubling with each level towards the root.
+	 *
+	 * <p>The tiles of the tree have no content of their own, so this value does not describe an actual geometric
+	 * deviation. Instead, it controls the distance from which the tiles of the tileset are loaded.
+	 */
+	static final double GEOMETRIC_ERROR_AT_MAX_ZOOM = 50;
+
+	/**
+	 * the geometric error (in meters) of each {@link LevelOfDetail}, indexed by its ordinal.
+	 * This controls the distance at which a client switches to the next level of detail.
+	 * They all need to be smaller than {@link #GEOMETRIC_ERROR_AT_MAX_ZOOM}:
+	 * a tile always needs a larger geometric error than the tiles below it.
+	 */
+	static final double[] GEOMETRIC_ERROR_BY_LOD = {32, 16, 6, 2, 1};
 
 	/**
 	 * maximum number of levels of subdivision described by a single tileset.json file.
@@ -48,36 +70,37 @@ public final class TilesetTreeUtil {
 	 */
 	private static final int MAX_LEVELS_PER_FILE = 4;
 
-	/**
-	 * geometric error assigned to the tiles containing the actual content.
-	 * Matches the geometric error which {@link TilesetOutput} assigns to the root of a per-tile tileset.
-	 * The geometric error doubles with each level towards the root.
-	 */
-	private static final double LEAF_GEOMETRIC_ERROR = 25;
-
-	/** name of the tileset.json at the top of the tree, the entry point for clients */
-	private static final String ROOT_FILE_NAME = "tileset.json";
-
-	/** subdirectory for the tileset.json files below the root, keeps them separate from the per-tile tilesets */
-	private static final String INTERMEDIATE_DIR_NAME = "index";
-
 	private TilesetTreeUtil() {}
 
 	/**
-	 * generates the tileset.json files which make the tiles with the given tile numbers reachable from a single
-	 * entry point at {@code <tilesetDir>/tileset.json}.
-	 * The tiles themselves must already have been written, any tile without a tileset.json of its own is skipped.
+	 * generates the tileset.json files which make the given tiles reachable from the single entry point at
+	 * {@link #ROOT_FILE_NAME}.
+	 * The tiles themselves must already have been written; any tile which does not exist at any of the levels of
+	 * detail is skipped.
 	 *
-	 * @param tilesetDir  directory containing the tiles, with the tileset.json of each individual tile at
-	 *                    {@code <tilesetDir>/<zoom>/<x>/<y>.tileset.json}
+	 * @param baseDir  directory containing the tiles, with the tileset.json of an individual tile at
+	 *                 {@code <baseDir>/lod<n>/<zoom>/<x>/<y>.tileset.json}
 	 * @param tileNumbers  the tiles which should be part of this tileset, must not be empty.
 	 *                     No tile may be an ancestor of another tile in this list.
-	 * @throws IllegalArgumentException  if the list of tile numbers is empty or contains a tile
-	 *                                   which is an ancestor of another tile in the list
+	 * @param lods  the levels of detail the tiles may exist at, must not be empty
+	 * @throws IllegalArgumentException  if the list of tile numbers or levels of detail is empty,
+	 *                                   or if a tile is an ancestor of another tile in the list
 	 * @throws IOException  if none of the tiles exists, or if reading or writing a tileset.json fails
 	 */
-	public static void generateTilesetTree(Path tilesetDir, List<TileNumber> tileNumbers) throws IOException {
-		new Generator(tilesetDir, tileNumbers).run();
+	public static void generateTilesetTree(Path baseDir, List<TileNumber> tileNumbers, List<LevelOfDetail> lods)
+			throws IOException {
+		new Generator(baseDir, tileNumbers, lods).run();
+	}
+
+	/**
+	 * returns the expected path of a glb or tileset.json for a particular {@link TileNumber} and {@link LevelOfDetail}.
+	 */
+	public static Path tilePath(Path baseDir, TileNumber tile, LevelOfDetail lod, String extension) {
+		return baseDir
+				.resolve("lod" + lod.ordinal())
+				.resolve(Integer.toString(tile.zoom))
+				.resolve(Integer.toString(tile.x))
+				.resolve(tile.y + extension);
 	}
 
 	/**
@@ -113,18 +136,21 @@ public final class TilesetTreeUtil {
 
 	}
 
-	/** holds the state for a single run of {@link #generateTilesetTree(Path, List)} */
+	/** one level of detail of one tile, as described by the tileset.json written for it by {@link TilesetOutput} */
+	private record LodContent(LevelOfDetail lod, double[] region, double[] transform, Path contentFile) {}
+
+	/** holds the state for a single run of {@link #generateTilesetTree(Path, List, List)} */
 	private static final class Generator {
 
-		private final Path tilesetDir;
+		private final Path baseDir;
 
-		/** the tiles with content, i.e. the tiles the tree is built for */
-		private final Set<TileNumber> contentTiles;
+		/** the levels of detail of each tile which has at least one of them, ordered from lowest to highest */
+		private final Map<TileNumber, List<LodContent>> contentTiles;
 
 		/**
 		 * bounding volume of each tile making up the tree, i.e. of the content tiles and of all their ancestors
-		 * down to (and including) {@link #rootTile}. The bounds of a content tile are those of its own tileset.json,
-		 * the bounds of any other tile are the union of the bounds of the content tiles below it.
+		 * down to (and including) {@link #rootTile}. The bounds of a content tile are the union of the bounds of
+		 * its levels of detail, the bounds of any other tile are the union of the bounds of the tiles below it.
 		 */
 		private final Map<TileNumber, double[]> regions;
 
@@ -134,37 +160,57 @@ public final class TilesetTreeUtil {
 		/** number of levels described by each tileset.json file, at most {@link #MAX_LEVELS_PER_FILE} */
 		private final int levelsPerFile;
 
-		Generator(Path tilesetDir, List<TileNumber> tileNumbers) throws IOException {
+		Generator(Path baseDir, List<TileNumber> tileNumbers, List<LevelOfDetail> lods) throws IOException {
 
 			if (tileNumbers.isEmpty()) {
 				throw new IllegalArgumentException("at least one tile number is required");
+			} else if (lods.isEmpty()) {
+				throw new IllegalArgumentException("at least one level of detail is required");
 			}
 
-			this.tilesetDir = tilesetDir.toAbsolutePath().normalize();
+			this.baseDir = baseDir.toAbsolutePath().normalize();
 
-			/* only include tiles which actually exist. Tiles may be missing because they failed to render. */
+			/* find the levels of detail which exist for each tile.
+			 * Tiles or levels of detail may be missing because they failed to render or were not requested. */
 
-			this.contentTiles = new HashSet<>(tileNumbers);
-			this.contentTiles.removeIf(it -> !Files.isRegularFile(tileFile(it)));
+			List<LevelOfDetail> sortedLods = lods.stream().distinct().sorted().toList();
+
+			this.contentTiles = new HashMap<>();
+
+			for (TileNumber tile : new HashSet<>(tileNumbers)) {
+
+				List<LodContent> contents = new ArrayList<>();
+
+				for (LevelOfDetail lod : sortedLods) {
+					if (Files.isRegularFile(tilePath(baseDir, tile, lod, ".tileset.json"))) {
+						contents.add(readLodContent(tile, lod));
+					}
+				}
+
+				if (!contents.isEmpty()) {
+					contentTiles.put(tile, contents);
+				}
+
+			}
 
 			if (contentTiles.isEmpty()) {
 				throw new IOException("none of the " + tileNumbers.size()
-						+ " tiles has a tileset.json in " + this.tilesetDir);
+						+ " tiles has a tileset.json in " + this.baseDir);
 			}
 
 			/* a tile with content is a leaf of the tree, so it must not contain another tile with content */
 
-			for (TileNumber tile : contentTiles) {
+			for (TileNumber tile : contentTiles.keySet()) {
 				for (int zoom = tile.zoom - 1; zoom >= 0; zoom--) {
-					if (contentTiles.contains(tile.ancestor(zoom))) {
+					if (contentTiles.containsKey(tile.ancestor(zoom))) {
 						throw new IllegalArgumentException("tile " + tile.ancestor(zoom)
 								+ " is an ancestor of tile " + tile);
 					}
 				}
 			}
 
-			this.rootTile = smallestCommonAncestor(List.copyOf(contentTiles));
-			this.maxZoom = contentTiles.stream().mapToInt(it -> it.zoom).max().getAsInt();
+			this.rootTile = smallestCommonAncestor(List.copyOf(contentTiles.keySet()));
+			this.maxZoom = contentTiles.keySet().stream().mapToInt(it -> it.zoom).max().getAsInt();
 
 			/* spread the levels evenly across as few files as possible.
 			 * Filling up every file except the last one would put the split close to the bottom of the tree,
@@ -174,16 +220,16 @@ public final class TilesetTreeUtil {
 			int numFiles = max(1, ceilDiv(totalLevels, MAX_LEVELS_PER_FILE));
 			this.levelsPerFile = max(1, ceilDiv(totalLevels, numFiles));
 
-			/* take the bounds of each content tile from its tileset.json and propagate them up to the root.
+			/* propagate the bounds of each content tile up to the root.
 			 * Using the actual bounds of the content, rather than the bounds of the entire tile, keeps the
 			 * bounding volumes tight. This matters because clients derive the screen space error from the
 			 * distance to the bounding volume, and a tile appears closer than it is if its bounds are too large. */
 
 			this.regions = new HashMap<>();
 
-			for (TileNumber tile : contentTiles) {
+			contentTiles.forEach((tile, contents) -> {
 
-				double[] region = readContentRegion(tile);
+				double[] region = unionRegion(contents);
 
 				for (int zoom = tile.zoom; zoom >= rootTile.zoom; zoom--) {
 					double[] existingRegion = regions.get(tile.ancestor(zoom));
@@ -194,92 +240,159 @@ public final class TilesetTreeUtil {
 					}
 				}
 
-			}
+			});
 
 		}
 
-		/** reads the bounding volume from the tileset.json which {@link TilesetOutput} has written for a tile */
-		private double[] readContentRegion(TileNumber tile) throws IOException {
+		/**
+		 * the geometric error of a tile of the tree, doubling with each level towards the root.
+		 *
+		 * <p>This is deliberately unrelated to the geometric error of the levels of detail within a tile.
+		 * A tile of the tree is only a container for the tiles below it, and clients traverse into it based on
+		 * this value, whereas the levels of detail are actual representations of the same content.
+		 */
+		private double treeGeometricError(int zoom) {
+			return GEOMETRIC_ERROR_AT_MAX_ZOOM * (1 << (maxZoom - zoom));
+		}
 
-			Path file = tileFile(tile);
+		void run() throws IOException {
+
+			for (TileNumber tile : contentTiles.keySet()) {
+				writeLodChainFile(tile);
+			}
+
+			writeTreeFile(baseDir.resolve(ROOT_FILE_NAME), rootTile);
+
+		}
+
+		/** reads the tileset.json which {@link TilesetOutput} has written for one level of detail of a tile */
+		private LodContent readLodContent(TileNumber tile, LevelOfDetail lod) throws IOException {
+
+			Path file = tilePath(baseDir, tile, lod, ".tileset.json");
 
 			TilesetRoot tileset;
 			try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
 				tileset = JsonUtil.fromJson(reader, TilesetRoot.class);
 			}
 
-			if (tileset == null || tileset.getRoot() == null || tileset.getRoot().getBoundingVolume() == null) {
-				throw new IOException("tileset for tile " + tile + " has no bounding volume: " + file);
+			if (tileset == null || tileset.getRoot() == null) {
+				throw new IOException("tileset for tile " + tile + " at " + lod + " has no root tile: " + file);
 			}
 
-			double[] region = tileset.getRoot().getBoundingVolume().getRegion();
+			TilesetParentEntry root = tileset.getRoot();
 
-			if (region.length != 6) {
-				throw new IOException("tileset for tile " + tile + " has an invalid region: " + file);
+			if (root.getBoundingVolume() == null || root.getBoundingVolume().getRegion().length != 6) {
+				throw new IOException("tileset for tile " + tile + " at " + lod
+						+ " has no valid bounding volume: " + file);
+			} else if (root.getContent() == null) {
+				throw new IOException("tileset for tile " + tile + " at " + lod + " has no content: " + file);
 			}
 
-			return region;
+			Path contentFile = file.getParent().resolve(root.getContent().getUri()).normalize();
 
-		}
-
-		void run() throws IOException {
-			writeTilesetFile(tilesetDir.resolve(ROOT_FILE_NAME), rootTile);
-		}
-
-		/** writes a tileset.json describing the tile and up to {@link #levelsPerFile} levels of its descendants */
-		private void writeTilesetFile(Path file, TileNumber tile) throws IOException {
-
-			var rootEntry = new TilesetParentEntry();
-			fillEntry(rootEntry, tile, levelsPerFile, file.getParent());
-
-			var tileset = new TilesetRoot();
-			tileset.setAsset(new TilesetAsset());
-			tileset.setGeometricError(geometricError(tile.zoom));
-			tileset.setRoot(rootEntry);
-
-			Files.createDirectories(file.getParent());
-
-			try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-				JsonUtil.toJson(tileset, writer, false);
-			}
+			return new LodContent(lod, root.getBoundingVolume().getRegion(), root.getTransform(), contentFile);
 
 		}
 
 		/**
-		 * fills in an entry describing a tile, recursively adding its descendants as children.
+		 * writes the tileset.json describing all levels of detail of a single tile.
+		 * They form a chain of tiles, each of them covering the same area as, but refining, the one above it.
+		 */
+		private void writeLodChainFile(TileNumber tile) throws IOException {
+
+			List<LodContent> contents = contentTiles.get(tile);
+
+			Path file = indexFile(tile);
+			Path fileDir = file.getParent();
+
+			var rootEntry = new TilesetParentEntry();
+
+			/* the transform is only set on the root because transforms are inherited and combined with each other */
+
+			rootEntry.setTransform(contents.get(0).transform());
+
+			TilesetEntry entry = rootEntry;
+
+			for (int i = 0; i < contents.size(); i++) {
+
+				if (i > 0) {
+					var childEntry = new TilesetEntry();
+					entry.addChild(childEntry);
+					entry = childEntry;
+				}
+
+				LodContent content = contents.get(i);
+
+				entry.setGeometricError(geometricErrorInChain(contents, i));
+				entry.setBoundingVolume(new TilesetEntry.Region(regions.get(tile).clone()));
+				entry.setContent(relativeUri(fileDir, content.contentFile()));
+
+			}
+
+			writeTileset(file, rootEntry, geometricErrorInChain(contents, 0));
+
+		}
+
+		/** writes a tileset.json describing the tile and up to {@link #levelsPerFile} levels of its descendants */
+		private void writeTreeFile(Path file, TileNumber tile) throws IOException {
+
+			var rootEntry = new TilesetParentEntry();
+			fillTreeEntry(rootEntry, tile, levelsPerFile, file.getParent());
+
+			writeTileset(file, rootEntry, treeGeometricError(tile.zoom));
+
+		}
+
+		/**
+		 * fills in an entry describing a tile of the tree, recursively adding its descendants as children.
 		 * Descendants more than {@code remainingLevels} below the tile are placed in a separate tileset.json,
 		 * which is written by this method as well.
 		 *
 		 * @param fileDir  directory of the tileset.json this entry will be written to, used for relative URIs
 		 */
-		private void fillEntry(TilesetEntry entry, TileNumber tile, int remainingLevels, Path fileDir)
+		private void fillTreeEntry(TilesetEntry entry, TileNumber tile, int remainingLevels, Path fileDir)
 				throws IOException {
 
-			entry.setGeometricError(geometricError(tile.zoom));
+			entry.setGeometricError(treeGeometricError(tile.zoom));
 			entry.setBoundingVolume(new TilesetEntry.Region(regions.get(tile).clone()));
 
-			if (contentTiles.contains(tile)) {
+			if (contentTiles.containsKey(tile)) {
 
-				/* refer to the tileset.json written for this tile by TilesetOutput */
+				/* refer to the chain of levels of detail for this tile */
 
-				entry.setContent(relativeUri(fileDir, tileFile(tile)));
+				entry.setContent(relativeUri(fileDir, indexFile(tile)));
 
 			} else if (remainingLevels == 0) {
 
 				/* continue the tree in a separate file, and refer to that file as an external tileset */
 
-				Path childFile = intermediateFile(tile);
-				writeTilesetFile(childFile, tile);
+				Path childFile = indexFile(tile);
+				writeTreeFile(childFile, tile);
 				entry.setContent(relativeUri(fileDir, childFile));
 
 			} else {
 
 				for (TileNumber child : childrenOf(tile)) {
 					var childEntry = new TilesetEntry();
-					fillEntry(childEntry, child, remainingLevels - 1, fileDir);
+					fillTreeEntry(childEntry, child, remainingLevels - 1, fileDir);
 					entry.addChild(childEntry);
 				}
 
+			}
+
+		}
+
+		private void writeTileset(Path file, TilesetParentEntry rootEntry, double geometricError) throws IOException {
+
+			var tileset = new TilesetRoot();
+			tileset.setAsset(new TilesetAsset());
+			tileset.setGeometricError(geometricError);
+			tileset.setRoot(rootEntry);
+
+			Files.createDirectories(file.getParent());
+
+			try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+				JsonUtil.toJson(tileset, writer, false);
 			}
 
 		}
@@ -301,28 +414,44 @@ public final class TilesetTreeUtil {
 
 		}
 
-		/** the geometric error at a zoom level, doubling with each level towards the root */
-		private double geometricError(int zoom) {
-			return LEAF_GEOMETRIC_ERROR * pow(2, maxZoom - zoom);
-		}
-
-		/** path of the tileset.json written for an individual tile by {@link TilesetOutput} */
-		private Path tileFile(TileNumber tile) {
-			return tilesetDir
+		/**
+		 * path of a tileset.json generated by this class for a tile.
+		 * Depending on the tile, this either describes its levels of detail or continues the tree below it.
+		 * A tile is never both, because a tile with content is a leaf of the tree.
+		 */
+		private Path indexFile(TileNumber tile) {
+			return baseDir
+					.resolve(INDEX_DIR_NAME)
 					.resolve(Integer.toString(tile.zoom))
 					.resolve(Integer.toString(tile.x))
 					.resolve(tile.y + ".tileset.json");
 		}
 
-		/** path of a tileset.json continuing the tree below the given tile */
-		private Path intermediateFile(TileNumber tile) {
-			return tilesetDir
-					.resolve(INTERMEDIATE_DIR_NAME)
-					.resolve(Integer.toString(tile.zoom))
-					.resolve(Integer.toString(tile.x))
-					.resolve(tile.y + ".tileset.json");
-		}
+	}
 
+	/**
+	 * returns the geometric error for one element of a chain of levels of detail.
+	 *
+	 * @param index  position in the chain, 0 is the lowest level of detail
+	 */
+	private static double geometricErrorInChain(List<LodContent> contents, int index) {
+		if (index == contents.size() - 1 && contents.size() > 1) {
+			/* the highest level of detail is not refined any further.
+			 * This is only used if there is something coarser above it, as an error of 0 anywhere
+			 * in a tileset would keep the tiles containing it from ever being refined. */
+			return 0;
+		} else {
+			return GEOMETRIC_ERROR_BY_LOD[contents.get(index).lod().ordinal()];
+		}
+	}
+
+	/** returns the smallest region containing the regions of all the given levels of detail */
+	private static double[] unionRegion(List<LodContent> contents) {
+		double[] result = contents.get(0).region().clone();
+		for (LodContent content : contents) {
+			expandRegion(result, content.region());
+		}
+		return result;
 	}
 
 	/** integer division rounding towards positive infinity, for non-negative arguments */

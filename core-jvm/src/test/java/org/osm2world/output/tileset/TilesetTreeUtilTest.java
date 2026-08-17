@@ -5,6 +5,8 @@ import static java.util.Collections.emptyList;
 import static org.junit.Assert.*;
 import static org.osm2world.output.tileset.TilesetTreeUtil.generateTilesetTree;
 import static org.osm2world.output.tileset.TilesetTreeUtil.smallestCommonAncestor;
+import static org.osm2world.scene.mesh.LevelOfDetail.LOD1;
+import static org.osm2world.scene.mesh.LevelOfDetail.LOD3;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +15,6 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -24,6 +25,7 @@ import org.osm2world.output.tileset.tiles_data.TilesetAsset;
 import org.osm2world.output.tileset.tiles_data.TilesetEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetParentEntry;
 import org.osm2world.output.tileset.tiles_data.TilesetRoot;
+import org.osm2world.scene.mesh.LevelOfDetail;
 import org.osm2world.util.platform.json.JsonImplementationJvm;
 import org.osm2world.util.platform.json.JsonUtil;
 import org.osm2world.util.test.TestFileUtil;
@@ -33,6 +35,9 @@ public class TilesetTreeUtilTest {
 	static {
 		JsonImplementationJvm.register();
 	}
+
+	/** the levels of detail used by most of the tests */
+	private static final List<LevelOfDetail> LODS = List.of(LOD1, LOD3);
 
 	@Test
 	public void testSmallestCommonAncestorSingleTile() {
@@ -126,29 +131,147 @@ public class TilesetTreeUtilTest {
 		smallestCommonAncestor(emptyList());
 	}
 
+
 	@Test
 	public void testGenerateTilesetTreeSingleTile() throws IOException {
 
 		var tile = new TileNumber(15, 17608, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, List.of(tile));
-		generateTilesetTree(dir, List.of(tile));
+		writeTileTilesets(dir, List.of(tile), LODS);
+		generateTilesetTree(dir, List.of(tile), LODS);
 
-		/* the tile is its own smallest common ancestor, so the root refers to it directly */
+		/* the tile is its own smallest common ancestor, so the root refers to its chain of levels of detail */
 
 		TilesetRoot tileset = readTileset(dir.resolve("tileset.json"));
 
 		assertEquals("1.1", tileset.getAsset().getVersion());
-		assertEquals(25.0, tileset.getGeometricError().doubleValue(), 1e-9);
+		assertEquals(treeGeometricError(0), tileset.getGeometricError().doubleValue(), 1e-9);
 
 		TilesetEntry root = tileset.getRoot();
-		assertRegion(root, tile);
-		assertEquals(25.0, root.getGeometricError().doubleValue(), 1e-9);
-		assertEquals("15/17608/11312.tileset.json", root.getContent().getUri());
+		assertRegion(root, LODS, tile);
+		assertEquals(treeGeometricError(0), root.getGeometricError().doubleValue(), 1e-9);
+		assertEquals("index/15/17608/11312.tileset.json", root.getContent().getUri());
 		assertNull(root.getChildren());
 
-		assertFalse(Files.exists(dir.resolve("index")));
+	}
+
+	@Test
+	public void testLodChain() throws IOException {
+
+		var tile = new TileNumber(15, 17608, 11312);
+
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile), LODS);
+		generateTilesetTree(dir, List.of(tile), LODS);
+
+		TilesetRoot chain = readTileset(dir.resolve("index/15/17608/11312.tileset.json"));
+
+		/* the chain starts at the lowest level of detail and refines it with the higher ones */
+
+		TilesetParentEntry lod1 = chain.getRoot();
+		assertEquals("REPLACE", lod1.getRefine());
+		assertEquals(expectedGeometricError(LOD1), lod1.getGeometricError().doubleValue(), 1e-9);
+		assertEquals(expectedGeometricError(LOD1), chain.getGeometricError().doubleValue(), 1e-9);
+		assertEquals("../../../lod1/15/17608/11312.glb", lod1.getContent().getUri());
+
+		assertEquals(1, lod1.getChildren().size());
+		TilesetEntry lod3 = lod1.getChildren().get(0);
+		assertEquals("../../../lod3/15/17608/11312.glb", lod3.getContent().getUri());
+		assertNull(lod3.getChildren());
+
+		/* the highest level of detail is not refined any further */
+
+		assertEquals(0.0, lod3.getGeometricError().doubleValue(), 1e-9);
+
+		/* every level of detail covers the same area, the union of the areas of all levels of detail */
+
+		assertRegion(lod1, LODS, tile);
+		assertRegion(lod3, LODS, tile);
+
+		/* the transform is only set once, because transforms of nested tiles are combined */
+
+		assertNotNull(lod1.getTransform());
+		assertNull(lod3.getChildren());
+		assertArrayEquals(transformOf(tile), lod1.getTransform(), 1e-9);
+
+	}
+
+	@Test
+	public void testLodChainSingleLod() throws IOException {
+
+		var tile = new TileNumber(15, 17608, 11312);
+		List<LevelOfDetail> lods = List.of(LOD3);
+
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile), lods);
+		generateTilesetTree(dir, List.of(tile), lods);
+
+		TilesetRoot chain = readTileset(dir.resolve("index/15/17608/11312.tileset.json"));
+
+		/* with only one level of detail there is nothing to refine, but the geometric error must not be 0.
+		 * A geometric error of 0 would keep the tiles containing this one from ever being refined. */
+
+		assertNull(chain.getRoot().getChildren());
+		assertEquals(expectedGeometricError(LOD3), chain.getRoot().getGeometricError().doubleValue(), 1e-9);
+		assertTrue(readTileset(dir.resolve("tileset.json")).getGeometricError().doubleValue() > 0);
+
+	}
+
+	@Test
+	public void testLodChainIsReachedBeforeItIsRefined() throws IOException {
+
+		var tile = new TileNumber(15, 17608, 11312);
+
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile, new TileNumber(15, 17609, 11312)), LODS);
+		generateTilesetTree(dir, List.of(tile, new TileNumber(15, 17609, 11312)), LODS);
+
+		/* A client always traverses into an external tileset, regardless of its geometric error, but it only
+		 * refines the tile within it once the error is too large. The lowest level of detail is therefore only
+		 * ever shown if its geometric error is smaller than that of the tile of the tree referring to it. */
+
+		TilesetEntry treeEntry = readTileset(dir.resolve("tileset.json")).getRoot().getChildren().get(0);
+		TilesetRoot chain = readTileset(dir.resolve("index/15/17608/11312.tileset.json"));
+
+		assertTrue("the lowest level of detail is shown before it is refined",
+				chain.getRoot().getGeometricError().doubleValue() < treeEntry.getGeometricError().doubleValue());
+
+		/* the same has to hold for every level of detail, whichever of them a tileset happens to contain */
+
+		for (LevelOfDetail lod : LevelOfDetail.values()) {
+			assertTrue("geometric error of " + lod + " is on the scale of levels of detail, not of tree tiles",
+					expectedGeometricError(lod) < TilesetTreeUtil.GEOMETRIC_ERROR_AT_MAX_ZOOM);
+		}
+
+	}
+
+	@Test
+	public void testGenerateTilesetTreePartialLods() throws IOException {
+
+		var tile0 = new TileNumber(15, 17608, 11312);
+		var tile1 = new TileNumber(15, 17609, 11312);
+
+		/* the first tile exists at both levels of detail, the second one only at the higher one */
+
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		writeTileTilesets(dir, List.of(tile0), LODS);
+		writeTileTilesets(dir, List.of(tile1), List.of(LOD3));
+		generateTilesetTree(dir, List.of(tile0, tile1), LODS);
+
+		TilesetRoot chain0 = readTileset(dir.resolve("index/15/17608/11312.tileset.json"));
+		assertEquals(expectedGeometricError(LOD1), chain0.getRoot().getGeometricError().doubleValue(), 1e-9);
+		assertEquals(1, chain0.getRoot().getChildren().size());
+
+		TilesetRoot chain1 = readTileset(dir.resolve("index/15/17609/11312.tileset.json"));
+		assertEquals(expectedGeometricError(LOD3), chain1.getRoot().getGeometricError().doubleValue(), 1e-9);
+		assertNull(chain1.getRoot().getChildren());
+		assertEquals("../../../lod3/15/17609/11312.glb", chain1.getRoot().getContent().getUri());
+
+		/* both tiles are reachable */
+
+		assertEquals(Set.of("lod1/15/17608/11312.glb", "lod3/15/17608/11312.glb", "lod3/15/17609/11312.glb"),
+				walkFromRoot(dir));
 
 	}
 
@@ -159,35 +282,30 @@ public class TilesetTreeUtilTest {
 		var tile1 = new TileNumber(15, 17609, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, List.of(tile0, tile1));
-		generateTilesetTree(dir, List.of(tile0, tile1));
+		writeTileTilesets(dir, List.of(tile0, tile1), LODS);
+		generateTilesetTree(dir, List.of(tile0, tile1), LODS);
 
 		/* both tiles share a parent at zoom 14, so the whole tree fits into a single file */
-
-		assertFalse(Files.exists(dir.resolve("index")));
 
 		TilesetRoot tileset = readTileset(dir.resolve("tileset.json"));
 
 		TilesetEntry root = tileset.getRoot();
-		assertRegion(root, tile0, tile1);
-		assertEquals(50.0, root.getGeometricError().doubleValue(), 1e-9);
-		assertEquals(50.0, tileset.getGeometricError().doubleValue(), 1e-9);
+		assertRegion(root, LODS, tile0, tile1);
 		assertNull(root.getContent());
+
+		/* the geometric error doubles with each level towards the root */
+
+		assertEquals(treeGeometricError(1), root.getGeometricError().doubleValue(), 1e-9);
 
 		/* only the two tiles which exist are present, not all four children of the zoom 14 tile */
 
 		assertEquals(2, root.getChildren().size());
 
-		for (TilesetEntry child : root.getChildren()) {
-			assertEquals(25.0, child.getGeometricError().doubleValue(), 1e-9);
-			assertNull(child.getChildren());
-		}
-
-		assertEquals(List.of("15/17608/11312.tileset.json", "15/17609/11312.tileset.json"),
+		assertEquals(List.of("index/15/17608/11312.tileset.json", "index/15/17609/11312.tileset.json"),
 				root.getChildren().stream().map(it -> it.getContent().getUri()).sorted().toList());
 
-		assertRegion(root.getChildren().get(0), tile0);
-		assertRegion(root.getChildren().get(1), tile1);
+		assertRegion(root.getChildren().get(0), LODS, tile0);
+		assertRegion(root.getChildren().get(1), LODS, tile1);
 
 	}
 
@@ -198,53 +316,41 @@ public class TilesetTreeUtilTest {
 		var tile1 = new TileNumber(15, 17620, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, List.of(tile0, tile1));
-		generateTilesetTree(dir, List.of(tile0, tile1));
+		writeTileTilesets(dir, List.of(tile0, tile1), LODS);
+		generateTilesetTree(dir, List.of(tile0, tile1), LODS);
 
 		/* the smallest common ancestor is at zoom 10, i.e. 5 levels above the tiles.
 		 * With at most 4 levels per file, two files are needed, so the 5 levels are split 3 + 2. */
 
-		TilesetRoot tileset = readTileset(dir.resolve("tileset.json"));
-
-		TilesetEntry entry = tileset.getRoot();
-		assertRegion(entry, tile0, tile1);
-		assertEquals(25.0 * 32, entry.getGeometricError().doubleValue(), 1e-9);
+		TilesetEntry entry = readTileset(dir.resolve("tileset.json")).getRoot();
+		assertRegion(entry, LODS, tile0, tile1);
+		assertEquals(treeGeometricError(5), entry.getGeometricError().doubleValue(), 1e-9);
 
 		/* descend the three levels within the root file.
 		 * The tiles are in different zoom 11 tiles, so the tree branches immediately below the root. */
 
-		assertNull(entry.getContent());
 		assertEquals(2, entry.getChildren().size());
 		entry = entry.getChildren().get(0);
-		assertEquals(25.0 * 16, entry.getGeometricError().doubleValue(), 1e-9);
 
 		for (int zoom = 12; zoom <= 13; zoom++) {
 			assertNull("no content above the split at zoom 13", entry.getContent());
 			assertEquals(1, entry.getChildren().size());
 			entry = entry.getChildren().get(0);
-			assertEquals(25.0 * (1 << (15 - zoom)), entry.getGeometricError().doubleValue(), 1e-9);
 		}
 
 		/* the zoom 13 tile refers to the file continuing the tree as an external tileset */
 
-		var splitTile = new TileNumber(13, 4402, 2828);
-		assertRegion(entry, tile0);
 		assertEquals("index/13/4402/2828.tileset.json", entry.getContent().getUri());
 		assertNull(entry.getChildren());
 
 		/* the referenced file repeats the tile it is referenced from, and leads to the actual tile */
 
 		TilesetRoot subTileset = readTileset(dir.resolve("index/13/4402/2828.tileset.json"));
+		assertEquals(treeGeometricError(2), subTileset.getGeometricError().doubleValue(), 1e-9);
 
-		TilesetEntry subRoot = subTileset.getRoot();
-		assertRegion(subRoot, tile0);
-		assertEquals(100.0, subRoot.getGeometricError().doubleValue(), 1e-9);
-		assertEquals(100.0, subTileset.getGeometricError().doubleValue(), 1e-9);
-
-		assertEquals(1, subRoot.getChildren().size());
-		TilesetEntry leaf = subRoot.getChildren().get(0).getChildren().get(0);
-		assertRegion(leaf, tile0);
-		assertEquals("../../../15/17608/11312.tileset.json", leaf.getContent().getUri());
+		TilesetEntry leaf = subTileset.getRoot().getChildren().get(0).getChildren().get(0);
+		assertRegion(leaf, LODS, tile0);
+		assertEquals("../../15/17608/11312.tileset.json", leaf.getContent().getUri());
 
 		/* the second tile is reached through a file of its own */
 
@@ -258,10 +364,10 @@ public class TilesetTreeUtilTest {
 		var tile = new TileNumber(15, 17608, 11312);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, List.of(tile));
-		generateTilesetTree(dir, List.of(tile, tile));
+		writeTileTilesets(dir, List.of(tile), LODS);
+		generateTilesetTree(dir, List.of(tile, tile), LODS);
 
-		assertEquals("15/17608/11312.tileset.json",
+		assertEquals("index/15/17608/11312.tileset.json",
 				readTileset(dir.resolve("tileset.json")).getRoot().getContent().getUri());
 
 	}
@@ -270,14 +376,20 @@ public class TilesetTreeUtilTest {
 	public void testGenerateTilesetTreeNestedTiles() throws IOException {
 		List<TileNumber> tiles = List.of(new TileNumber(13, 4402, 2828), new TileNumber(15, 17608, 11312));
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, tiles);
-		generateTilesetTree(dir, tiles);
+		writeTileTilesets(dir, tiles, LODS);
+		generateTilesetTree(dir, tiles, LODS);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testGenerateTilesetTreeEmpty() throws IOException {
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		generateTilesetTree(dir, emptyList());
+		generateTilesetTree(dir, emptyList(), LODS);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testGenerateTilesetTreeEmptyLods() throws IOException {
+		Path dir = TestFileUtil.createTempDirectory().toPath();
+		generateTilesetTree(dir, List.of(new TileNumber(15, 17608, 11312)), emptyList());
 	}
 
 	@Test
@@ -287,8 +399,8 @@ public class TilesetTreeUtilTest {
 		var tile1 = new TileNumber(15, 17609, 11313);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, List.of(tile0, tile1));
-		generateTilesetTree(dir, List.of(tile0, tile1));
+		writeTileTilesets(dir, List.of(tile0, tile1), LODS);
+		generateTilesetTree(dir, List.of(tile0, tile1), LODS);
 
 		TilesetEntry root = readTileset(dir.resolve("tileset.json")).getRoot();
 		double[] region = root.getBoundingVolume().getRegion();
@@ -301,10 +413,10 @@ public class TilesetTreeUtilTest {
 				region[1] > toRadians(tileBounds.minlat));
 		assertEquals(toRadians(tileBounds.maxlat), region[3], 1e-12);
 
-		/* the height range is the union of the heights of the two tiles, rather than a fixed range */
+		/* the height range is the union across tiles and levels of detail, rather than a fixed range */
 
 		assertEquals(-1, region[4], 1e-12);
-		assertEquals(Math.max(contentRegion(tile0)[5], contentRegion(tile1)[5]), region[5], 1e-12);
+		assertEquals(Math.max(contentRegion(tile0, LOD3)[5], contentRegion(tile1, LOD3)[5]), region[5], 1e-12);
 		assertTrue("height range is tight", region[5] - region[4] < 100);
 
 	}
@@ -316,25 +428,25 @@ public class TilesetTreeUtilTest {
 		var tile1 = new TileNumber(15, 17609, 11312);
 		var missingTile = new TileNumber(15, 17609, 11313);
 
-		/* the tileset of one of the requested tiles is missing, e.g. because the tile failed to render */
+		/* one of the requested tiles does not exist at any level of detail, e.g. because it failed to render */
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, List.of(tile0, tile1));
-		generateTilesetTree(dir, List.of(tile0, tile1, missingTile));
+		writeTileTilesets(dir, List.of(tile0, tile1), LODS);
+		generateTilesetTree(dir, List.of(tile0, tile1, missingTile), LODS);
 
 		/* the missing tile is left out of the tree instead of being referenced but unavailable */
 
-		var reachedTiles = new HashSet<TileNumber>();
-		walk(dir.resolve("tileset.json"), dir, null, reachedTiles);
-
-		assertEquals(Set.of(tile0, tile1), reachedTiles);
+		assertEquals(Set.of(
+				"lod1/15/17608/11312.glb", "lod3/15/17608/11312.glb",
+				"lod1/15/17609/11312.glb", "lod3/15/17609/11312.glb"),
+				walkFromRoot(dir));
 
 	}
 
 	@Test(expected = IOException.class)
 	public void testGenerateTilesetTreeNoTilesExist() throws IOException {
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		generateTilesetTree(dir, List.of(new TileNumber(15, 17608, 11312)));
+		generateTilesetTree(dir, List.of(new TileNumber(15, 17608, 11312)), LODS);
 	}
 
 	@Test
@@ -346,59 +458,71 @@ public class TilesetTreeUtilTest {
 		assertTrue("test covers several tiles", tiles.size() > 20);
 
 		Path dir = TestFileUtil.createTempDirectory().toPath();
-		writeTileTilesets(dir, tiles);
-		generateTilesetTree(dir, tiles);
+		writeTileTilesets(dir, tiles, LODS);
+		generateTilesetTree(dir, tiles, LODS);
 
-		/* walking the tree from the entry point must reach every tile exactly once,
-		 * and bounding volumes and geometric errors must be consistent along the way */
+		/* walking the tree from the entry point must reach the content of every tile at every level of detail
+		 * exactly once, and bounding volumes and geometric errors must be consistent along the way */
 
-		var reachedTiles = new HashSet<TileNumber>();
-		walk(dir.resolve("tileset.json"), dir, null, reachedTiles);
+		Set<String> expected = new HashSet<>();
+		for (TileNumber tile : tiles) {
+			for (LevelOfDetail lod : LODS) {
+				expected.add("lod" + lod.ordinal() + "/" + tile.zoom + "/" + tile.x + "/" + tile.y + ".glb");
+			}
+		}
 
-		assertEquals(Set.copyOf(tiles), reachedTiles);
+		assertEquals(expected, walkFromRoot(dir));
 
 	}
 
-	/** recursively checks a tileset.json and everything it refers to, collecting the tiles it makes reachable */
-	private static void walk(Path file, Path dir, @Nullable TilesetEntry parent, Set<TileNumber> reachedTiles)
+	/**
+	 * walks the entire tileset from its entry point, checking its consistency along the way,
+	 * and returns the paths of all content files it makes reachable
+	 */
+	private static Set<String> walkFromRoot(Path dir) throws IOException {
+		var reachedContent = new HashSet<String>();
+		walk(dir.resolve("tileset.json"), dir, null, reachedContent);
+		return reachedContent;
+	}
+
+	/** recursively checks a tileset.json and everything it refers to, collecting the content it makes reachable */
+	private static void walk(Path file, Path dir, @Nullable TilesetEntry parent, Set<String> reachedContent)
 			throws IOException {
 
 		TilesetRoot tileset = readTileset(file);
 		assertEquals("1.1", tileset.getAsset().getVersion());
+		assertEquals("REPLACE", tileset.getRoot().getRefine());
 
 		/* an external tileset must match the entry referring to it */
 
 		if (parent != null) {
 			assertArrayEquals(parent.getBoundingVolume().getRegion(),
 					tileset.getRoot().getBoundingVolume().getRegion(), 1e-12);
-			assertEquals(parent.getGeometricError().doubleValue(),
-					tileset.getRoot().getGeometricError().doubleValue(), 1e-9);
+			assertTrue("geometric error does not increase across an external tileset",
+					tileset.getRoot().getGeometricError().doubleValue()
+							<= parent.getGeometricError().doubleValue());
 		}
 
-		walkEntry(tileset.getRoot(), file.getParent(), dir, reachedTiles);
+		walkEntry(tileset.getRoot(), file.getParent(), dir, reachedContent);
 
 	}
 
-	private static void walkEntry(TilesetEntry entry, Path fileDir, Path dir, Set<TileNumber> reachedTiles)
+	private static void walkEntry(TilesetEntry entry, Path fileDir, Path dir, Set<String> reachedContent)
 			throws IOException {
 
 		if (entry.getContent() != null) {
 
 			Path target = fileDir.resolve(entry.getContent().getUri()).normalize();
+			assertTrue("content exists: " + target, Files.isRegularFile(target));
 			assertTrue("content is within the tileset directory: " + target, target.startsWith(dir));
 
 			String relativePath = dir.relativize(target).toString().replace('\\', '/');
 
-			if (relativePath.startsWith("index/")) {
-				walk(target, dir, entry, reachedTiles);
+			if (relativePath.endsWith(".tileset.json")) {
+				walk(target, dir, entry, reachedContent);
 			} else {
-				/* the per-tile tileset.json, which is written by TilesetOutput rather than by this class */
-				var m = Pattern.compile("(\\d+)/(\\d+)/(\\d+)\\.tileset\\.json").matcher(relativePath);
-				assertTrue("content path refers to a tile: " + relativePath, m.matches());
-				var tile = new TileNumber(Integer.parseInt(m.group(1)),
-						Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3)));
-				assertRegion(entry, tile);
-				assertTrue("each tile is reachable only once: " + tile, reachedTiles.add(tile));
+				assertTrue("each content file is reachable only once: " + relativePath,
+						reachedContent.add(relativePath));
 			}
 
 		}
@@ -413,9 +537,11 @@ public class TilesetTreeUtilTest {
 
 				assertTrue(childRegion[0] >= parentRegion[0] && childRegion[1] >= parentRegion[1]);
 				assertTrue(childRegion[2] <= parentRegion[2] && childRegion[3] <= parentRegion[3]);
-				assertTrue(child.getGeometricError().doubleValue() < entry.getGeometricError().doubleValue());
+				assertTrue(childRegion[4] >= parentRegion[4] && childRegion[5] <= parentRegion[5]);
+				assertTrue("geometric error decreases towards the leaves",
+						child.getGeometricError().doubleValue() < entry.getGeometricError().doubleValue());
 
-				walkEntry(child, fileDir, dir, reachedTiles);
+				walkEntry(child, fileDir, dir, reachedContent);
 
 			}
 		}
@@ -423,24 +549,26 @@ public class TilesetTreeUtilTest {
 	}
 
 	/**
-	 * asserts that the entry's bounding volume is the union of the bounds of the given tiles' content, in radians.
-	 * Assumes the content of each tile has been written with {@link #writeTileTilesets(Path, List)}.
+	 * asserts that the entry's bounding volume is the union of the bounds of the given tiles' content
+	 * across all the given levels of detail, in radians.
 	 */
-	private static void assertRegion(TilesetEntry entry, TileNumber... tiles) {
+	private static void assertRegion(TilesetEntry entry, List<LevelOfDetail> lods, TileNumber... tiles) {
 
 		double[] expected = null;
 
 		for (TileNumber tile : tiles) {
-			double[] tileRegion = contentRegion(tile);
-			if (expected == null) {
-				expected = tileRegion;
-			} else {
-				expected[0] = Math.min(expected[0], tileRegion[0]);
-				expected[1] = Math.min(expected[1], tileRegion[1]);
-				expected[2] = Math.max(expected[2], tileRegion[2]);
-				expected[3] = Math.max(expected[3], tileRegion[3]);
-				expected[4] = Math.min(expected[4], tileRegion[4]);
-				expected[5] = Math.max(expected[5], tileRegion[5]);
+			for (LevelOfDetail lod : lods) {
+				double[] region = contentRegion(tile, lod);
+				if (expected == null) {
+					expected = region;
+				} else {
+					expected[0] = Math.min(expected[0], region[0]);
+					expected[1] = Math.min(expected[1], region[1]);
+					expected[2] = Math.max(expected[2], region[2]);
+					expected[3] = Math.max(expected[3], region[3]);
+					expected[4] = Math.min(expected[4], region[4]);
+					expected[5] = Math.max(expected[5], region[5]);
+				}
 			}
 		}
 
@@ -448,52 +576,78 @@ public class TilesetTreeUtilTest {
 
 	}
 
+	private static double expectedGeometricError(LevelOfDetail lod) {
+		return TilesetTreeUtil.GEOMETRIC_ERROR_BY_LOD[lod.ordinal()];
+	}
+
+	/** the geometric error expected for a tile of the tree, the given number of levels above the deepest tiles */
+	private static double treeGeometricError(int levelsAboveMaxZoom) {
+		return TilesetTreeUtil.GEOMETRIC_ERROR_AT_MAX_ZOOM * (1 << levelsAboveMaxZoom);
+	}
+
 	/**
-	 * the bounding volume which {@link #writeTileTilesets(Path, List)} writes for a tile.
-	 * The content covers the northern half of the tile, so that it can be told apart from the full tile bounds,
-	 * and its height range differs from tile to tile.
+	 * the bounding volume which {@link #writeTileTilesets(Path, List, List)} writes for a tile.
+	 * The content covers only part of the tile, so that it can be told apart from the full tile bounds,
+	 * and both the covered part and the height range grow with the level of detail.
 	 */
-	private static double[] contentRegion(TileNumber tile) {
+	private static double[] contentRegion(TileNumber tile, LevelOfDetail lod) {
 
 		LatLonBounds bounds = tile.latLonBounds();
-		double midLat = (bounds.minlat + bounds.maxlat) / 2;
+		double southFraction = 0.5 - 0.1 * lod.ordinal();
+		double south = bounds.minlat + (bounds.maxlat - bounds.minlat) * southFraction;
 
 		return new double[] {
 				toRadians(bounds.minlon),
-				toRadians(midLat),
+				toRadians(south),
 				toRadians(bounds.maxlon),
 				toRadians(bounds.maxlat),
 				-1,
-				10 + tile.y % 7};
+				10 + tile.y % 7 + lod.ordinal()};
 
 	}
 
-	/** writes the tileset.json of each individual tile, as {@link TilesetOutput} would */
-	private static void writeTileTilesets(Path dir, List<TileNumber> tiles) throws IOException {
+	/** the transform which {@link #writeTileTilesets(Path, List, List)} writes for a tile */
+	private static double[] transformOf(TileNumber tile) {
+		double[] result = new double[16];
+		for (int i = 0; i < 16; i++) {
+			result[i] = i + tile.x % 3;
+		}
+		return result;
+	}
+
+	/** writes the tileset.json and content of each individual tile, as {@link TilesetOutput} would */
+	private static void writeTileTilesets(Path dir, List<TileNumber> tiles, List<LevelOfDetail> lods)
+			throws IOException {
 
 		for (TileNumber tile : tiles) {
+			for (LevelOfDetail lod : lods) {
 
-			var root = new TilesetParentEntry();
-			root.setGeometricError(25);
-			root.setBoundingVolume(contentRegion(tile));
-			root.setContent(tile.y + ".glb");
+				var root = new TilesetParentEntry();
+				root.setGeometricError(25);
+				root.setBoundingVolume(contentRegion(tile, lod));
+				root.setTransform(transformOf(tile));
+				root.setContent(tile.y + ".glb");
 
-			var tileset = new TilesetRoot();
-			tileset.setAsset(new TilesetAsset());
-			tileset.setGeometricError(25);
-			tileset.setRoot(root);
+				var tileset = new TilesetRoot();
+				tileset.setAsset(new TilesetAsset());
+				tileset.setGeometricError(25);
+				tileset.setRoot(root);
 
-			Path file = dir
-					.resolve(Integer.toString(tile.zoom))
-					.resolve(Integer.toString(tile.x))
-					.resolve(tile.y + ".tileset.json");
+				Path tileDir = dir
+						.resolve("lod" + lod.ordinal())
+						.resolve(Integer.toString(tile.zoom))
+						.resolve(Integer.toString(tile.x));
 
-			Files.createDirectories(file.getParent());
+				Files.createDirectories(tileDir);
 
-			try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-				JsonUtil.toJson(tileset, writer, false);
+				try (var writer = Files.newBufferedWriter(tileDir.resolve(tile.y + ".tileset.json"),
+						StandardCharsets.UTF_8)) {
+					JsonUtil.toJson(tileset, writer, false);
+				}
+
+				Files.write(tileDir.resolve(tile.y + ".glb"), new byte[] {'g', 'l', 'T', 'F'});
+
 			}
-
 		}
 
 	}
