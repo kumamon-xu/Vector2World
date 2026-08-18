@@ -420,6 +420,21 @@ public class O2WConfig {
 	}
 
 	/**
+	 * The case-insensitive names of the glTF extensions which output files are allowed to require.
+	 * If this is unset, a command-specific set of defaults will be used.
+	 */
+	public List<String> gltfExtensionWhitelist() {
+		return getList("gltfExtensionWhitelist");
+	}
+
+	/**
+	 * whether {@link #gltfExtensionWhitelist()} permits the use of a particular glTF extension
+	 */
+	public boolean gltfExtensionWhitelistAllows(String extensionName) {
+		return gltfExtensionWhitelist().stream().anyMatch(extensionName::equalsIgnoreCase);
+	}
+
+	/**
 	 * whether underground {@link org.osm2world.world.data.WorldObject}s should be rendered
 	 */
 	public boolean renderUnderground() {

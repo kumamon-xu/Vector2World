@@ -61,6 +61,9 @@ import com.google.common.collect.Multimap;
  */
 public class GltfOutput extends AbstractOutput {
 
+	/** name of the glTF extension which allows vertex attributes to use integer components */
+	public static final String KHR_MESH_QUANTIZATION = "KHR_mesh_quantization";
+
 	private final File outputFile;
 	private final GltfFlavor flavor;
 	private final Compression compression;
@@ -76,6 +79,9 @@ public class GltfOutput extends AbstractOutput {
 
 	/** data for the glb BIN chunk, only used if {@link #flavor} is {@link GltfFlavor#GLB} */
 	private final List<ByteBuffer> binChunkData = new ArrayList<>();
+
+	/** how to quantize vertex positions, or null if positions and normals are written as floats */
+	private @Nullable PositionQuantization positionQuantization = null;
 
 	/**
 	 * Sets up an output to write a scene as glTF.
@@ -257,8 +263,15 @@ public class GltfOutput extends AbstractOutput {
 		/* put geometry into buffers and set up accessors */
 
 		primitive.indices = createIndexAccessor(vertexIndices, uniquePositions.size());
-		primitive.attributes.put("POSITION", createAccessor(3, uniquePositions));
-		primitive.attributes.put("NORMAL", createAccessor(3, uniqueNormals));
+
+		if (positionQuantization != null) {
+			primitive.attributes.put("POSITION",
+					createQuantizedPositionAccessor(uniquePositions, positionQuantization));
+			primitive.attributes.put("NORMAL", createQuantizedNormalAccessor(uniqueNormals));
+		} else {
+			primitive.attributes.put("POSITION", createAccessor(3, uniquePositions));
+			primitive.attributes.put("NORMAL", createAccessor(3, uniqueNormals));
+		}
 
 		if (uniqueTexCoords != null) {
 			primitive.attributes.put("TEXCOORD_0", createAccessor(2, uniqueTexCoords));
@@ -342,6 +355,10 @@ public class GltfOutput extends AbstractOutput {
 
 	}
 
+	/**
+	 * creates a float accessor.
+	 * Can be used for any type of data (positions, normals, texture coordinates, or colors).
+	 */
 	private int createAccessor(int numComponents, List<? extends Vector3D> vs) {
 
 		String type = switch (numComponents) {
@@ -383,7 +400,140 @@ public class GltfOutput extends AbstractOutput {
 
 	}
 
+	/**
+	 * parameters for representing vertex positions as 16-bit integers, see {@link #KHR_MESH_QUANTIZATION}.
+	 * A quantized position q stands for the original position <code>offset + q * scale</code>,
+	 * so the same offset and scale are applied to the scene's root node to undo the quantization.
+	 */
+	private record PositionQuantization(float[] offset, float scale) {
+
+		private static final int MAX_VALUE = Short.MAX_VALUE;
+
+		/** returns the quantization to use for a set of vertices */
+		public static @Nullable PositionQuantization forVertices(Collection<VectorXYZ> vertices) {
+
+			if (vertices.isEmpty()) return null;
+
+			var min = new float[] {Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY};
+			var max = new float[] {Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY};
+
+			for (VectorXYZ v : vertices) {
+				float[] components = components(3, v);
+				for (int i = 0; i < 3; i++) {
+					min[i] = Math.min(min[i], components[i]);
+					max[i] = Math.max(max[i], components[i]);
+				}
+			}
+
+			float[] offset = new float[3];
+			float largestExtent = 0;
+
+			for (int i = 0; i < 3; i++) {
+				offset[i] = (min[i] + max[i]) / 2;
+				largestExtent = Math.max(largestExtent, max[i] - min[i]);
+			}
+
+			/* all axes share a scale: a non-uniform scale on the root node would require renderers to
+			 * correct the normals, and the precision gained on the shorter axes is not needed anyway */
+
+			float scale = largestExtent > 0 ? largestExtent / (2 * MAX_VALUE) : 1;
+
+			return new PositionQuantization(offset, scale);
+
+		}
+
+		public short quantize(float value, int axis) {
+			int result = Math.round((value - offset[axis]) / scale);
+			return (short) Math.max(-MAX_VALUE, Math.min(MAX_VALUE, result));
+		}
+
+		public float[] scaleXYZ() {
+			return new float[] {scale, scale, scale};
+		}
+
+	}
+
+	/**
+	 * creates a POSITION accessor with 16-bit integer components instead of floats,
+	 * which requires the {@link #KHR_MESH_QUANTIZATION} extension
+	 */
+	private int createQuantizedPositionAccessor(List<VectorXYZ> vs, PositionQuantization quantization) {
+
+		int byteStride = 8; // 3 short components, padded to the 4 byte alignment required for vertex attributes
+
+		var min = new short[] {Short.MAX_VALUE, Short.MAX_VALUE, Short.MAX_VALUE};
+		var max = new short[] {Short.MIN_VALUE, Short.MIN_VALUE, Short.MIN_VALUE};
+
+		ByteBuffer byteBuffer = ByteBuffer.allocate(byteStride * vs.size());
+		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+		for (VectorXYZ v : vs) {
+
+			float[] components = components(3, v);
+
+			for (int i = 0; i < 3; i++) {
+				short component = quantization.quantize(components[i], i);
+				byteBuffer.putShort(component);
+				min[i] = (short) Math.min(min[i], component);
+				max[i] = (short) Math.max(max[i], component);
+			}
+
+			byteBuffer.putShort((short) 0); // padding
+
+		}
+
+		var accessor = new GltfAccessor(GltfAccessor.TYPE_SHORT, vs.size(), "VEC3");
+		accessor.bufferView = createBufferView(byteBuffer, GltfBufferView.TARGET_ARRAY_BUFFER, byteStride);
+		accessor.min = new float[] {min[0], min[1], min[2]};
+		accessor.max = new float[] {max[0], max[1], max[2]};
+		gltf.accessors.add(accessor);
+
+		return gltf.accessors.size() - 1;
+
+	}
+
+	/**
+	 * creates a NORMAL accessor with normalized 8-bit integer components instead of floats,
+	 * which requires the {@link #KHR_MESH_QUANTIZATION} extension
+	 */
+	private int createQuantizedNormalAccessor(List<VectorXYZ> vs) {
+
+		int byteStride = 4; // 3 byte components, padded to the 4 byte alignment required for vertex attributes
+
+		ByteBuffer byteBuffer = ByteBuffer.allocate(byteStride * vs.size());
+		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+		for (VectorXYZ v : vs) {
+
+			float[] components = components(3, v);
+
+			for (int i = 0; i < 3; i++) {
+				// a normalized byte c stands for the value max(c / 127, -1)
+				byteBuffer.put((byte) Math.max(-127, Math.min(127, Math.round(components[i] * 127))));
+			}
+
+			byteBuffer.put((byte) 0); // padding
+
+		}
+
+		var accessor = new GltfAccessor(GltfAccessor.TYPE_BYTE, vs.size(), "VEC3");
+		accessor.normalized = true;
+		accessor.bufferView = createBufferView(byteBuffer, GltfBufferView.TARGET_ARRAY_BUFFER, byteStride);
+		gltf.accessors.add(accessor);
+
+		return gltf.accessors.size() - 1;
+
+	}
+
 	private int createBufferView(ByteBuffer byteBuffer, @Nullable Integer target) {
+		return createBufferView(byteBuffer, target, null);
+	}
+
+	/**
+	 * @param byteStride  distance between the elements of the buffer view in bytes,
+	 *                    null if they are tightly packed
+	 */
+	private int createBufferView(ByteBuffer byteBuffer, @Nullable Integer target, @Nullable Integer byteStride) {
 
 		GltfBufferView view = switch (flavor) {
 			case GLTF -> {
@@ -409,6 +559,7 @@ public class GltfOutput extends AbstractOutput {
 		};
 
 		view.target = target;
+		view.byteStride = byteStride;
 
 		gltf.bufferViews.add(view);
 		return gltf.bufferViews.size() - 1;
@@ -581,6 +732,15 @@ public class GltfOutput extends AbstractOutput {
 
 		Multimap<ElementMetadata, MeshWithMetadata> meshesByMetadata = processedMeshStore.meshesByElementMetadata();
 
+		/* decide whether to quantize the geometry. This makes the file smaller, but slightly less precise,
+		 * so it is limited to the levels of detail which are intended to be viewed from a distance. */
+
+		if (config.gltfExtensionWhitelistAllows(KHR_MESH_QUANTIZATION) && lod.ordinal() <= LevelOfDetail.LOD1.ordinal()) {
+			positionQuantization = PositionQuantization.forVertices(processedMeshStore.meshes().stream()
+					.flatMap(it -> it.geometry.asTriangles().vertices().stream())
+					.toList());
+		}
+
 		/* define metadata for the scene and root node */
 
 		var sceneMetadata = new HashMap<String, Object>();
@@ -594,6 +754,11 @@ public class GltfOutput extends AbstractOutput {
 		gltf.asset = new GltfAsset();
 		gltf.asset.version = "2.0";
 		gltf.asset.generator = "OSM2World " + GlobalValues.VERSION_STRING;
+
+		if (positionQuantization != null) {
+			gltf.extensionsUsed = List.of(KHR_MESH_QUANTIZATION);
+			gltf.extensionsRequired = List.of(KHR_MESH_QUANTIZATION);
+		}
 
 		gltf.scene = 0;
 		gltf.scenes = List.of(new GltfScene());
@@ -617,6 +782,12 @@ public class GltfOutput extends AbstractOutput {
 		rootNode.name = "OSM2World scene";
 		rootNode.extras = sceneMetadata;
 		gltf.nodes.add(rootNode);
+
+		if (positionQuantization != null) {
+			// undo the quantization of the vertex positions for the entire scene
+			rootNode.translation = positionQuantization.offset();
+			rootNode.scale = positionQuantization.scaleXYZ();
+		}
 
 		rootNode.children = new ArrayList<>();
 

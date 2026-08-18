@@ -197,6 +197,10 @@ public class TilesetCommand implements Callable<Integer> {
 						if (!config.containsKey("clipToBounds")) {
 							config = config.withProperty("clipToBounds", "true");
 						}
+						if (!config.containsKey("gltfExtensionWhitelist")) {
+							// 3D Tiles clients can be expected to support this, and tile size matters a lot here
+							config = config.withProperty("gltfExtensionWhitelist", GltfOutput.KHR_MESH_QUANTIZATION);
+						}
 
 						/* render the scene */
 

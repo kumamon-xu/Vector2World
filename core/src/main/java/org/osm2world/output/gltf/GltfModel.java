@@ -289,7 +289,7 @@ public class GltfModel implements Model {
 			for (int j = 0; j < numComponents; j++) {
 				components.add(readComponent(byteBuffer, accessor.componentType, normalized));
 			}
-			if (bufferView.byteStride != null && i + 1 < totalComponents && (i + 1) % numComponents == 0) {
+			if (bufferView.byteStride != null && i + 1 < accessor.count) {
 				byteBuffer.position(previousPosition + byteStride);
 			}
 		}
@@ -344,12 +344,11 @@ public class GltfModel implements Model {
 	}
 
 	static float readComponent(ByteBuffer b, int componentType, boolean normalized) {
-		if (normalized) throw new UnsupportedOperationException("Unsupported normalized option present");
 		return switch (componentType) {
-			case GltfAccessor.TYPE_BYTE -> b.get();
-			case GltfAccessor.TYPE_UNSIGNED_BYTE -> b.get() & 0xff;
-			case GltfAccessor.TYPE_SHORT -> b.getShort();
-			case GltfAccessor.TYPE_UNSIGNED_SHORT -> b.getShort() & 0xffff;
+			case GltfAccessor.TYPE_BYTE -> normalized ? Math.max(b.get() / 127f, -1) : b.get();
+			case GltfAccessor.TYPE_UNSIGNED_BYTE -> normalized ? (b.get() & 0xff) / 255f : b.get() & 0xff;
+			case GltfAccessor.TYPE_SHORT -> normalized ? Math.max(b.getShort() / 32767f, -1) : b.getShort();
+			case GltfAccessor.TYPE_UNSIGNED_SHORT -> normalized ? (b.getShort() & 0xffff) / 65535f : b.getShort() & 0xffff;
 			case GltfAccessor.TYPE_UNSIGNED_INT -> b.getInt() & 0xffffffffL;
 			case GltfAccessor.TYPE_FLOAT -> b.getFloat();
 			default -> throw new UnsupportedOperationException("Unsupported component type " + componentType);
