@@ -54,7 +54,7 @@ public final class TilesetTreeUtil {
 	 * <p>The tiles of the tree have no content of their own, so this value does not describe an actual geometric
 	 * deviation. Instead, it controls the distance from which the tiles of the tileset are loaded.
 	 */
-	static final double GEOMETRIC_ERROR_AT_MAX_ZOOM = 50;
+	static final double GEOMETRIC_ERROR_AT_MAX_ZOOM = 100;
 
 	/**
 	 * the geometric error (in meters) of each {@link LevelOfDetail}, indexed by its ordinal.
@@ -62,7 +62,7 @@ public final class TilesetTreeUtil {
 	 * They all need to be smaller than {@link #GEOMETRIC_ERROR_AT_MAX_ZOOM}:
 	 * a tile always needs a larger geometric error than the tiles below it.
 	 */
-	static final double[] GEOMETRIC_ERROR_BY_LOD = {32, 16, 6, 2, 1};
+	static final double[] GEOMETRIC_ERROR_BY_LOD = {32, 16, 8, 4, 2};
 
 	/**
 	 * maximum number of levels of subdivision described by a single tileset.json file.
