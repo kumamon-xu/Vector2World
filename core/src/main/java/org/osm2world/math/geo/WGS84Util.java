@@ -18,6 +18,12 @@ public final class WGS84Util {
 	/** square of the ellipsoid's first eccentricity, i.e. 1 - (b/a)² */
 	private static final double ECCENTRICITY_SQ = (2 - 1 / INVERSE_FLATTENING) / INVERSE_FLATTENING;
 
+	/** semi-minor axis (polar radius) of the WGS84 ellipsoid in meters */
+	private static final double SEMI_MINOR_AXIS = SEMI_MAJOR_AXIS * (1 - 1 / INVERSE_FLATTENING);
+
+	/** square of the ellipsoid's second eccentricity, i.e. (a/b)² - 1 */
+	private static final double SECOND_ECCENTRICITY_SQ = ECCENTRICITY_SQ / (1 - ECCENTRICITY_SQ);
+
 	private WGS84Util() {}
 
 	/**
@@ -42,6 +48,60 @@ public final class WGS84Util {
 				(n + ele) * cosLat * cosLon,
 				(n + ele) * cosLat * sinLon,
 				(n * (1 - ECCENTRICITY_SQ) + ele) * sinLat);
+
+	}
+
+	/**
+	 * converts ECEF coordinates to geodetic coordinates, the inverse of {@link #ecefFromLatLon(LatLon, double)}.
+	 * Uses Bowring's method, which is accurate to well below a millimeter for points near the ellipsoid's surface.
+	 * The height above the ellipsoid is not part of the result.
+	 *
+	 * @param pos  ECEF coordinates, with the axes as documented for {@link #ecefFromLatLon(LatLon, double)}
+	 */
+	static LatLon latLonFromEcef(VectorXYZ pos) {
+
+		/* distance from the polar axis */
+		double p = sqrt(pos.x * pos.x + pos.y * pos.y);
+
+		/* parametric latitude of the point's projection onto the ellipsoid */
+		double theta = atan2(pos.z * SEMI_MAJOR_AXIS, p * SEMI_MINOR_AXIS);
+		double sinTheta = sin(theta), cosTheta = cos(theta);
+
+		double lat = atan2(
+				pos.z + SECOND_ECCENTRICITY_SQ * SEMI_MINOR_AXIS * sinTheta * sinTheta * sinTheta,
+				p - ECCENTRICITY_SQ * SEMI_MAJOR_AXIS * cosTheta * cosTheta * cosTheta);
+
+		return new LatLon(toDegrees(lat), toDegrees(atan2(pos.y, pos.x)));
+
+	}
+
+	/**
+	 * intersects a ray with the surface of the ellipsoid.
+	 *
+	 * @param start  starting point of the ray in ECEF coordinates, on or above the surface
+	 * @param direction  unit vector for the ray's direction, pointing towards the surface
+	 *
+	 * @return  the intersection closest to the ray's starting point, or, if the ray misses the ellipsoid,
+	 *          the point on the ray which comes closest to the surface
+	 */
+	static VectorXYZ intersectWithSurface(VectorXYZ start, VectorXYZ direction) {
+
+		double aSq = SEMI_MAJOR_AXIS * SEMI_MAJOR_AXIS;
+		double bSq = SEMI_MINOR_AXIS * SEMI_MINOR_AXIS;
+
+		/* insert the ray into the ellipsoid's equation, resulting in a quadratic equation for the ray parameter */
+
+		double a = (direction.x * direction.x + direction.y * direction.y) / aSq + direction.z * direction.z / bSq;
+		double b = 2 * ((start.x * direction.x + start.y * direction.y) / aSq + start.z * direction.z / bSq);
+		double c = (start.x * start.x + start.y * start.y) / aSq + start.z * start.z / bSq - 1;
+
+		double discriminant = b * b - 4 * a * c;
+
+		double t = (discriminant > 0)
+				? (-b - sqrt(discriminant)) / (2 * a)
+				: -b / (2 * a);
+
+		return start.add(direction.mult(t));
 
 	}
 
