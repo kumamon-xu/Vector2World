@@ -201,11 +201,6 @@ public class TilesetCommand implements Callable<Integer> {
 							// 3D Tiles clients can be expected to support this, and tile size matters a lot here
 							config = config.withProperty("gltfExtensionWhitelist", GltfOutput.KHR_MESH_QUANTIZATION);
 						}
-						if (!config.containsKey("mapProjection")) {
-							/* tile contents are placed on the globe with a WGS84 east-north-up transform.
-							 * Only a matching projection keeps neighboring tiles free of gaps and overlaps. */
-							config = config.withProperty("mapProjection", "TangentPlaneMapProjection");
-						}
 
 						/* render the scene */
 

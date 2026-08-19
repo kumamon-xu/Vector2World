@@ -17,11 +17,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import org.osm2world.map_elevation.creation.*;
-import org.osm2world.math.geo.LatLon;
-import org.osm2world.math.geo.MapProjection;
-import org.osm2world.math.geo.MetricMapProjection;
-import org.osm2world.math.geo.OrthographicAzimuthalMapProjection;
-import org.osm2world.math.geo.TangentPlaneMapProjection;
+import org.osm2world.math.geo.*;
 import org.osm2world.scene.color.Color;
 import org.osm2world.scene.mesh.LevelOfDetail;
 import org.osm2world.style.PropertyStyle;
@@ -507,9 +503,9 @@ public class O2WConfig {
 	 */
 	public Function<LatLon, ? extends MapProjection> mapProjection() {
 		return switch (getString("mapProjection", "")) {
+			case "MetricMapProjection" -> MetricMapProjection::new;
 			case "OrthographicAzimuthalMapProjection" -> OrthographicAzimuthalMapProjection::new;
-			case "TangentPlaneMapProjection" -> TangentPlaneMapProjection::new;
-			default -> MetricMapProjection::new;
+			default -> TangentPlaneMapProjection::new;
 		};
 	}
 
