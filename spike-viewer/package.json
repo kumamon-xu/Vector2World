@@ -1,18 +1,40 @@
 {
-  "name": "vector2world-m0-viewer",
+  "name": "vector2world-workbench",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
-    "cesium": "1.144.0"
+    "@ant-design/icons": "^6.3.2",
+    "antd": "^6.6.1",
+    "cesium": "1.144.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "axe-core": "^4.13.0",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
+    "jsdom": "^30.0.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
     "vite": "8.2.2",
-    "vite-plugin-static-copy": "4.1.1"
+    "vite-plugin-static-copy": "4.1.1",
+    "vitest": "^4.1.11"
   }
 }

@@ -82,7 +82,10 @@ public final class GenerationJobController {
 				}
 			} catch (IOException exception) {
 				job.unsubscribe(holder[0]);
-				emitter.completeWithError(exception);
+				// A browser refresh, navigation or EventSource close is a normal SSE
+				// disconnect. Completing quietly avoids routing an already committed
+				// text/event-stream response through the JSON exception handler.
+				emitter.complete();
 			}
 		};
 		emitter.onCompletion(() -> job.unsubscribe(holder[0]));

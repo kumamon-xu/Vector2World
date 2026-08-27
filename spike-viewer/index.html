@@ -4,25 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="data:," />
-    <title>Vector2World Cesium 验证</title>
+    <meta name="description" content="将 GeoJSON 或 Shapefile 建筑面转换为可验证、可下载的 3D Tiles。" />
+    <title>Vector2World 建模工作台</title>
   </head>
   <body>
-    <div id="cesiumContainer"></div>
-    <aside class="panel">
-      <h1>Vector2World Cesium 验证</h1>
-      <label>
-        数据源
-        <select id="datasetSelect">
-          <option value="geojson">GeoJSON</option>
-          <option value="shp">Shapefile</option>
-		  <option value="m2">M2 Model Preview</option>
-		  <option value="m3">M3 Generation Job</option>
-        </select>
-      </label>
-      <p id="status" role="status">正在初始化 Cesium…</p>
-      <pre id="details"></pre>
-      <p class="notice">轮廓与高度来自源数据；屋顶、楼层和材质为程序化简模。</p>
-    </aside>
-    <script type="module" src="/src/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
