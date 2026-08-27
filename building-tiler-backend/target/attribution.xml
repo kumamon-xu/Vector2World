@@ -43,7 +43,7 @@
          <name>Apache Commons Lang</name>
          <groupId>org.apache.commons</groupId>
          <artifactId>commons-lang3</artifactId>
-         <version>3.18.0</version>
+         <version>3.17.0</version>
          <projectUrl>https://commons.apache.org/proper/commons-lang/</projectUrl>
          <type>jar</type>
          <licenses>
@@ -75,6 +75,21 @@
          <artifactId>commons-text</artifactId>
          <version>1.13.0</version>
          <projectUrl>https://commons.apache.org/proper/commons-text</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache-2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Apache Log4j API</name>
+         <groupId>org.apache.logging.log4j</groupId>
+         <artifactId>log4j-api</artifactId>
+         <version>2.24.3</version>
+         <projectUrl>https://logging.apache.org/log4j/2.x/log4j/log4j-api/</projectUrl>
          <type>jar</type>
          <licenses>
             <license>
@@ -133,7 +148,7 @@
          <name>Commons Pool</name>
          <groupId>commons-pool</groupId>
          <artifactId>commons-pool</artifactId>
-         <version>1.5.4</version>
+         <version>1.6</version>
          <projectUrl>http://commons.apache.org/pool/</projectUrl>
          <type>jar</type>
          <licenses>
@@ -410,7 +425,7 @@
          <name>HyperSQL Database</name>
          <groupId>org.hsqldb</groupId>
          <artifactId>hsqldb</artifactId>
-         <version>2.7.4</version>
+         <version>2.7.3</version>
          <projectUrl>http://hsqldb.org</projectUrl>
          <type>jar</type>
          <licenses>
@@ -437,16 +452,46 @@
          <downloadUrls/>
       </dependency>
       <dependency>
-         <name>Jackson-annotations</name>
-         <groupId>com.fasterxml.jackson.core</groupId>
-         <artifactId>jackson-annotations</artifactId>
-         <version>3.0-rc5</version>
-         <projectUrl>http://github.com/FasterXML/jackson</projectUrl>
+         <name>Jackson datatype: jdk8</name>
+         <groupId>com.fasterxml.jackson.datatype</groupId>
+         <artifactId>jackson-datatype-jdk8</artifactId>
+         <version>2.19.2</version>
+         <projectUrl>https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jdk8</projectUrl>
          <type>jar</type>
          <licenses>
             <license>
                <name>The Apache Software License, Version 2.0</name>
                <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Jackson datatype: JSR310</name>
+         <groupId>com.fasterxml.jackson.datatype</groupId>
+         <artifactId>jackson-datatype-jsr310</artifactId>
+         <version>2.19.2</version>
+         <projectUrl>https://github.com/FasterXML/jackson-modules-java8/jackson-datatype-jsr310</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Jackson-annotations</name>
+         <groupId>com.fasterxml.jackson.core</groupId>
+         <artifactId>jackson-annotations</artifactId>
+         <version>2.19.2</version>
+         <projectUrl>https://github.com/FasterXML/jackson</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             </license>
          </licenses>
          <downloadUrls/>
@@ -467,11 +512,41 @@
          <downloadUrls/>
       </dependency>
       <dependency>
-         <name>Jakarta Dependency Injection</name>
-         <groupId>jakarta.inject</groupId>
-         <artifactId>jakarta.inject-api</artifactId>
-         <version>2.0.1</version>
-         <projectUrl>https://github.com/eclipse-ee4j/injection-api</projectUrl>
+         <name>Jackson-core</name>
+         <groupId>com.fasterxml.jackson.core</groupId>
+         <artifactId>jackson-core</artifactId>
+         <version>2.19.2</version>
+         <projectUrl>https://github.com/FasterXML/jackson-core</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>jackson-databind</name>
+         <groupId>com.fasterxml.jackson.core</groupId>
+         <artifactId>jackson-databind</artifactId>
+         <version>2.19.2</version>
+         <projectUrl>https://github.com/FasterXML/jackson</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Jackson-module-parameter-names</name>
+         <groupId>com.fasterxml.jackson.module</groupId>
+         <artifactId>jackson-module-parameter-names</artifactId>
+         <version>2.19.2</version>
+         <projectUrl>https://github.com/FasterXML/jackson-modules-java8/jackson-module-parameter-names</projectUrl>
          <type>jar</type>
          <licenses>
             <license>
@@ -482,10 +557,10 @@
          <downloadUrls/>
       </dependency>
       <dependency>
-         <name>jakarta.annotation API</name>
+         <name>Jakarta Annotations API</name>
          <groupId>jakarta.annotation</groupId>
          <artifactId>jakarta.annotation-api</artifactId>
-         <version>1.3.4</version>
+         <version>2.1.1</version>
          <projectUrl>https://projects.eclipse.org/projects/ee4j.ca</projectUrl>
          <type>jar</type>
          <licenses>
@@ -496,6 +571,21 @@
             <license>
                <name>GPL2 w/ CPE</name>
                <url>https://www.gnu.org/software/classpath/license.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Jakarta Dependency Injection</name>
+         <groupId>jakarta.inject</groupId>
+         <artifactId>jakarta.inject-api</artifactId>
+         <version>2.0.1</version>
+         <projectUrl>https://github.com/eclipse-ee4j/injection-api</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
             </license>
          </licenses>
          <downloadUrls/>
@@ -555,16 +645,69 @@
          <downloadUrls/>
       </dependency>
       <dependency>
-         <name>Logging</name>
-         <groupId>commons-logging</groupId>
-         <artifactId>commons-logging</artifactId>
-         <version>1.0.4</version>
-         <projectUrl>http://jakarta.apache.org/commons/logging/</projectUrl>
+         <name>JUL to SLF4J bridge</name>
+         <groupId>org.slf4j</groupId>
+         <artifactId>jul-to-slf4j</artifactId>
+         <version>2.0.17</version>
+         <projectUrl>http://www.slf4j.org</projectUrl>
          <type>jar</type>
          <licenses>
             <license>
-               <name>The Apache Software License, Version 2.0</name>
-               <url>/LICENSE.txt</url>
+               <name>MIT</name>
+               <url>https://opensource.org/license/mit</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Log4j API to SLF4J Adapter</name>
+         <groupId>org.apache.logging.log4j</groupId>
+         <artifactId>log4j-to-slf4j</artifactId>
+         <version>2.24.3</version>
+         <projectUrl>https://logging.apache.org/log4j/2.x/log4j/log4j-to-slf4j/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache-2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Logback Classic Module</name>
+         <groupId>ch.qos.logback</groupId>
+         <artifactId>logback-classic</artifactId>
+         <version>1.5.18</version>
+         <projectUrl>http://logback.qos.ch/logback-classic</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Eclipse Public License - v 1.0</name>
+               <url>http://www.eclipse.org/legal/epl-v10.html</url>
+            </license>
+            <license>
+               <name>GNU Lesser General Public License</name>
+               <url>http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Logback Core Module</name>
+         <groupId>ch.qos.logback</groupId>
+         <artifactId>logback-core</artifactId>
+         <version>1.5.18</version>
+         <projectUrl>http://logback.qos.ch/logback-core</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Eclipse Public License - v 1.0</name>
+               <url>http://www.eclipse.org/legal/epl-v10.html</url>
+            </license>
+            <license>
+               <name>GNU Lesser General Public License</name>
+               <url>http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html</url>
             </license>
          </licenses>
          <downloadUrls/>
@@ -623,6 +766,36 @@
             <license>
                <name>Lesser General Public License (LGPL)</name>
                <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>micrometer-commons</name>
+         <groupId>io.micrometer</groupId>
+         <artifactId>micrometer-commons</artifactId>
+         <version>1.15.4</version>
+         <projectUrl>https://github.com/micrometer-metrics/micrometer</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>micrometer-observation</name>
+         <groupId>io.micrometer</groupId>
+         <artifactId>micrometer-observation</artifactId>
+         <version>1.15.4</version>
+         <projectUrl>https://github.com/micrometer-metrics/micrometer</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
             </license>
          </licenses>
          <downloadUrls/>
@@ -1262,13 +1435,223 @@
          <name>SLF4J API Module</name>
          <groupId>org.slf4j</groupId>
          <artifactId>slf4j-api</artifactId>
-         <version>2.0.16</version>
+         <version>2.0.17</version>
          <projectUrl>http://www.slf4j.org</projectUrl>
          <type>jar</type>
          <licenses>
             <license>
-               <name>MIT License</name>
-               <url>http://www.opensource.org/licenses/mit-license.php</url>
+               <name>MIT</name>
+               <url>https://opensource.org/license/mit</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>SnakeYAML</name>
+         <groupId>org.yaml</groupId>
+         <artifactId>snakeyaml</artifactId>
+         <version>2.4</version>
+         <projectUrl>https://bitbucket.org/snakeyaml/snakeyaml</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Spring AOP</name>
+         <groupId>org.springframework</groupId>
+         <artifactId>spring-aop</artifactId>
+         <version>6.2.11</version>
+         <projectUrl>https://github.com/spring-projects/spring-framework</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Spring Beans</name>
+         <groupId>org.springframework</groupId>
+         <artifactId>spring-beans</artifactId>
+         <version>6.2.11</version>
+         <projectUrl>https://github.com/spring-projects/spring-framework</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Spring Context</name>
+         <groupId>org.springframework</groupId>
+         <artifactId>spring-context</artifactId>
+         <version>6.2.11</version>
+         <projectUrl>https://github.com/spring-projects/spring-framework</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Spring Expression Language (SpEL)</name>
+         <groupId>org.springframework</groupId>
+         <artifactId>spring-expression</artifactId>
+         <version>6.2.11</version>
+         <projectUrl>https://github.com/spring-projects/spring-framework</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Spring Web</name>
+         <groupId>org.springframework</groupId>
+         <artifactId>spring-web</artifactId>
+         <version>6.2.11</version>
+         <projectUrl>https://github.com/spring-projects/spring-framework</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Spring Web MVC</name>
+         <groupId>org.springframework</groupId>
+         <artifactId>spring-webmvc</artifactId>
+         <version>6.2.11</version>
+         <projectUrl>https://github.com/spring-projects/spring-framework</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>spring-boot</name>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot</artifactId>
+         <version>3.5.6</version>
+         <projectUrl>https://spring.io/projects/spring-boot</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>spring-boot-autoconfigure</name>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-autoconfigure</artifactId>
+         <version>3.5.6</version>
+         <projectUrl>https://spring.io/projects/spring-boot</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>spring-boot-starter</name>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter</artifactId>
+         <version>3.5.6</version>
+         <projectUrl>https://spring.io/projects/spring-boot</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>spring-boot-starter-json</name>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-json</artifactId>
+         <version>3.5.6</version>
+         <projectUrl>https://spring.io/projects/spring-boot</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>spring-boot-starter-logging</name>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-logging</artifactId>
+         <version>3.5.6</version>
+         <projectUrl>https://spring.io/projects/spring-boot</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>spring-boot-starter-tomcat</name>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-tomcat</artifactId>
+         <version>3.5.6</version>
+         <projectUrl>https://spring.io/projects/spring-boot</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>spring-boot-starter-web</name>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-web</artifactId>
+         <version>3.5.6</version>
+         <projectUrl>https://spring.io/projects/spring-boot</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0</url>
             </license>
          </licenses>
          <downloadUrls/>
@@ -1277,7 +1660,7 @@
          <name>SQLite JDBC</name>
          <groupId>org.xerial</groupId>
          <artifactId>sqlite-jdbc</artifactId>
-         <version>3.41.2.2</version>
+         <version>3.49.1.0</version>
          <projectUrl>https://github.com/xerial/sqlite-jdbc</projectUrl>
          <type>jar</type>
          <licenses>
@@ -1328,6 +1711,51 @@
          <licenses>
             <license>
                <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>tomcat-embed-core</name>
+         <groupId>org.apache.tomcat.embed</groupId>
+         <artifactId>tomcat-embed-core</artifactId>
+         <version>10.1.46</version>
+         <projectUrl>https://tomcat.apache.org/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>tomcat-embed-el</name>
+         <groupId>org.apache.tomcat.embed</groupId>
+         <artifactId>tomcat-embed-el</artifactId>
+         <version>10.1.46</version>
+         <projectUrl>https://tomcat.apache.org/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>tomcat-embed-websocket</name>
+         <groupId>org.apache.tomcat.embed</groupId>
+         <artifactId>tomcat-embed-websocket</artifactId>
+         <version>10.1.46</version>
+         <projectUrl>https://tomcat.apache.org/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
                <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
             </license>
          </licenses>

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "license": "CC0-1.0; generated test fixtures",
+  "samples": [
+    {"id":"geojson-wgs84","kind":"inline-generated","crs":"OGC:CRS84","covers":["Polygon","MultiPolygon","holes","empty collection"]},
+    {"id":"geojson-projected","kind":"inline-generated","crs":"EPSG:3857","covers":["longitude-first transform","control point"]},
+    {"id":"utm","kind":"runtime-generated","crs":"EPSG:32650","covers":["UTM round trip"]},
+    {"id":"cgcs2000","kind":"runtime-generated","crs":"EPSG:4490","covers":["CGCS2000 transform"]},
+    {"id":"geometry-damage","kind":"inline-generated","crs":"OGC:CRS84","covers":["self intersection","duplicate point","zero area","mixed geometry"]},
+    {"id":"shapefile-zip","kind":"runtime-generated","crs":"EPSG:4326","covers":["required sidecars","DBF charset","multiple layers"]},
+    {"id":"hostile-inputs","kind":"runtime-generated","crs":null,"covers":["malformed JSON","Zip Slip","duplicate ZIP entry","zip limits","missing CRS"]}
+  ]
+}

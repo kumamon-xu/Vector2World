@@ -12,6 +12,7 @@
 /core-web/target
 /desktop/target
 /opengl/target
+/building-tiler-backend/target
 /dist
 /bin
 /build

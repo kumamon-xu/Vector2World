@@ -14,10 +14,26 @@
 
 	<properties>
 		<geotools.version>35.1</geotools.version>
-		<junit.version>5.13.4</junit.version>
+		<spring-boot.version>3.5.6</spring-boot.version>
 	</properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${spring-boot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<repositories>
+		<repository>
+			<id>central-first</id>
+			<url>https://repo.maven.apache.org/maven2</url>
+		</repository>
 		<repository>
 			<id>osgeo-release</id>
 			<url>https://repo.osgeo.org/repository/release/</url>
@@ -29,6 +45,12 @@
 			<groupId>org.osm2world</groupId>
 			<artifactId>osm2world-core-jvm</artifactId>
 			<version>${project.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.geotools</groupId>
@@ -46,15 +68,26 @@
 			<version>2.11.0</version>
 		</dependency>
 		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<version>${junit.version}</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
+				<configuration>
+					<mainClass>org.osm2world.buildingtiler.Vector2WorldApplication</mainClass>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>

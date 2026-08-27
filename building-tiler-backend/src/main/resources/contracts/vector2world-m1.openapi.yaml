@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: Vector2World Dataset API
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8080
+paths:
+  /api/datasets:
+    post:
+      operationId: createDataset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                sourceCrs: { type: string }
+                layer: { type: string }
+                dbfCharset: { type: string }
+                heightField: { type: string }
+                heightUnit: { type: string, enum: [m, cm, mm, ft], default: m }
+      responses:
+        '201':
+          description: Dataset is ready for preview or height mapping
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DatasetMetadata' }
+        '400': { $ref: '#/components/responses/ImportError' }
+        '413': { $ref: '#/components/responses/ImportError' }
+  /api/datasets/{datasetId}:
+    parameters:
+      - $ref: '#/components/parameters/DatasetId'
+    get:
+      operationId: getDataset
+      responses:
+        '200':
+          description: Dataset metadata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DatasetMetadata' }
+        '404': { $ref: '#/components/responses/ImportError' }
+    delete:
+      operationId: deleteDataset
+      responses:
+        '204': { description: Dataset deleted or already absent }
+  /api/datasets/{datasetId}/height-mapping:
+    parameters:
+      - $ref: '#/components/parameters/DatasetId'
+    post:
+      operationId: setDatasetHeightMapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fieldName]
+              properties:
+                fieldName: { type: string }
+                unit: { type: string, enum: [m, cm, mm, ft], default: m }
+                invalidPolicy: { type: string, enum: [SKIP, FAIL], default: SKIP }
+                maximumHeightMeters: { type: number, exclusiveMinimum: 0, default: 10000 }
+      responses:
+        '200':
+          description: Updated metadata and height quality statistics
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DatasetMetadata' }
+        '400': { $ref: '#/components/responses/ImportError' }
+        '404': { $ref: '#/components/responses/ImportError' }
+  /api/datasets/{datasetId}/preview:
+    parameters:
+      - $ref: '#/components/parameters/DatasetId'
+    get:
+      operationId: previewDataset
+      responses:
+        '200':
+          description: Bounded, simplified WGS84 footprint preview without source attributes
+          content:
+            application/geo+json:
+              schema: { type: object }
+        '404': { $ref: '#/components/responses/ImportError' }
+components:
+  parameters:
+    DatasetId:
+      name: datasetId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ImportError:
+      description: Stable import error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+  schemas:
+    DatasetMetadata:
+      $ref: './dataset-metadata.schema.json'
+    ApiError:
+      type: object
+      required: [schemaVersion, timestamp, status, code, message, details]
+      properties:
+        schemaVersion: { const: '1.0' }
+        timestamp: { type: string, format: date-time }
+        status: { type: integer }
+        code: { type: string }
+        message: { type: string }
+        details: { type: object }

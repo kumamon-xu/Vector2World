@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vector2world.local/schemas/dataset-metadata-1.0.json",
+  "title": "Vector2World Dataset Metadata",
+  "type": "object",
+  "required": [
+    "schemaVersion", "datasetId", "status", "format", "crs", "layers",
+    "geometryTypes", "featureCount", "validGeometryCount", "bboxWgs84",
+    "fields", "heightCandidates", "issues"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "datasetId": { "type": "string", "format": "uuid" },
+    "status": { "enum": ["UPLOADING", "INSPECTING", "READY", "FAILED", "DELETING", "DELETED"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "format": { "enum": ["GEOJSON", "SHP"] },
+    "crs": { "type": "string", "minLength": 1 },
+    "sourceEncoding": { "type": ["string", "null"] },
+    "layers": { "type": "array", "items": { "$ref": "#/$defs/layer" } },
+    "geometryTypes": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "featureCount": { "type": "integer", "minimum": 0 },
+    "validGeometryCount": { "type": "integer", "minimum": 0 },
+    "skippedInvalidGeometry": { "type": "integer", "minimum": 0 },
+    "repairedGeometryCount": { "type": "integer", "minimum": 0 },
+    "bboxWgs84": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 4,
+      "items": { "type": "number" }
+    },
+    "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+    "heightCandidates": { "type": "array", "items": { "$ref": "#/$defs/heightCandidate" } },
+    "heightMapping": { "type": ["object", "null"] },
+    "heightQuality": { "oneOf": [{ "$ref": "#/$defs/heightQuality" }, { "type": "null" }] },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } }
+  },
+  "$defs": {
+    "layer": {
+      "type": "object",
+      "required": ["name", "selected"],
+      "properties": {
+        "name": { "type": "string" },
+        "geometryType": { "type": ["string", "null"] },
+        "selected": { "type": "boolean" }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["name", "type", "presentCount", "nullOrEmptyCount", "numericCount", "sampleValues"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "presentCount": { "type": "integer", "minimum": 0 },
+        "nullOrEmptyCount": { "type": "integer", "minimum": 0 },
+        "numericCount": { "type": "integer", "minimum": 0 },
+        "sampleValues": { "type": "array", "maxItems": 5, "items": { "type": "string" } }
+      }
+    },
+    "heightCandidate": {
+      "type": "object",
+      "required": ["fieldName", "score", "qualityAssumingMeters"],
+      "properties": {
+        "fieldName": { "type": "string" },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "qualityAssumingMeters": { "$ref": "#/$defs/heightQuality" }
+      }
+    },
+    "heightQuality": {
+      "type": "object",
+      "required": ["valid", "nullOrEmpty", "nonNumeric", "nonFinite", "nonPositive", "aboveMaximum"],
+      "properties": {
+        "valid": { "type": "integer", "minimum": 0 },
+        "nullOrEmpty": { "type": "integer", "minimum": 0 },
+        "nonNumeric": { "type": "integer", "minimum": 0 },
+        "nonFinite": { "type": "integer", "minimum": 0 },
+        "nonPositive": { "type": "integer", "minimum": 0 },
+        "aboveMaximum": { "type": "integer", "minimum": 0 },
+        "minimumMeters": { "type": ["number", "null"] },
+        "maximumMeters": { "type": ["number", "null"] },
+        "averageMeters": { "type": ["number", "null"] }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "required": ["severity", "code", "message", "count"],
+      "properties": {
+        "severity": { "enum": ["WARNING", "ERROR"] },
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "count": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

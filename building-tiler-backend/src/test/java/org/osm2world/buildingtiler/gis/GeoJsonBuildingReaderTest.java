@@ -28,7 +28,7 @@ class GeoJsonBuildingReaderTest {
 		assertEquals(116.6510, result.metadata().boundsWgs84().getMaxX(), 1e-12);
 		assertEquals(39.9000, result.metadata().boundsWgs84().getMinY(), 1e-12);
 		assertEquals(39.9010, result.metadata().boundsWgs84().getMaxY(), 1e-12);
-		assertEquals(2L, result.metadata().geometryTypes().get("Polygon"));
+		assertEquals(3L, result.metadata().geometryTypes().get("Polygon"));
 		assertEquals(1L, result.metadata().geometryTypes().get("MultiPolygon"));
 		Polygon polygon = assertInstanceOf(Polygon.class, result.buildings().get(0).geometryWgs84());
 		assertEquals(1, polygon.getNumInteriorRing());
