@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $runtimeJava) -or -not (Test-Path -LiteralPath 
     throw "Embedded jpackage runtime is missing its Java/JVM libraries"
 }
 
-$profiles = @('Windows clean profile A', 'Windows 清洁配置 B')
+$profiles = @('Windows clean profile A', 'Windows clean profile B')
 foreach ($profile in $profiles) {
     $dataRoot = Join-Path $workRoot $profile
     $stdout = Join-Path $workRoot "$profile.stdout.log"
