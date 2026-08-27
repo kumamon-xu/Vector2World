@@ -1,0 +1,196 @@
+openapi: 3.1.0
+info:
+  title: Vector2World Generation Job API
+  version: 3.0.0-m3
+  description: >-
+    Milestone 3 asynchronous, cancellable and bounded 3D Tiles generation contract.
+    Dataset upload remains defined by vector2world-m1.openapi.yaml.
+paths:
+  /api/jobs:
+    post:
+      operationId: createGenerationJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateGenerationJobRequest' }
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GenerationJob' }
+        '400': { $ref: '#/components/responses/ApiError' }
+        '404': { $ref: '#/components/responses/ApiError' }
+        '429': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}:
+    parameters: [{ $ref: '#/components/parameters/JobId' }]
+    get:
+      operationId: getGenerationJob
+      responses:
+        '200':
+          description: Current job state and links
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GenerationJob' }
+        '404': { $ref: '#/components/responses/ApiError' }
+    delete:
+      operationId: cancelGenerationJob
+      responses:
+        '202':
+          description: Cancellation accepted or job was already terminal
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GenerationJob' }
+        '404': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/events:
+    parameters:
+      - { $ref: '#/components/parameters/JobId' }
+      - name: Last-Event-ID
+        in: header
+        required: false
+        schema: { type: integer, minimum: 0 }
+    get:
+      operationId: streamGenerationJobEvents
+      responses:
+        '200':
+          description: SSE stream with monotonically increasing event IDs, replay and heartbeat events
+          content:
+            text/event-stream: {}
+        '404': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/tileset:
+    parameters: [{ $ref: '#/components/parameters/JobId' }]
+    get:
+      operationId: getRootTileset
+      responses:
+        '200': { description: Validated root 3D Tiles 1.1 tileset }
+        '409': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/files/{filePath}:
+    parameters:
+      - { $ref: '#/components/parameters/JobId' }
+      - name: filePath
+        in: path
+        required: true
+        description: Result-relative tileset JSON or GLB path; slashes are permitted and traversal is rejected.
+        schema: { type: string, minLength: 1 }
+    get:
+      operationId: getGenerationTileAsset
+      responses:
+        '200':
+          description: A published tileset JSON or GLB asset
+          content:
+            application/json: {}
+            model/gltf-binary: {}
+        '400': { $ref: '#/components/responses/ApiError' }
+        '409': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/manifest:
+    parameters: [{ $ref: '#/components/parameters/JobId' }]
+    get:
+      operationId: getGenerationManifest
+      responses:
+        '200': { description: Manifest conforming to generation-manifest.schema.json }
+        '409': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/report:
+    parameters: [{ $ref: '#/components/parameters/JobId' }]
+    get:
+      operationId: getGenerationReport
+      responses:
+        '200': { description: Report conforming to generation-report.schema.json }
+        '409': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/download:
+    parameters: [{ $ref: '#/components/parameters/JobId' }]
+    get:
+      operationId: downloadGenerationResult
+      responses:
+        '200':
+          description: Streaming ZIP containing only the published result tree
+          content:
+            application/zip: {}
+        '409': { $ref: '#/components/responses/ApiError' }
+components:
+  parameters:
+    JobId:
+      name: jobId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ApiError:
+      description: Stable API error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [schemaVersion, status, code, message]
+            properties:
+              schemaVersion: { const: '1.0' }
+              status: { type: integer }
+              code: { type: string }
+              message: { type: string }
+              details: { type: object }
+  schemas:
+    CreateGenerationJobRequest:
+      type: object
+      additionalProperties: false
+      required: [datasetId, heightField]
+      properties:
+        datasetId: { type: string, format: uuid }
+        heightField: { type: string, minLength: 1 }
+        heightUnit: { enum: [m, cm, mm, ft], default: m }
+        invalidPolicy: { enum: [SKIP, FAIL], default: SKIP }
+        maximumHeightMeters: { type: number, exclusiveMinimum: 0, default: 10000 }
+        ruleVersion: { const: m2-rules-v1, default: m2-rules-v1 }
+        roofMode: { enum: [CONSERVATIVE, AUTO_SIMPLE, FLAT_FACADE_DETAIL], default: AUTO_SIMPLE }
+        stylePreset: { enum: [neutral-city, warm-residential, modern-city, industrial], default: neutral-city }
+        floorHeightMeters: { type: number, minimum: 2, maximum: 6, default: 3.2 }
+        roofHeightRatio: { type: number, minimum: 0, maximum: 0.5, default: 0.15 }
+        minimumRoofHeightMeters: { type: number, minimum: 0, maximum: 10, default: 0.8 }
+        maximumRoofHeightMeters: { type: number, minimum: 0, maximum: 20, default: 3.0 }
+        minimumBodyHeightMeters: { type: number, minimum: 1, maximum: 20, default: 2.5 }
+        minimumPitchedBuildingHeightMeters: { type: number, minimum: 2, maximum: 100, default: 6 }
+        maximumPitchedBuildingHeightMeters: { type: number, minimum: 2, maximum: 1000, default: 30 }
+        zoom: { type: integer, minimum: 0, maximum: 22, default: 15 }
+        lods:
+          type: array
+          prefixItems: [{ const: 2 }]
+          items: false
+          default: [2]
+        workerCount: { type: integer, minimum: 1, maximum: 64 }
+        queueCapacity: { type: integer, minimum: 1, maximum: 4096 }
+        transientRetryCount: { type: integer, minimum: 0, maximum: 3, default: 1 }
+        crossTileBufferMeters: { const: 0, default: 0 }
+        largeBuildingTileSpanWarning: { type: integer, minimum: 2, maximum: 10000, default: 4 }
+        outputFormats:
+          type: array
+          prefixItems: [{ const: 3DTILES }]
+          items: false
+          default: [3DTILES]
+        variantSeed: { type: integer, default: 1446139724 }
+    GenerationJob:
+      type: object
+      required: [schemaVersion, id, datasetId, state, progress, modelingConfig, tilingConfig, links]
+      properties:
+        schemaVersion: { const: '1.0' }
+        id: { type: string, format: uuid }
+        datasetId: { type: string, format: uuid }
+        state:
+          enum: [CREATED, VALIDATING, PREPARING, TILING, MODELING, BUILDING_TILESET,
+                 VALIDATING_RESULT, COMPLETED, COMPLETED_WITH_WARNINGS, FAILED, CANCELLED]
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        completedTiles: { type: integer, minimum: 0 }
+        totalTiles: { type: integer, minimum: 0 }
+        progress: { type: number, minimum: 0, maximum: 1 }
+        error: { type: [string, 'null'] }
+        modelingConfig: { type: object }
+        tilingConfig: { type: object }
+        successfulTiles: { type: [integer, 'null'], minimum: 0 }
+        failedTiles: { type: [integer, 'null'], minimum: 0 }
+        modeledBuildings: { type: [integer, 'null'], minimum: 0 }
+        outputBytes: { type: [integer, 'null'], minimum: 0 }
+        ownershipHash: { type: [string, 'null'] }
+        warnings: { type: array, items: { type: string } }
+        tileFailures: { type: array, items: { type: object } }
+        artifacts: { type: array, items: { type: object } }
+        links: { type: object }

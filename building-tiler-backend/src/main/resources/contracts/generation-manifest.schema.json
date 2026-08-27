@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vector2world.local/contracts/generation-manifest.schema.json",
+  "title": "Vector2World generation manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "applicationVersion", "osm2worldVersion", "osm2worldCommit",
+    "ruleVersion", "presetVersion", "configHash", "sourceFormat", "sourceCrs",
+    "heightMapping", "zoom", "lods", "outputFormats", "crossTileStrategy",
+    "crossTileBufferMeters", "boundsWgs84", "ownershipHash", "tileContents", "buildTime"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "applicationVersion": { "type": "string", "minLength": 1 },
+    "osm2worldVersion": { "type": "string", "minLength": 1 },
+    "osm2worldCommit": { "type": "string", "minLength": 7 },
+    "ruleVersion": { "const": "m2-rules-v1" },
+    "presetVersion": { "type": "string", "minLength": 1 },
+    "configHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "sourceFormat": { "enum": ["GEOJSON", "SHP"] },
+    "sourceCrs": { "type": "string", "minLength": 1 },
+    "sourceEncoding": { "type": "string" },
+    "heightMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fieldName", "unit", "invalidPolicy", "maximumHeightMeters"],
+      "properties": {
+        "fieldName": { "type": "string", "minLength": 1 },
+        "unit": { "enum": ["m", "cm", "mm", "ft"] },
+        "invalidPolicy": { "enum": ["SKIP", "FAIL"] },
+        "maximumHeightMeters": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "zoom": { "type": "integer", "minimum": 0, "maximum": 22, "default": 15 },
+    "lods": { "type": "array", "prefixItems": [{ "const": 2 }], "items": false },
+    "outputFormats": {
+      "type": "array",
+      "prefixItems": [{ "const": "3DTILES" }],
+      "items": false
+    },
+    "crossTileStrategy": { "const": "centroid-owner/full-footprint/no-clip" },
+    "crossTileBufferMeters": { "const": 0 },
+    "boundsWgs84": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": { "type": "number" }
+    },
+    "ownershipHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "tileContents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tile", "lod", "tilesetPath", "glbPath"],
+        "properties": {
+          "tile": { "type": "string" },
+          "lod": { "const": 2 },
+          "tilesetPath": { "type": "string", "pattern": "^[^\\\\]*\\.tileset\\.json$" },
+          "glbPath": { "type": "string", "pattern": "^[^\\\\]*\\.glb$" }
+        }
+      }
+    },
+    "buildTime": { "type": "string", "format": "date-time" }
+  }
+}

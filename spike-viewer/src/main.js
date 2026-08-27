@@ -9,7 +9,8 @@ import "./style.css";
 
 const params = new URLSearchParams(window.location.search);
 const previewId = params.get("previewId");
-const dataset = previewId ? "m2" : params.get("dataset") === "shp" ? "shp" : "geojson";
+const jobId = params.get("jobId");
+const dataset = jobId ? "m3" : previewId ? "m2" : params.get("dataset") === "shp" ? "shp" : "geojson";
 const select = document.querySelector("#datasetSelect");
 const status = document.querySelector("#status");
 const details = document.querySelector("#details");
@@ -71,6 +72,74 @@ function webMercatorTileRectangle(tileKey) {
 }
 
 async function load() {
+	if (jobId) {
+		const metadata = await fetch(`/api/jobs/${jobId}`).then((response) => {
+			if (!response.ok) throw new Error(`job HTTP ${response.status}`);
+			return response.json();
+		});
+		if (!["COMPLETED", "COMPLETED_WITH_WARNINGS"].includes(metadata.state)) {
+			throw new Error(`job is not complete: ${metadata.state}`);
+		}
+		const [manifest, report] = await Promise.all([
+			fetch(metadata.links.manifest).then((response) => {
+				if (!response.ok) throw new Error(`manifest HTTP ${response.status}`);
+				return response.json();
+			}),
+			fetch(metadata.links.report).then((response) => {
+				if (!response.ok) throw new Error(`report HTTP ${response.status}`);
+				return response.json();
+			})
+		]);
+		const tileset = await Cesium3DTileset.fromUrl(metadata.links.tileset);
+		tileset.maximumScreenSpaceError = 1;
+		viewer.scene.primitives.add(tileset);
+		const [west, south, east, north] = manifest.boundsWgs84;
+		viewer.entities.add({
+			name: "M3 全量源数据范围",
+			rectangle: {
+				coordinates: Rectangle.fromDegrees(west, south, east, north),
+				height: 0,
+				fill: true,
+				material: Color.CYAN.withAlpha(0.05),
+				outline: true,
+				outlineColor: Color.CYAN
+			}
+		});
+		const focus = report.tileResults.reduce((best, current) =>
+			current.modeledBuildings > best.modeledBuildings ? current : best,
+			report.tileResults[0]);
+		viewer.entities.add({
+			name: "当前 Z15 owner Tile",
+			rectangle: {
+				coordinates: webMercatorTileRectangle(focus.tile),
+				height: 0,
+				fill: false,
+				outline: true,
+				outlineColor: Color.YELLOW
+			}
+		});
+		await viewer.camera.flyTo({ destination: webMercatorTileRectangle(focus.tile), duration: 0 });
+		viewer.scene.requestRender();
+		await waitForInitialTilesetLoad(tileset);
+		viewer.scene.requestRender();
+		status.textContent = `READY · M3 · ${report.successfulTiles} Tiles`;
+		status.dataset.ready = "true";
+		details.textContent = JSON.stringify({
+			state: metadata.state,
+			inputFeatures: report.inputFeatures,
+			modeledBuildings: report.modeledBuildings,
+			plannedTiles: report.plannedTiles,
+			successfulTiles: report.successfulTiles,
+			failedTiles: report.failedTiles,
+			crossTileBuildings: report.crossTileBuildings,
+			lods: manifest.lods,
+			assetVersion: report.validation.assetVersion,
+			glbCount: report.validation.glbCount,
+			ownershipHash: report.ownershipHash
+		}, null, 2);
+		window.__VECTOR2WORLD_M3__ = { ready: true, contentLoaded: true, metadata, manifest, report, focus };
+		return;
+	}
 	if (previewId) {
 		const metadata = await fetch(`/api/model-previews/${previewId}`).then((response) => {
 			if (!response.ok) throw new Error(`preview HTTP ${response.status}`);
@@ -180,6 +249,7 @@ load().catch((error) => {
   status.textContent = `FAILED · ${error.message}`;
   status.dataset.ready = "false";
   const failure = { ready: false, dataset, error: error.message };
-  if (previewId) window.__VECTOR2WORLD_M2__ = failure;
+	if (jobId) window.__VECTOR2WORLD_M3__ = failure;
+	else if (previewId) window.__VECTOR2WORLD_M2__ = failure;
   else window.__VECTOR2WORLD_M0__ = failure;
 });
