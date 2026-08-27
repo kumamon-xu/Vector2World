@@ -197,7 +197,7 @@ if (-not $SkipInstaller) {
         $installerDest = New-Item -ItemType Directory -Path (Join-Path $releaseRoot 'installer')
         Invoke-Native 'jpackage.exe' (@(
             '--type','msi','--dest',$installerDest.FullName,'--win-dir-chooser','--win-menu','--win-shortcut',
-            '--win-per-user-install',
+            '--win-per-user-install','--install-dir','Vector2World Application',
             '--win-menu-group','Vector2World','--win-upgrade-uuid','4cdd6605-53c4-4b83-ae12-6c88dafab8bf'
         ) + $jpackageCommon)
         $installerPath = (Get-ChildItem -LiteralPath $installerDest -Filter '*.msi' | Select-Object -First 1).FullName

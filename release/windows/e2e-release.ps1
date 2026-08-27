@@ -34,7 +34,7 @@ function Invoke-Json([string]$Uri, [string]$Method = 'GET', $Body = $null) {
 $beforePids = @(Get-AppProcesses | ForEach-Object ProcessId)
 $stdout = Join-Path $workRoot 'packaged-e2e.stdout.log'
 $stderr = Join-Path $workRoot 'packaged-e2e.stderr.log'
-$dataRoot = Join-Path $workRoot 'Windows 打包 E2E 数据'
+$dataRoot = Join-Path $workRoot 'Windows packaged E2E data'
 $arguments = "--no-browser --data-root=`"$dataRoot`" --instance-id=release-e2e"
 $launcher = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru -WindowStyle Hidden `
     -RedirectStandardOutput $stdout -RedirectStandardError $stderr

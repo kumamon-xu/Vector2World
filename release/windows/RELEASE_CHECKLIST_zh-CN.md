@@ -13,6 +13,7 @@
 
 - 每次构建使用新的 `<version>+<buildNumber>` 目录；禁止覆盖同名制品或复用不明内容的 tag。
 - 只发布已经通过 `verify-release.ps1` 的 MSI/ZIP；公开下载页同时发布 SHA-256 和 SBOM。
+- per-user 应用二进制安装在独立的 `Vector2World Application` 目录，不得与 `%LOCALAPPDATA%\Vector2World` 用户数据根重叠。
 - 降级不是原位 MSI 操作：先卸载当前二进制（保留用户数据），再安装旧版。旧版若遇到更高版本配置 schema 会拒绝启动且不覆盖原配置。
 
 ## 撤回与回滚
