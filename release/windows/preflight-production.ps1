@@ -24,7 +24,4 @@ if (& git -C $repoRoot rev-parse --verify --quiet "refs/tags/$tag") { throw "Loc
 if (& git -C $repoRoot ls-remote --exit-code --tags origin "refs/tags/$tag" 2>$null) { throw "Remote tag already exists: $tag" }
 if (& gh release view $tag --repo 'kumamon-xu/Vector2World' 2>$null) { throw "GitHub Release already exists: $tag" }
 Invoke-Checked 'gh' @('auth','status') | Out-Null
-$secretNames = @(Invoke-Checked 'gh' @('secret','list','--repo','kumamon-xu/Vector2World','--json','name','--jq','.[].name'))
-$missing = @('VECTOR2WORLD_SIGN_PFX_BASE64','VECTOR2WORLD_SIGN_PASSWORD') | Where-Object { $_ -notin $secretNames }
-if ($missing) { throw "Production signing secrets are missing: $($missing -join ', ')" }
 Write-Host "VECTOR2WORLD_PRODUCTION_PREFLIGHT_OK version=$Version commit=$head"

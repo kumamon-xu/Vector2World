@@ -47,27 +47,14 @@ jobs:
           Invoke-WebRequest 'https://github.com/wixtoolset/wix3/releases/download/wix314rtm/wix314-binaries.zip' -OutFile "$env:RUNNER_TEMP\wix.zip"
           if ((Get-FileHash "$env:RUNNER_TEMP\wix.zip" -Algorithm SHA256).Hash -ne '13F067F38969FAF163D93A804B48EA0576790A202C8F10291F2000F0E356E934') { throw 'WiX archive checksum mismatch' }
           Expand-Archive "$env:RUNNER_TEMP\wix.zip" "$env:RUNNER_TEMP\wix"
-      - name: Materialize signing certificate
-        if: github.ref_type == 'tag'
-        shell: pwsh
-        env:
-          SIGN_PFX_BASE64: ${{ secrets.VECTOR2WORLD_SIGN_PFX_BASE64 }}
-        run: |
-          if (-not $env:SIGN_PFX_BASE64) { throw 'Production tag builds require VECTOR2WORLD_SIGN_PFX_BASE64' }
-          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\vector2world-sign.pfx", [Convert]::FromBase64String($env:SIGN_PFX_BASE64))
-          "VECTOR2WORLD_SIGN_PFX=$env:RUNNER_TEMP\vector2world-sign.pfx" >> $env:GITHUB_ENV
       - name: Build installer and portable bundle
         shell: pwsh
-        env:
-          VECTOR2WORLD_SIGN_PASSWORD: ${{ secrets.VECTOR2WORLD_SIGN_PASSWORD }}
         run: |
           $arguments = @('-Version','${{ steps.version.outputs.version }}','-PackageVersion','${{ steps.version.outputs.package-version }}','-BuildNumber','${{ github.run_number }}','-WixBin',"$env:RUNNER_TEMP\wix")
           if ('${{ github.ref_type }}' -eq 'tag') { $arguments += '-Release' }
           & .\release\windows\build-release.ps1 @arguments
       - name: Build upgrade baseline
         shell: pwsh
-        env:
-          VECTOR2WORLD_SIGN_PASSWORD: ${{ secrets.VECTOR2WORLD_SIGN_PASSWORD }}
         run: |
           & .\release\windows\build-release.ps1 -Version 0.9.0 -PackageVersion 0.9.0 -BuildNumber upgrade-baseline -OutputRoot "$env:RUNNER_TEMP\vector2world-upgrade" -WixBin "$env:RUNNER_TEMP\wix" -SkipTests
           $current = Get-ChildItem output\release -Directory | Select-Object -First 1
@@ -144,7 +131,7 @@ jobs:
           if (-not $root) { throw 'Release artifact root is missing' }
           if ((gh release view $tag 2>$null)) { throw "Release $tag already exists and will not be overwritten" }
           $metadata = Get-Content -Raw -LiteralPath (Join-Path $root.FullName 'release-metadata.json') | ConvertFrom-Json
-          if ($metadata.signingStatus -ne 'SIGNED' -or $metadata.version -ne $version -or $metadata.gitSha -ne '${{ github.sha }}') {
+          if ($metadata.signingStatus -ne 'UNSIGNED' -or $metadata.version -ne $version -or $metadata.gitSha -ne '${{ github.sha }}') {
             throw 'Tag, version, commit or signing metadata mismatch'
           }
           $zip = Get-ChildItem -LiteralPath $root.FullName -Filter '*portable.zip' | Select-Object -First 1
@@ -160,7 +147,7 @@ jobs:
           - OSM2World commit: $($metadata.osm2worldCommit)
           - Rule / preset: $($metadata.ruleVersion) / $($metadata.presetVersion)
           - Java runtime: $($metadata.javaRuntime)
-          - Signing: Authenticode signed and timestamped
+          - Signing: UNSIGNED（未进行 Authenticode 代码签名；Windows 可能显示“未知发布者”）
           - Validation: Windows 2022/2025 packaged E2E and MSI upgrade/repair/uninstall matrix
 
           下载后请先使用随附 `SHA256SUMS.txt` 校验文件。程序仅监听本机 `127.0.0.1`，默认保留 `%LOCALAPPDATA%\Vector2World` 中的用户成果与配置。

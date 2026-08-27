@@ -174,12 +174,12 @@ Copy-Item -LiteralPath $sbom -Destination $appImage -Recurse
 $signTool = Get-Command signtool.exe -ErrorAction SilentlyContinue
 $pfx = $env:VECTOR2WORLD_SIGN_PFX
 $pfxPassword = $env:VECTOR2WORLD_SIGN_PASSWORD
-$signingStatus = 'UNSIGNED_RC'
+$signingStatus = if ($Release) { 'UNSIGNED' } else { 'UNSIGNED_RC' }
 if ($pfx) {
     if (-not $signTool) { throw 'VECTOR2WORLD_SIGN_PFX is set but signtool.exe is unavailable' }
     Invoke-Native $signTool.Source @('sign','/fd','SHA256','/td','SHA256','/tr','http://timestamp.digicert.com','/f',$pfx,'/p',$pfxPassword,(Join-Path $appImage 'Vector2World.exe'))
     $signingStatus = 'SIGNED'
-} elseif ($Release) { throw 'Production release signing credentials are required' }
+}
 
 & (Join-Path $scriptRoot 'smoke-release.ps1') -AppImage $appImage -WorkRoot (Join-Path $releaseRoot 'smoke profiles')
 if ($LASTEXITCODE -ne 0) { throw 'Portable smoke test failed' }

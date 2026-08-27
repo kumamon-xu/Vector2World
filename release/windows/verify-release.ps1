@@ -38,7 +38,7 @@ if ($metadata.signingStatus -eq 'SIGNED') {
         $signature = Get-AuthenticodeSignature -LiteralPath $target
         if ($signature.Status -ne 'Valid') { throw "Release signature is not valid for ${target}: $($signature.Status)" }
     }
-} elseif ($metadata.signingStatus -ne 'UNSIGNED_RC') {
+} elseif ($metadata.signingStatus -notin @('UNSIGNED', 'UNSIGNED_RC')) {
     throw "Unknown signing status: $($metadata.signingStatus)"
 }
 Write-Host 'VECTOR2WORLD_RELEASE_VERIFY_OK'
