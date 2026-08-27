@@ -50,9 +50,14 @@ jobs:
       - name: Build installer and portable bundle
         shell: pwsh
         run: |
-          $arguments = @('-Version','${{ steps.version.outputs.version }}','-PackageVersion','${{ steps.version.outputs.package-version }}','-BuildNumber','${{ github.run_number }}','-WixBin',"$env:RUNNER_TEMP\wix")
-          if ('${{ github.ref_type }}' -eq 'tag') { $arguments += '-Release' }
-          & .\release\windows\build-release.ps1 @arguments
+          $buildParameters = @{
+            Version = '${{ steps.version.outputs.version }}'
+            PackageVersion = '${{ steps.version.outputs.package-version }}'
+            BuildNumber = '${{ github.run_number }}'
+            WixBin = "$env:RUNNER_TEMP\wix"
+          }
+          if ('${{ github.ref_type }}' -eq 'tag') { $buildParameters.Release = $true }
+          & .\release\windows\build-release.ps1 @buildParameters
       - name: Build upgrade baseline
         shell: pwsh
         run: |
