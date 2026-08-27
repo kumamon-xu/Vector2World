@@ -6,6 +6,7 @@ import java.time.Duration;
 import org.osm2world.buildingtiler.application.DatasetService;
 import org.osm2world.buildingtiler.application.GenerationJobCleanupScheduler;
 import org.osm2world.buildingtiler.application.GenerationJobService;
+import org.osm2world.buildingtiler.application.JobResourcePolicy;
 import org.osm2world.buildingtiler.application.ModelPreviewService;
 import org.osm2world.buildingtiler.application.PreviewGeoJsonService;
 import org.osm2world.buildingtiler.gis.UploadLimits;
@@ -13,6 +14,7 @@ import org.osm2world.buildingtiler.modeling.BuildingRuleEngine;
 import org.osm2world.buildingtiler.modeling.OsmTagMapper;
 import org.osm2world.buildingtiler.modeling.RepresentativeSampleSelector;
 import org.osm2world.buildingtiler.osm2world.Osm2WorldEngineAdapter;
+import org.osm2world.buildingtiler.product.ManagedDirectoryService;
 import org.osm2world.buildingtiler.tiles.ModelPreviewWriterAdapter;
 import org.osm2world.buildingtiler.tiles.Osm2WorldTileRenderer;
 import org.osm2world.buildingtiler.tiles.TileOwnershipPlanner;
@@ -75,14 +77,35 @@ public class Vector2WorldApplication {
 			@Value("${vector2world.jobs.ttl-hours:24}") long ttlHours,
 			@Value("${vector2world.jobs.max-workers:0}") int maxWorkers,
 			@Value("${vector2world.jobs.queue-capacity:128}") int queueCapacity,
+			@Value("${vector2world.jobs.estimated-bytes-per-building:8192}") long estimatedBytesPerBuilding,
+			@Value("${vector2world.jobs.minimum-usable-disk-bytes:268435456}") long minimumUsableDiskBytes,
+			@Value("${vector2world.jobs.maximum-job-bytes:8589934592}") long maximumJobBytes,
+			@Value("${vector2world.jobs.maximum-zip-bytes:8589934592}") long maximumZipBytes,
+			@Value("${vector2world.jobs.maximum-features-per-tile:100000}") int maximumFeaturesPerTile,
+			@Value("${vector2world.jobs.job-timeout-minutes:360}") long jobTimeoutMinutes,
+			@Value("${vector2world.jobs.tile-timeout-minutes:30}") long tileTimeoutMinutes,
+			@Value("${vector2world.jobs.retry-base-delay-ms:100}") long retryBaseDelayMillis,
+			@Value("${vector2world.jobs.maximum-log-bytes:8388608}") long maximumLogBytes,
+			@Value("${vector2world.jobs.reserved-heap-bytes:134217728}") long reservedHeapBytes,
+			@Value("${vector2world.jobs.estimated-worker-heap-bytes:134217728}") long estimatedWorkerHeapBytes,
 			DatasetService datasets, Osm2WorldEngineAdapter engine) throws java.io.IOException {
+		JobResourcePolicy policy = new JobResourcePolicy(estimatedBytesPerBuilding, minimumUsableDiskBytes,
+				maximumJobBytes, maximumZipBytes, maximumFeaturesPerTile,
+				Duration.ofMinutes(jobTimeoutMinutes), Duration.ofMinutes(tileTimeoutMinutes),
+				Duration.ofMillis(retryBaseDelayMillis), maximumLogBytes,
+				reservedHeapBytes, estimatedWorkerHeapBytes);
 		return new GenerationJobService(Path.of(storageRoot), Duration.ofHours(ttlHours), maxWorkers,
 				queueCapacity, datasets, new TileOwnershipPlanner(), new Osm2WorldTileRenderer(engine),
-				new TilesetTreeAssembler(), new TilesetValidator());
+				new TilesetTreeAssembler(), new TilesetValidator(), policy);
 	}
 
 	@Bean
 	GenerationJobCleanupScheduler generationJobCleanupScheduler(GenerationJobService jobs) {
 		return new GenerationJobCleanupScheduler(jobs);
+	}
+
+	@Bean
+	ManagedDirectoryService managedDirectoryService(DatasetService datasets, GenerationJobService jobs) {
+		return ManagedDirectoryService.desktop(datasets, jobs);
 	}
 }

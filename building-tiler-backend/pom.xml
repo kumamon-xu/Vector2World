@@ -15,6 +15,14 @@
 	<properties>
 		<geotools.version>35.1</geotools.version>
 		<spring-boot.version>3.5.6</spring-boot.version>
+		<exec.mainClass>org.osm2world.buildingtiler.cli.Milestone0Cli</exec.mainClass>
+		<vector2world.release.version>1.0.0-rc.1</vector2world.release.version>
+		<vector2world.build.number>dev</vector2world.build.number>
+		<vector2world.git.sha>unknown</vector2world.git.sha>
+		<vector2world.git.dirty>true</vector2world.git.dirty>
+		<vector2world.build.time>unknown</vector2world.build.time>
+		<vector2world.packaged>false</vector2world.packaged>
+		<vector2world.osm2world.commit>bfa31df1124295721ec848273fbf93ab46b24d25</vector2world.osm2world.commit>
 	</properties>
 
 	<dependencyManagement>
@@ -79,14 +87,40 @@
 	</dependencies>
 
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>vector2world-build.properties</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>vector2world-build.properties</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>../spike-viewer/dist</directory>
+				<targetPath>static</targetPath>
+				<filtering>false</filtering>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<version>${spring-boot.version}</version>
 				<configuration>
-					<mainClass>org.osm2world.buildingtiler.Vector2WorldApplication</mainClass>
+					<mainClass>org.osm2world.buildingtiler.product.Vector2WorldLauncher</mainClass>
 				</configuration>
+				<executions>
+					<execution>
+						<goals><goal>repackage</goal></goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -101,7 +135,7 @@
 				<artifactId>exec-maven-plugin</artifactId>
 				<version>3.5.1</version>
 				<configuration>
-					<mainClass>org.osm2world.buildingtiler.cli.Milestone0Cli</mainClass>
+					<mainClass>${exec.mainClass}</mainClass>
 					<cleanupDaemonThreads>false</cleanupDaemonThreads>
 				</configuration>
 			</plugin>

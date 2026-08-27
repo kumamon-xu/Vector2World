@@ -35,6 +35,8 @@ class GenerationContractResourceTest {
 				.anyMatch(value -> "successfulTileContents".equals(value.getAsString())));
 		assertTrue(report.getAsJsonArray("required").asList().stream()
 				.anyMatch(value -> "outputBytes".equals(value.getAsString())));
+		assertTrue(report.getAsJsonArray("required").asList().stream()
+				.anyMatch(value -> "resourceMetrics".equals(value.getAsString())));
 	}
 
 	@Test
@@ -46,6 +48,8 @@ class GenerationContractResourceTest {
 			assertTrue(yaml.contains("Last-Event-ID"));
 			assertTrue(yaml.contains("cancelGenerationJob"));
 			assertTrue(yaml.contains("/api/jobs/{jobId}/download:"));
+			assertTrue(yaml.contains("/api/jobs/{jobId}/diagnostics:"));
+			assertTrue(yaml.contains("/api/jobs/{jobId}/retry-failed:"));
 			assertTrue(yaml.contains("COMPLETED_WITH_WARNINGS"));
 			assertTrue(yaml.contains("default: [3DTILES]"));
 		}

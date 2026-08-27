@@ -10,7 +10,7 @@
     "plannedTiles", "successfulTiles", "failedTiles", "successfulTileContents",
     "modeledBuildings", "meshCount", "vertexCount", "triangleCount", "crossTileBuildings",
     "largeBuildings", "ownershipHash", "configHash", "contentBytes", "outputBytes",
-    "quantization", "tileResults", "tileFailures", "warnings", "validation", "volatileFields"
+    "quantization", "tileResults", "tileFailures", "warnings", "validation", "resourceMetrics", "volatileFields"
   ],
   "properties": {
     "schemaVersion": { "const": "1.0" },
@@ -51,6 +51,19 @@
         "glbCount": { "$ref": "#/$defs/nonNegativeInteger" },
         "errors": { "type": "array", "maxItems": 0 },
         "extensionsUsed": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "resourceMetrics": {
+      "type": "object",
+      "required": ["phaseNanos", "peakHeapBytes", "gcCollections", "gcTimeMillis", "emittedTileBytes", "retryAttempts", "effectiveWorkers"],
+      "properties": {
+        "phaseNanos": { "type": "object", "additionalProperties": { "$ref": "#/$defs/nonNegativeInteger" } },
+        "peakHeapBytes": { "$ref": "#/$defs/nonNegativeInteger" },
+        "gcCollections": { "$ref": "#/$defs/nonNegativeInteger" },
+        "gcTimeMillis": { "$ref": "#/$defs/nonNegativeInteger" },
+        "emittedTileBytes": { "$ref": "#/$defs/nonNegativeInteger" },
+        "retryAttempts": { "$ref": "#/$defs/nonNegativeInteger" },
+        "effectiveWorkers": { "type": "integer", "minimum": 1 }
       }
     },
     "volatileFields": { "type": "array", "items": { "type": "string" } }

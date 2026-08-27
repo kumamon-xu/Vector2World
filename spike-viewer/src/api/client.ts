@@ -5,6 +5,7 @@ import type {
   GenerationReport,
   JobResponse,
   ModelingConfig,
+  ProductAbout,
   PreviewReport,
   PreviewResponse
 } from "../domain";
@@ -90,6 +91,12 @@ export function uploadDataset(
 }
 
 export const api = {
+  about: () => request<ProductAbout>("/api/system/about"),
+  health: () => request<{ status: "UP"; timestamp: string; pid: number }>("/api/system/health"),
+  openDirectory: (type: "dataset" | "job", id: string) => request<{ opened: true }>(
+    "/api/system/open-directory",
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, id }) }
+  ),
   dataset: (id: string) => request<DatasetResponse>(`/api/datasets/${id}`),
   deleteDataset: (id: string) => request<void>(`/api/datasets/${id}`, { method: "DELETE" }),
   mapHeight: (id: string, config: ModelingConfig) => request<DatasetResponse>(

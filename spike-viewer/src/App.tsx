@@ -1,7 +1,7 @@
-import { App as AntApp, Alert, Button, ConfigProvider, Layout, Spin, Steps, Tag, Typography } from "antd";
+import { App as AntApp, Alert, Button, ConfigProvider, Descriptions, Layout, Modal, Spin, Steps, Tag, Typography } from "antd";
 import { useEffect, useReducer, useState } from "react";
 import { api, ApiClientError } from "./api/client";
-import type { WizardStep } from "./domain";
+import type { ProductAbout, WizardStep } from "./domain";
 import { guardStep, loadSession, maxAllowedStep, pathForStep, saveSession, sessionReducer, stepForPath } from "./state/session";
 import { ConfigStep } from "./steps/ConfigStep";
 import { GenerateStep } from "./steps/GenerateStep";
@@ -34,8 +34,11 @@ function Workspace() {
   const [session, dispatch] = useReducer(sessionReducer, undefined, loadSession);
   const [restoring, setRestoring] = useState(true);
   const [notice, setNotice] = useState("");
+  const [about, setAbout] = useState<ProductAbout | null>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => saveSession(session), [session]);
+  useEffect(() => { void api.about().then(setAbout).catch(() => undefined); }, []);
   useEffect(() => {
     const onPopState = () => dispatch({ type: "SET_STEP", step: stepForPath(window.location.pathname) });
     window.addEventListener("popstate", onPopState);
@@ -118,7 +121,8 @@ function Workspace() {
       <header className="app-header">
         <div className="brand-mark" aria-hidden="true"><span /><span /><span /></div>
         <div className="brand-copy"><strong>Vector2World</strong><span>建筑矢量到 3D Tiles</span></div>
-        <Tag className="local-tag">LOCAL WORKFLOW</Tag>
+        <Tag className="local-tag">{about?.packaged ? "WINDOWS LOCAL" : "LOCAL WORKFLOW"}</Tag>
+        <Button className="about-button" type="text" onClick={() => setAboutOpen(true)} data-testid="about-button">关于</Button>
       </header>
       <main>
         <section className="hero-strip">
@@ -140,7 +144,16 @@ function Workspace() {
           </div>
         )}
       </main>
-      <footer><span>Vector2World · 本地优先的 OSM2World 建模工作台</span><Button type="link" onClick={() => { dispatch({ type: "RESET" }); window.history.pushState({}, "", "/import"); }}>清除会话状态</Button></footer>
+      <footer><span>Vector2World {about ? `v${about.version}` : ""} · 本地优先的 OSM2World 建模工作台</span><Button type="link" onClick={() => { dispatch({ type: "RESET" }); window.history.pushState({}, "", "/import"); }}>清除会话状态</Button></footer>
+      <Modal title="关于 Vector2World" open={aboutOpen} onCancel={() => setAboutOpen(false)} footer={<Button type="primary" onClick={() => setAboutOpen(false)}>关闭</Button>}>
+        {about ? <Descriptions size="small" column={1} data-testid="about-details">
+          <Descriptions.Item label="版本">{about.version} · build {about.buildNumber}</Descriptions.Item>
+          <Descriptions.Item label="源代码"><code>{about.gitSha}{about.gitDirty ? " (dirty)" : ""}</code></Descriptions.Item>
+          <Descriptions.Item label="构建时间">{about.buildTime}</Descriptions.Item>
+          <Descriptions.Item label="OSM2World"><code>{about.osm2worldCommit}</code></Descriptions.Item>
+          <Descriptions.Item label="规则 / 预设">{about.ruleVersion} / {about.presetVersion}</Descriptions.Item>
+        </Descriptions> : <Alert type="warning" showIcon title="暂时无法读取本地服务的版本信息" />}
+      </Modal>
     </Layout>
   );
 }

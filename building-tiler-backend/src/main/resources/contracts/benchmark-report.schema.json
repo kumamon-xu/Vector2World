@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vector2world.local/contracts/benchmark-report.schema.json",
+  "title": "Vector2World M5 benchmark report",
+  "type": "object",
+  "required": ["schemaVersion", "generatedAt", "generatorVersion", "environment", "configuration", "runs", "summary"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "generatedAt": {"type": "string", "format": "date-time"},
+    "generatorVersion": {"type": "string"},
+    "environment": {"type": "object"},
+    "configuration": {
+      "type": "object",
+      "required": ["sizes", "warmups", "repetitions", "fullUpTo", "workers", "queueCapacity"]
+    },
+    "runs": {"type": "array", "items": {"$ref": "#/$defs/run"}},
+    "summary": {"type": "array", "items": {"type": "object"}}
+  },
+  "$defs": {
+    "run": {
+      "type": "object",
+      "required": ["featureCount", "repetition", "cacheState", "scope", "status", "totalMillis", "peakHeapBytes", "phaseNanos"],
+      "properties": {
+        "featureCount": {"type": "integer", "minimum": 1},
+        "repetition": {"type": "integer", "minimum": 1},
+        "cacheState": {"enum": ["cold", "hot"]},
+        "scope": {"enum": ["analysis", "full"]},
+        "status": {"enum": ["PASSED", "FAILED"]},
+        "phaseNanos": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
+      }
+    }
+  }
+}

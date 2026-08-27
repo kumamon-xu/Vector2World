@@ -12,6 +12,8 @@ button, input { font: inherit; }
 .brand-copy strong { font-size: 18px; letter-spacing: .02em; }
 .brand-copy span { color: #9bb7c1; font-size: 12px; margin-top: 5px; }
 .local-tag { margin-left: auto; color: #aef7ed !important; border-color: rgba(82,221,208,.35) !important; background: rgba(82,221,208,.09) !important; letter-spacing: .09em; }
+.about-button { color: #d7e7ea !important; }
+.about-button:hover { color: white !important; background: rgba(255,255,255,.09) !important; }
 .hero-strip { min-height: 224px; padding: 44px max(24px, calc((100vw - 1180px) / 2)); display: flex; justify-content: space-between; overflow: hidden; position: relative; color: white; background: radial-gradient(circle at 78% 30%, rgba(23,176,162,.3), transparent 27%), linear-gradient(115deg,#071722 0%,#0b2631 58%,#0a3b40 100%); }
 .hero-strip > div:first-child { z-index: 1; max-width: 770px; }
 .hero-strip .ant-typography { color: white; margin: 7px 0; }

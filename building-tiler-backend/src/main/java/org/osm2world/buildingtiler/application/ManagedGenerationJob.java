@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 
 public final class ManagedGenerationJob {
 
+	private static final int MAX_RETAINED_EVENTS = 10_000;
 	private static final Map<GenerationJobState, EnumSet<GenerationJobState>> TRANSITIONS = transitions();
 
 	private final UUID id;
@@ -23,6 +24,7 @@ public final class ManagedGenerationJob {
 	private final Path workDirectory;
 	private final Instant createdAt;
 	private final Instant expiresAt;
+	private final Instant deadline;
 	private final AtomicBoolean cancellationRequested = new AtomicBoolean();
 	private final AtomicInteger activeReaders = new AtomicInteger();
 	private final List<GenerationJobEvent> events = new ArrayList<>();
@@ -37,11 +39,17 @@ public final class ManagedGenerationJob {
 	private long nextEventId = 1;
 
 	ManagedGenerationJob(UUID id, GenerationJobSpec spec, Path workDirectory, Instant createdAt, Instant expiresAt) {
+		this(id, spec, workDirectory, createdAt, expiresAt, expiresAt);
+	}
+
+	ManagedGenerationJob(UUID id, GenerationJobSpec spec, Path workDirectory, Instant createdAt,
+			Instant expiresAt, Instant deadline) {
 		this.id = id;
 		this.spec = spec;
 		this.workDirectory = workDirectory;
 		this.createdAt = createdAt;
 		this.expiresAt = expiresAt;
+		this.deadline = deadline;
 		this.updatedAt = createdAt;
 		emit("Job created");
 	}
@@ -52,6 +60,7 @@ public final class ManagedGenerationJob {
 	public Instant createdAt() { return createdAt; }
 	public Instant updatedAt() { return updatedAt; }
 	public Instant expiresAt() { return expiresAt; }
+	public Instant deadline() { return deadline; }
 	public int completedTiles() { return completedTiles; }
 	public int totalTiles() { return totalTiles; }
 	public String error() { return error; }
@@ -107,6 +116,15 @@ public final class ManagedGenerationJob {
 		return true;
 	}
 
+	public synchronized boolean timeout(String message) {
+		if (state.terminal()) return false;
+		cancellationRequested.set(true);
+		for (Future<?> future : futures) future.cancel(true);
+		error = message == null ? "Generation job timed out" : message;
+		transition(GenerationJobState.FAILED, error);
+		return true;
+	}
+
 	void track(Future<?> future) {
 		if (future == null) return;
 		futures.add(future);
@@ -144,6 +162,7 @@ public final class ManagedGenerationJob {
 		GenerationJobEvent event = new GenerationJobEvent(nextEventId++, Instant.now(), state,
 				completedTiles, totalTiles, message);
 		events.add(event);
+		if (events.size() > MAX_RETAINED_EVENTS) events.remove(0);
 		for (Consumer<GenerationJobEvent> subscriber : subscribers) subscriber.accept(event);
 	}
 

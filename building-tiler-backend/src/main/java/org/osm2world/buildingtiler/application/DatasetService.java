@@ -165,6 +165,10 @@ public final class DatasetService {
 
 	public int size() { return datasets.size(); }
 
+	public Path managedDirectory(String id) throws DatasetImportException { return get(id).workDirectory(); }
+
+	public Path storageRoot() { return storageRoot; }
+
 	private void ensureStorageRoot() throws DatasetImportException {
 		try {
 			Files.createDirectories(storageRoot);

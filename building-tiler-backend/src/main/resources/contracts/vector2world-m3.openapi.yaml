@@ -107,6 +107,28 @@ paths:
           content:
             application/zip: {}
         '409': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/diagnostics:
+    parameters: [{ $ref: '#/components/parameters/JobId' }]
+    get:
+      operationId: downloadGenerationDiagnostics
+      responses:
+        '200':
+          description: Capped structured logs and a redacted terminal summary
+          content:
+            application/zip: {}
+        '409': { $ref: '#/components/responses/ApiError' }
+  /api/jobs/{jobId}/retry-failed:
+    parameters: [{ $ref: '#/components/parameters/JobId' }]
+    post:
+      operationId: retryFailedGenerationJob
+      description: Starts a clean recovery job with the immutable source and configuration fingerprint.
+      responses:
+        '202':
+          description: Recovery job accepted in an isolated staging directory
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GenerationJob' }
+        '409': { $ref: '#/components/responses/ApiError' }
 components:
   parameters:
     JobId:

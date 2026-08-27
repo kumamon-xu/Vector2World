@@ -5,7 +5,8 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schemaVersion", "applicationVersion", "osm2worldVersion", "osm2worldCommit",
+    "schemaVersion", "applicationVersion", "applicationBuildNumber", "applicationGitSha",
+    "applicationGitDirty", "applicationBuildTime", "osm2worldVersion", "osm2worldCommit",
     "ruleVersion", "presetVersion", "configHash", "sourceFormat", "sourceCrs",
     "heightMapping", "zoom", "lods", "outputFormats", "crossTileStrategy",
     "crossTileBufferMeters", "boundsWgs84", "ownershipHash", "tileContents", "buildTime"
@@ -13,6 +14,10 @@
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "applicationVersion": { "type": "string", "minLength": 1 },
+    "applicationBuildNumber": { "type": "string", "minLength": 1 },
+    "applicationGitSha": { "type": "string", "minLength": 7 },
+    "applicationGitDirty": { "type": "boolean" },
+    "applicationBuildTime": { "type": "string", "minLength": 1 },
     "osm2worldVersion": { "type": "string", "minLength": 1 },
     "osm2worldCommit": { "type": "string", "minLength": 7 },
     "ruleVersion": { "const": "m2-rules-v1" },

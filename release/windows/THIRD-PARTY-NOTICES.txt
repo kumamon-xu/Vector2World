@@ -1,0 +1,16 @@
+Vector2World is a secondary development of OSM2World and retains the OSM2World MIT notice.
+
+Major bundled components include:
+- OSM2World — MIT License
+- CesiumJS — Apache License 2.0
+- GeoTools — GNU Lesser General Public License 2.1
+- JTS Topology Suite — Eclipse Public License 2.0 / Eclipse Distribution License 1.0
+- Spring Boot and Spring Framework — Apache License 2.0
+- React and React DOM — MIT License
+- Ant Design — MIT License
+- Gson — Apache License 2.0
+- Vite and supporting production packages — licenses declared by their respective packages
+
+The release bundle also contains machine-generated Java and Web CycloneDX SBOM files and a detailed
+JAVA-DEPENDENCIES.txt attribution report. Those files are the authoritative dependency/version inventory
+for the exact build. Copyrights and license texts remain the property of their respective owners.

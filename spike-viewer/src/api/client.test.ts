@@ -29,4 +29,16 @@ describe("API client contract", () => {
     } satisfies Partial<ApiClientError>));
     await expect(api.dataset("expired")).rejects.toThrow("请返回第一步重新导入");
   });
+
+  it("opens only a typed managed directory instead of accepting a raw path", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ opened: true }), {
+      status: 200, headers: { "Content-Type": "application/json" }
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    await api.openDirectory("job", "00000000-0000-0000-0000-000000000001");
+    const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(path).toBe("/api/system/open-directory");
+    expect(JSON.parse(String(init.body))).toEqual({ type: "job", id: "00000000-0000-0000-0000-000000000001" });
+    expect(String(init.body)).not.toContain("path");
+  });
 });

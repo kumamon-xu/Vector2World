@@ -1,5 +1,19 @@
 export type WizardStep = 0 | 1 | 2 | 3;
 
+export interface ProductAbout {
+  schemaVersion: string;
+  name: string;
+  version: string;
+  buildNumber: string;
+  gitSha: string;
+  gitDirty: boolean;
+  buildTime: string;
+  packaged: boolean;
+  osm2worldCommit: string;
+  ruleVersion: string;
+  presetVersion: string;
+}
+
 export const STEP_PATHS = ["/import", "/configure", "/preview", "/generate"] as const;
 
 export const TERMINAL_JOB_STATES = [
@@ -214,6 +228,10 @@ export interface JobEvent {
 export interface GenerationManifest {
   schemaVersion: string;
   applicationVersion: string;
+  applicationBuildNumber: string;
+  applicationGitSha: string;
+  applicationGitDirty: boolean;
+  applicationBuildTime: string;
   osm2worldVersion: string;
   osm2worldCommit: string;
   ruleVersion: string;

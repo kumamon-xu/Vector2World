@@ -1,5 +1,5 @@
-import { CheckCircleOutlined, CloudDownloadOutlined, CloseCircleOutlined, StopOutlined } from "@ant-design/icons";
-import { Alert, Button, Descriptions, Popconfirm, Progress, Table, Tag, Typography } from "antd";
+import { CheckCircleOutlined, CloudDownloadOutlined, CloseCircleOutlined, FolderOpenOutlined, StopOutlined } from "@ant-design/icons";
+import { Alert, Button, Descriptions, Popconfirm, Progress, Space, Table, Tag, Typography } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import { CesiumViewport } from "../components/CesiumViewport";
@@ -32,6 +32,7 @@ export function GenerateStep({ dataset, config, job, onJob, onEvent, onResetJob,
   const [report, setReport] = useState<GenerationReport | null>(null);
   const [manifest, setManifest] = useState<GenerationManifest | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [openingDirectory, setOpeningDirectory] = useState(false);
 
   const completed = job?.state === "COMPLETED" || job?.state === "COMPLETED_WITH_WARNINGS";
   useEffect(() => {
@@ -70,6 +71,13 @@ export function GenerateStep({ dataset, config, job, onJob, onEvent, onResetJob,
     try { onJob(await api.cancelJob(job.id)); }
     catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)); }
     finally { setCancelling(false); }
+  };
+  const openDirectory = async () => {
+    if (!job) return;
+    setOpeningDirectory(true); setError("");
+    try { await api.openDirectory("job", job.id); }
+    catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)); }
+    finally { setOpeningDirectory(false); }
   };
 
   const warnings = useMemo(() => job ? [
@@ -136,7 +144,7 @@ export function GenerateStep({ dataset, config, job, onJob, onEvent, onResetJob,
           </section>
 
           <section className="content-card" aria-labelledby="delivery-title">
-            <div className="section-heading"><div><Typography.Title id="delivery-title" level={3}>成果交付</Typography.Title><Typography.Text type="secondary">浏览器模式提供 ZIP 下载；不会暴露服务端目录。</Typography.Text></div><Tag>WEB 模式</Tag></div>
+            <div className="section-heading"><div><Typography.Title id="delivery-title" level={3}>成果交付</Typography.Title><Typography.Text type="secondary">可下载 ZIP；Windows 本地版还可通过受控接口打开本任务成果目录。</Typography.Text></div><Tag>本地安全桥接</Tag></div>
             <Table
               size="small"
               rowKey="relativePath"
@@ -146,7 +154,10 @@ export function GenerateStep({ dataset, config, job, onJob, onEvent, onResetJob,
             />
             <div className="delivery-actions">
               <span>{downloadReady ? "空间内容与报告均已验证，可以下载。" : "等待成果在 Cesium 中成功加载后开放下载。"}</span>
-              <Button type="primary" size="large" icon={<CloudDownloadOutlined />} disabled={!downloadReady} href={job.links.download} data-testid="download-result">下载完整 ZIP</Button>
+              <Space wrap>
+                <Button size="large" icon={<FolderOpenOutlined />} loading={openingDirectory} onClick={() => void openDirectory()} data-testid="open-result-directory">打开成果目录</Button>
+                <Button type="primary" size="large" icon={<CloudDownloadOutlined />} disabled={!downloadReady} href={job.links.download} data-testid="download-result">下载完整 ZIP</Button>
+              </Space>
             </div>
           </section>
         </>

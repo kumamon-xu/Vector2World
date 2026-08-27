@@ -19,6 +19,7 @@ import org.osm2world.buildingtiler.modeling.StableStyleHash;
 import org.osm2world.buildingtiler.modeling.StylePresetCatalog;
 import org.osm2world.buildingtiler.tiles.TileOwnershipPlanner;
 import org.osm2world.buildingtiler.tiles.TileRenderResult;
+import org.osm2world.buildingtiler.product.ProductBuildInfo;
 import org.osm2world.buildingtiler.tiles.TilesetValidator;
 
 import com.google.gson.Gson;
@@ -31,7 +32,8 @@ public final class GenerationResultWriter {
 	public WriteResult write(Path staging, ManagedGenerationJob job, DatasetReadResult dataset,
 			TileOwnershipPlanner.TilingPlan plan, List<TileRenderResult> successes,
 			List<TileFailure> failures, List<String> warnings,
-			TilesetValidator.ValidationResult validation, Instant buildStarted, Instant buildFinished)
+			TilesetValidator.ValidationResult validation, Instant buildStarted, Instant buildFinished,
+			Map<String, Object> resourceMetrics)
 			throws IOException {
 		List<TileRenderResult> ordered = successes.stream()
 				.sorted(Comparator.comparing(TileRenderResult::tile)).toList();
@@ -41,9 +43,14 @@ public final class GenerationResultWriter {
 
 		Map<String, Object> manifest = new LinkedHashMap<>();
 		manifest.put("schemaVersion", "1.0");
-		manifest.put("applicationVersion", UpstreamBaseline.APPLICATION_VERSION);
+		ProductBuildInfo product = ProductBuildInfo.current();
+		manifest.put("applicationVersion", product.version());
+		manifest.put("applicationBuildNumber", product.buildNumber());
+		manifest.put("applicationGitSha", product.gitSha());
+		manifest.put("applicationGitDirty", product.gitDirty());
+		manifest.put("applicationBuildTime", product.buildTime());
 		manifest.put("osm2worldVersion", UpstreamBaseline.OSM2WORLD_VERSION);
-		manifest.put("osm2worldCommit", UpstreamBaseline.OSM2WORLD_COMMIT);
+		manifest.put("osm2worldCommit", product.osm2worldCommit());
 		manifest.put("ruleVersion", job.spec().modelingConfig().ruleVersion().value());
 		manifest.put("presetVersion", StylePresetCatalog.PRESET_VERSION);
 		manifest.put("configHash", configHash);
@@ -95,6 +102,7 @@ public final class GenerationResultWriter {
 		report.put("tileFailures", failures);
 		report.put("warnings", warnings);
 		report.put("validation", validation);
+		report.put("resourceMetrics", resourceMetrics == null ? Map.of() : resourceMetrics);
 		report.put("volatileFields", List.of("jobId", "buildStarted", "buildFinished", "elapsedMillis",
 				"tileResults.elapsedNanos"));
 		Path reportFile = staging.resolve("generation-report.json");
@@ -114,7 +122,7 @@ public final class GenerationResultWriter {
 				"maximumHeightMeters", mapping.maximumHeightMeters());
 	}
 
-	private static String configHash(GenerationJobSpec spec) {
+	static String configHash(GenerationJobSpec spec) {
 		String modeling = new StableStyleHash().configHash(spec.modelingConfig());
 		var tiling = spec.tilingConfig();
 		String canonical = String.join("|", modeling, Integer.toString(tiling.zoom()), tiling.lods().toString(),

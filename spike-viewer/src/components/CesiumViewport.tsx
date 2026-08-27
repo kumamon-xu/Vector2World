@@ -29,6 +29,22 @@ export function webMercatorTileBounds(tileKey: string): [number, number, number,
   return [longitude(x), latitude(y + 1), longitude(x + 1), latitude(y)];
 }
 
+/**
+ * Cesium 1.144 performs an unguarded `instanceof OffscreenCanvas` check while
+ * constructing default materials. Windows WebKit exposes WebGL but not the
+ * OffscreenCanvas global, so provide an identity-only constructor. Cesium does
+ * not instantiate it in this workflow; the shim only makes the feature check
+ * safe and leaves HTMLCanvasElement rendering unchanged.
+ */
+export function ensureOffscreenCanvasCompatibility(scope: Record<string, unknown> = globalThis) {
+  if (!("OffscreenCanvas" in scope)) {
+    Object.defineProperty(scope, "OffscreenCanvas", {
+      configurable: true,
+      value: class OffscreenCanvasCompatibility {}
+    });
+  }
+}
+
 export function CesiumViewport({ source, label, height = 440, onReadyChange }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const fit = useRef<(() => Promise<void>) | null>(null);
@@ -47,6 +63,7 @@ export function CesiumViewport({ source, label, height = 440, onReadyChange }: P
     onReadyChange?.(false);
 
     const load = async () => {
+      ensureOffscreenCanvasCompatibility();
       const Cesium = await import("cesium");
       if (disposed) return;
       viewer = new Cesium.Viewer(host, {

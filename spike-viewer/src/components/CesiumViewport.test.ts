@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validWgs84Bounds, webMercatorTileBounds } from "./CesiumViewport";
+import { ensureOffscreenCanvasCompatibility, validWgs84Bounds, webMercatorTileBounds } from "./CesiumViewport";
 
 describe("Cesium spatial helpers", () => {
   it("accepts finite non-wrapping WGS84 bounds", () => {
@@ -12,5 +12,13 @@ describe("Cesium spatial helpers", () => {
     const bounds = webMercatorTileBounds("0,0,0");
     expect(bounds[0]).toBe(-180); expect(bounds[1]).toBeCloseTo(-85.0511288);
     expect(bounds[2]).toBe(180); expect(bounds[3]).toBeCloseTo(85.0511288);
+  });
+
+  it("provides an identity-only OffscreenCanvas global for WebKit", () => {
+    const scope: Record<string, unknown> = {};
+    ensureOffscreenCanvasCompatibility(scope);
+    expect(scope.OffscreenCanvas).toBeTypeOf("function");
+    const constructor = scope.OffscreenCanvas as new () => object;
+    expect(new constructor()).toBeInstanceOf(constructor);
   });
 });

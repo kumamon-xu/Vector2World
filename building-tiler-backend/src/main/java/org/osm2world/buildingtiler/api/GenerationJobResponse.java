@@ -53,6 +53,8 @@ public record GenerationJobResponse(
 				result == null ? List.of() : result.tileFailures(), result == null ? List.of() : result.artifacts(),
 				Map.of("self", "/api/jobs/" + id, "events", "/api/jobs/" + id + "/events",
 						"tileset", "/api/jobs/" + id + "/files/tileset.json", "manifest", "/api/jobs/" + id + "/manifest",
-						"report", "/api/jobs/" + id + "/report", "download", "/api/jobs/" + id + "/download"));
+						"report", "/api/jobs/" + id + "/report", "download", "/api/jobs/" + id + "/download",
+						"diagnostics", "/api/jobs/" + id + "/diagnostics",
+						"retryFailed", "/api/jobs/" + id + "/retry-failed"));
 	}
 }

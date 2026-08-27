@@ -133,10 +133,29 @@ public final class GenerationJobController {
 				.body(body);
 	}
 
+	@GetMapping(value = "/{jobId}/diagnostics", produces = "application/zip")
+	public ResponseEntity<StreamingResponseBody> diagnostics(@PathVariable("jobId") String jobId)
+			throws DatasetImportException {
+		jobs.get(jobId);
+		StreamingResponseBody body = output -> jobs.streamDiagnosticsZip(jobId, output);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						"attachment; filename=vector2world-diagnostics-" + jobId + ".zip")
+				.contentType(MediaType.parseMediaType("application/zip"))
+				.body(body);
+	}
+
 	@DeleteMapping(value = "/{jobId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<GenerationJobResponse> cancel(@PathVariable("jobId") String jobId)
 			throws DatasetImportException {
 		return ResponseEntity.accepted().body(GenerationJobResponse.from(jobs.cancel(jobId)));
+	}
+
+	@PostMapping(value = "/{jobId}/retry-failed", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<GenerationJobResponse> retryFailed(@PathVariable("jobId") String jobId)
+			throws IOException {
+		return ResponseEntity.status(HttpStatus.ACCEPTED)
+				.body(GenerationJobResponse.from(jobs.retryFailed(jobId)));
 	}
 
 	private ResponseEntity<FileSystemResource> jsonFile(String jobId, String fileName)
@@ -169,7 +188,7 @@ public final class GenerationJobController {
 	}
 
 	private TilingConfig tilingConfig(CreateGenerationJobRequest request) {
-		int workers = request.workerCount() == null ? jobs.hardWorkerLimit() : request.workerCount();
+		int workers = request.workerCount() == null ? jobs.recommendedWorkerCount() : request.workerCount();
 		int queue = request.queueCapacity() == null ? jobs.queueCapacity() : request.queueCapacity();
 		List<OutputFormat> formats = request.outputFormats() == null ? List.of(OutputFormat.THREE_D_TILES)
 				: request.outputFormats().stream().map(OutputFormat::parse).toList();
