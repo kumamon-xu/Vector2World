@@ -1,0 +1,17 @@
+[
+  {
+    "name": "low-flat-neutral",
+    "input": { "longitude": 116.6000, "latitude": 39.9000, "width": 0.0010, "depth": 0.0005, "height": 4.0, "roofMode": "AUTO_SIMPLE", "preset": "neutral-city" },
+    "expected": { "levels": 1, "roofShape": "flat", "roofHeight": 0.0, "outputHash": "ceb847f9a94e563a08b3449e5db734bc8120ea25c06a27f2ed37b7abca44e92a", "meshCount": 5, "triangleCount": 10 }
+  },
+  {
+    "name": "mid-auto-warm",
+    "input": { "longitude": 116.6100, "latitude": 39.9000, "width": 0.0010, "depth": 0.0005, "height": 18.0, "roofMode": "AUTO_SIMPLE", "preset": "warm-residential" },
+    "expected": { "levels": 5, "roofShape": "hipped", "roofHeight": 2.7, "outputHash": "9253ca53a54d2240b16b70bc182c10520a56faf123491aac410aab449ac65150", "meshCount": 5, "triangleCount": 14 }
+  },
+  {
+    "name": "high-flat-modern",
+    "input": { "longitude": 116.6200, "latitude": 39.9000, "width": 0.0010, "depth": 0.0005, "height": 60.0, "roofMode": "AUTO_SIMPLE", "preset": "modern-city" },
+    "expected": { "levels": 19, "roofShape": "flat", "roofHeight": 0.0, "outputHash": "8910d4e4ff02448e243eb6b2b62669daa0f42caf9ee7b808f5028bd019cf531f", "meshCount": 5, "triangleCount": 10 }
+  }
+]

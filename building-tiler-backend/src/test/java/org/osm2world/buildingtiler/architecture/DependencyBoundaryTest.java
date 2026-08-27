@@ -18,7 +18,7 @@ class DependencyBoundaryTest {
 			sourceRoot = Path.of("").toAbsolutePath().resolve("building-tiler-backend/src/main/java");
 		}
 		List<String> violations = new ArrayList<>();
-		for (String packageName : List.of("application", "cli")) {
+		for (String packageName : List.of("application", "api", "cli", "modeling")) {
 			Path packageDirectory = sourceRoot.resolve("org/osm2world/buildingtiler/" + packageName);
 			try (var files = Files.walk(packageDirectory)) {
 				for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {

@@ -19,5 +19,10 @@ export default defineConfig(({ command }) => ({
         rename: { stripBase: 5 }
       }))
     })
-  ]
+	],
+	server: {
+		proxy: {
+			"/api": "http://127.0.0.1:18080"
+		}
+	}
 }));

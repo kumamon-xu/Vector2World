@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info:
+  title: Vector2World Model Preview API
+  version: 2.0.0-m2
+  description: >-
+    Milestone 2 contract. Dataset import remains defined by vector2world-m1.openapi.yaml.
+    Model previews use the same versioned procedural rules and OSM2World adapters as later generation.
+paths:
+  /api/model-previews:
+    post:
+      operationId: createModelPreview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelPreviewRequest'
+      responses:
+        '201':
+          description: Preview generated and validated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelPreview'
+        '400': { $ref: '#/components/responses/ApiError' }
+        '404': { $ref: '#/components/responses/ApiError' }
+        '500': { $ref: '#/components/responses/ApiError' }
+  /api/model-previews/{previewId}:
+    parameters:
+      - $ref: '#/components/parameters/PreviewId'
+    get:
+      operationId: getModelPreview
+      responses:
+        '200':
+          description: Current preview status and result links
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelPreview' }
+        '404': { $ref: '#/components/responses/ApiError' }
+    delete:
+      operationId: deleteModelPreview
+      responses:
+        '204': { description: Preview deleted or already absent }
+  /api/model-previews/{previewId}/files/{fileName}:
+    parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      - name: fileName
+        in: path
+        required: true
+        schema:
+          enum: [tileset.json, tileset.glb, preview-report.json]
+    get:
+      operationId: getModelPreviewFile
+      responses:
+        '200':
+          description: Validated preview artifact
+          content:
+            application/json: {}
+            model/gltf-binary: {}
+        '404': { $ref: '#/components/responses/ApiError' }
+components:
+  parameters:
+    PreviewId:
+      name: previewId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ApiError:
+      description: Stable API error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [schemaVersion, status, code, message]
+            properties:
+              schemaVersion: { const: '1.0' }
+              status: { type: integer }
+              code: { type: string }
+              message: { type: string }
+              details: { type: object }
+  schemas:
+    ModelPreviewRequest:
+      type: object
+      additionalProperties: false
+      required: [datasetId, heightField]
+      properties:
+        datasetId: { type: string, format: uuid }
+        heightField: { type: string, minLength: 1 }
+        heightUnit: { enum: [m, cm, mm, ft], default: m }
+        invalidPolicy: { enum: [SKIP, FAIL], default: SKIP }
+        maximumHeightMeters: { type: number, exclusiveMinimum: 0, default: 10000 }
+        ruleVersion: { const: m2-rules-v1, default: m2-rules-v1 }
+        roofMode: { enum: [CONSERVATIVE, AUTO_SIMPLE, FLAT_FACADE_DETAIL], default: AUTO_SIMPLE }
+        stylePreset: { enum: [neutral-city, warm-residential, modern-city, industrial], default: neutral-city }
+        floorHeightMeters: { type: number, minimum: 2, maximum: 6, default: 3.2 }
+        roofHeightRatio: { type: number, minimum: 0, maximum: 0.5, default: 0.15 }
+        minimumRoofHeightMeters: { type: number, minimum: 0, maximum: 10, default: 0.8 }
+        maximumRoofHeightMeters: { type: number, minimum: 0, maximum: 20, default: 3.0 }
+        minimumBodyHeightMeters: { type: number, minimum: 1, maximum: 20, default: 2.5 }
+        minimumPitchedBuildingHeightMeters: { type: number, minimum: 2, maximum: 100, default: 6 }
+        maximumPitchedBuildingHeightMeters: { type: number, minimum: 2, maximum: 1000, default: 30 }
+        lod: { type: integer, minimum: 0, maximum: 4, default: 4 }
+        sampleSize: { type: integer, minimum: 50, maximum: 200, default: 100 }
+        variantSeed: { type: integer, default: 1446139724 }
+    ModelPreview:
+      type: object
+      required: [schemaVersion, id, datasetId, status, disclaimer, config, links]
+      properties:
+        schemaVersion: { const: '1.0' }
+        id: { type: string, format: uuid }
+        datasetId: { type: string, format: uuid }
+        status: { enum: [GENERATING, READY, FAILED, DELETING, DELETED] }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        disclaimer: { type: string }
+        heightMapping: { type: object }
+        config: { type: object }
+        selectedBuildings: { type: integer, minimum: 0 }
+        modeledBuildings: { type: integer, minimum: 0 }
+        meshCount: { type: integer, minimum: 0 }
+        selectionHash: { type: [string, 'null'] }
+        ruleOutputHash: { type: [string, 'null'] }
+        boundsWgs84:
+          type: array
+          minItems: 0
+          maxItems: 4
+          items: { type: number }
+        bucketCoverage: { type: object }
+        warnings: { type: array, items: { type: string } }
+        featureFailures: { type: array, items: { type: object } }
+        links: { type: object }

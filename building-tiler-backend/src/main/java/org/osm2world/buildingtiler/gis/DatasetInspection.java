@@ -2,6 +2,7 @@ package org.osm2world.buildingtiler.gis;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -63,9 +64,10 @@ public record DatasetInspection(
 				}
 				continue;
 			}
-			buildings.add(new BuildingFeature(feature.id(), feature.geometryWgs84(), parsed.meters(),
-					Map.of("heightField", mapping.fieldName(), "partIds",
-							feature.parts().stream().map(Object::toString).toList())));
+			Map<String, Object> attributes = new LinkedHashMap<>(feature.properties());
+			attributes.put("_vector2world.heightField", mapping.fieldName());
+			attributes.put("_vector2world.partIds", feature.parts().stream().map(Object::toString).toList());
+			buildings.add(new BuildingFeature(feature.id(), feature.geometryWgs84(), parsed.meters(), attributes));
 		}
 		HeightQualityStatistics quality = statistics.result();
 		DatasetMetadata metadata = new DatasetMetadata(sourcePath, format, sourceCrs, sourceEncoding,

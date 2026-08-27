@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vector2world.local/contracts/modeling-config.schema.json",
+  "title": "Vector2World ModelingConfig",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ruleVersion", "roofMode", "stylePreset", "floorHeightMeters", "roofHeightRatio",
+    "minimumRoofHeightMeters", "maximumRoofHeightMeters", "minimumBodyHeightMeters",
+    "minimumPitchedBuildingHeightMeters", "maximumPitchedBuildingHeightMeters",
+    "lod", "previewSampleSize", "variantSeed", "footprintThresholds"
+  ],
+  "properties": {
+    "ruleVersion": { "const": "m2-rules-v1" },
+    "roofMode": { "enum": ["CONSERVATIVE", "AUTO_SIMPLE", "FLAT_FACADE_DETAIL"], "default": "AUTO_SIMPLE" },
+    "stylePreset": { "enum": ["neutral-city", "warm-residential", "modern-city", "industrial"], "default": "neutral-city" },
+    "floorHeightMeters": { "type": "number", "minimum": 2.0, "maximum": 6.0, "default": 3.2 },
+    "roofHeightRatio": { "type": "number", "minimum": 0.0, "maximum": 0.5, "default": 0.15 },
+    "minimumRoofHeightMeters": { "type": "number", "minimum": 0.0, "maximum": 10.0, "default": 0.8 },
+    "maximumRoofHeightMeters": { "type": "number", "minimum": 0.0, "maximum": 20.0, "default": 3.0 },
+    "minimumBodyHeightMeters": { "type": "number", "minimum": 1.0, "maximum": 20.0, "default": 2.5 },
+    "minimumPitchedBuildingHeightMeters": { "type": "number", "minimum": 2.0, "maximum": 100.0, "default": 6.0 },
+    "maximumPitchedBuildingHeightMeters": { "type": "number", "minimum": 2.0, "maximum": 1000.0, "default": 30.0 },
+    "lod": { "type": "integer", "minimum": 0, "maximum": 4, "default": 4 },
+    "previewSampleSize": { "type": "integer", "minimum": 50, "maximum": 200, "default": 100 },
+    "variantSeed": { "type": "integer", "default": 1446139724 },
+    "footprintThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimumCompactness", "minimumConvexity", "minimumOrthogonality", "maximumSimpleVertices", "maximumPitchedAspectRatio"],
+      "properties": {
+        "minimumCompactness": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.45 },
+        "minimumConvexity": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.82 },
+        "minimumOrthogonality": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.55 },
+        "maximumSimpleVertices": { "type": "integer", "minimum": 4, "maximum": 1000, "default": 12 },
+        "maximumPitchedAspectRatio": { "type": "number", "minimum": 1, "maximum": 100, "default": 4.0 }
+      }
+    }
+  }
+}
