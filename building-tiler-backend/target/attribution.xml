@@ -1,0 +1,1997 @@
+<attributionReport>
+   <dependencies>
+      <dependency>
+         <name>adt-multicollections</name>
+         <groupId>de.topobyte</groupId>
+         <artifactId>adt-multicollections</artifactId>
+         <version>0.0.4</version>
+         <type>jar</type>
+         <licenses/>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Apache Commons Collections</name>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-collections4</artifactId>
+         <version>4.4</version>
+         <projectUrl>https://commons.apache.org/proper/commons-collections/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Apache Commons IO</name>
+         <groupId>commons-io</groupId>
+         <artifactId>commons-io</artifactId>
+         <version>2.21.0</version>
+         <projectUrl>https://commons.apache.org/proper/commons-io/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache-2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Apache Commons Lang</name>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-lang3</artifactId>
+         <version>3.18.0</version>
+         <projectUrl>https://commons.apache.org/proper/commons-lang/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache-2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Apache Commons Math</name>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-math3</artifactId>
+         <version>3.6.1</version>
+         <projectUrl>http://commons.apache.org/proper/commons-math/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Apache Commons Text</name>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-text</artifactId>
+         <version>1.13.0</version>
+         <projectUrl>https://commons.apache.org/proper/commons-text</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache-2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Apache XML Graphics Commons</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>xmlgraphics-commons</artifactId>
+         <version>2.9</version>
+         <projectUrl>http://xmlgraphics.apache.org/commons/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>asm</name>
+         <groupId>org.ow2.asm</groupId>
+         <artifactId>asm</artifactId>
+         <version>9.10.1</version>
+         <projectUrl>http://asm.ow2.io/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD-3-Clause</name>
+               <url>https://asm.ow2.io/license.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Checker Qual</name>
+         <groupId>org.checkerframework</groupId>
+         <artifactId>checker-qual</artifactId>
+         <version>3.42.0</version>
+         <projectUrl>https://checkerframework.org/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The MIT License</name>
+               <url>http://opensource.org/licenses/MIT</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Commons Pool</name>
+         <groupId>commons-pool</groupId>
+         <artifactId>commons-pool</artifactId>
+         <version>1.5.4</version>
+         <projectUrl>http://commons.apache.org/pool/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>dynsax</name>
+         <groupId>de.topobyte</groupId>
+         <artifactId>dynsax</artifactId>
+         <version>0.0.1</version>
+         <type>jar</type>
+         <licenses/>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>earcut4j</name>
+         <groupId>io.github.earcut4j</groupId>
+         <artifactId>earcut4j</artifactId>
+         <version>2.2.2</version>
+         <projectUrl>https://github.com/earcut4j/earcut4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>ISC License (ISC)</name>
+               <url>https://opensource.org/licenses/ISC</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Eclipse Collections API</name>
+         <groupId>org.eclipse.collections</groupId>
+         <artifactId>eclipse-collections-api</artifactId>
+         <version>13.0.0</version>
+         <projectUrl>https://github.com/eclipse/eclipse-collections/eclipse-collections-api</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Eclipse Public License - v 1.0</name>
+               <url>https://www.eclipse.org/legal/epl-v10.html</url>
+            </license>
+            <license>
+               <name>Eclipse Distribution License - v 1.0</name>
+               <url>https://www.eclipse.org/licenses/edl-v10.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Eclipse Collections Main Library</name>
+         <groupId>org.eclipse.collections</groupId>
+         <artifactId>eclipse-collections</artifactId>
+         <version>13.0.0</version>
+         <projectUrl>https://github.com/eclipse/eclipse-collections/eclipse-collections</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Eclipse Public License - v 1.0</name>
+               <url>https://www.eclipse.org/legal/epl-v10.html</url>
+            </license>
+            <license>
+               <name>Eclipse Distribution License - v 1.0</name>
+               <url>https://www.eclipse.org/licenses/edl-v10.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>EJML</name>
+         <groupId>org.ejml</groupId>
+         <artifactId>ejml-ddense</artifactId>
+         <version>0.41</version>
+         <projectUrl>http://ejml.org/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>EJML</name>
+         <groupId>org.ejml</groupId>
+         <artifactId>ejml-core</artifactId>
+         <version>0.41</version>
+         <projectUrl>http://ejml.org/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>EPSG Authority Service using HSQL database</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-epsg-hsql</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>https://github.com/geotools/geotools/blob/master/modules/plugin/epsg-hsql/LICENSE.txt</url>
+            </license>
+            <license>
+               <name>EPSG database distribution license</name>
+               <url>https://github.com/geotools/geotools/blob/master/licenses/EPSG.md</url>
+            </license>
+            <license>
+               <name>BSD License for HSQL</name>
+               <url>https://github.com/geotools/geotools/blob/master/licenses/HSQL.md</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>error-prone annotations</name>
+         <groupId>com.google.errorprone</groupId>
+         <artifactId>error_prone_annotations</artifactId>
+         <version>2.27.0</version>
+         <projectUrl>https://errorprone.info/error_prone_annotations</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>FindBugs-jsr305</name>
+         <groupId>com.google.code.findbugs</groupId>
+         <artifactId>jsr305</artifactId>
+         <version>3.0.2</version>
+         <projectUrl>http://findbugs.sourceforge.net/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>GeoDesk</name>
+         <groupId>com.geodesk</groupId>
+         <artifactId>geodesk</artifactId>
+         <version>1.0.2</version>
+         <projectUrl>http://www.geodesk.com</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>GeoTools Interfaces</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-api</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>GNU Trove</name>
+         <groupId>net.sf.trove4j</groupId>
+         <artifactId>trove4j</artifactId>
+         <version>3.0.3</version>
+         <projectUrl>http://trove4j.sf.net</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 2.1</name>
+               <url>http://www.gnu.org/licenses/lgpl-2.1.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Gson</name>
+         <groupId>com.google.code.gson</groupId>
+         <artifactId>gson</artifactId>
+         <version>2.11.0</version>
+         <projectUrl>https://github.com/google/gson</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache-2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Guava InternalFutureFailureAccess and InternalFutures</name>
+         <groupId>com.google.guava</groupId>
+         <artifactId>failureaccess</artifactId>
+         <version>1.0.2</version>
+         <projectUrl>https://github.com/google/guava/failureaccess</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Guava ListenableFuture only</name>
+         <groupId>com.google.guava</groupId>
+         <artifactId>listenablefuture</artifactId>
+         <version>9999.0-empty-to-avoid-conflict-with-guava</version>
+         <projectUrl>https://github.com/google/guava/listenablefuture</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Guava: Google Core Libraries for Java</name>
+         <groupId>com.google.guava</groupId>
+         <artifactId>guava</artifactId>
+         <version>33.2.1-jre</version>
+         <projectUrl>https://github.com/google/guava</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>HTTP Clients</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-http</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>HyperSQL Database</name>
+         <groupId>org.hsqldb</groupId>
+         <artifactId>hsqldb</artifactId>
+         <version>2.7.4</version>
+         <projectUrl>http://hsqldb.org</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>HSQLDB License, a BSD open source license</name>
+               <url>http://hsqldb.org/web/hsqlLicense.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>J2ObjC Annotations</name>
+         <groupId>com.google.j2objc</groupId>
+         <artifactId>j2objc-annotations</artifactId>
+         <version>3.0.0</version>
+         <projectUrl>https://github.com/google/j2objc/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Jackson-annotations</name>
+         <groupId>com.fasterxml.jackson.core</groupId>
+         <artifactId>jackson-annotations</artifactId>
+         <version>3.0-rc5</version>
+         <projectUrl>http://github.com/FasterXML/jackson</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Jackson-core</name>
+         <groupId>tools.jackson.core</groupId>
+         <artifactId>jackson-core</artifactId>
+         <version>3.2.0</version>
+         <projectUrl>https://github.com/FasterXML/jackson-core</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Jakarta Dependency Injection</name>
+         <groupId>jakarta.inject</groupId>
+         <artifactId>jakarta.inject-api</artifactId>
+         <version>2.0.1</version>
+         <projectUrl>https://github.com/eclipse-ee4j/injection-api</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>jakarta.annotation API</name>
+         <groupId>jakarta.annotation</groupId>
+         <artifactId>jakarta.annotation-api</artifactId>
+         <version>1.3.4</version>
+         <projectUrl>https://projects.eclipse.org/projects/ee4j.ca</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>EPL 2.0</name>
+               <url>http://www.eclipse.org/legal/epl-2.0</url>
+            </license>
+            <license>
+               <name>GPL2 w/ CPE</name>
+               <url>https://www.gnu.org/software/classpath/license.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Java implementation of GeographicLib</name>
+         <groupId>net.sf.geographiclib</groupId>
+         <artifactId>GeographicLib-Java</artifactId>
+         <version>1.49</version>
+         <projectUrl>https://geographiclib.sourceforge.io</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The MIT License(MIT)</name>
+               <url>http://opensource.org/licenses/MIT</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>jgridshift-core</name>
+         <groupId>it.geosolutions.jgridshift</groupId>
+         <artifactId>jgridshift-core</artifactId>
+         <version>1.3</version>
+         <type>jar</type>
+         <licenses/>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>JHlabs Java Projection Library</name>
+         <groupId>com.jhlabs</groupId>
+         <artifactId>javaproj</artifactId>
+         <version>1.0</version>
+         <projectUrl>http://www.jhlabs.com/java/maps/proj/index.html</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Joda-Time</name>
+         <groupId>joda-time</groupId>
+         <artifactId>joda-time</artifactId>
+         <version>2.13.0</version>
+         <projectUrl>https://www.joda.org/joda-time/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Apache License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Logging</name>
+         <groupId>commons-logging</groupId>
+         <artifactId>commons-logging</artifactId>
+         <version>1.0.4</version>
+         <projectUrl>http://jakarta.apache.org/commons/logging/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>/LICENSE.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>LZ4 and xxHash</name>
+         <groupId>org.lz4</groupId>
+         <artifactId>lz4-java</artifactId>
+         <version>1.8.0</version>
+         <projectUrl>https://github.com/lz4/lz4-java</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Main module</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-main</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>MB Tiles for Java</name>
+         <groupId>org.imintel</groupId>
+         <artifactId>mbtiles4j</artifactId>
+         <version>1.0.6</version>
+         <projectUrl>http://www.github.com/imintel</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Metadata</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-metadata</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Open Web Services Model</name>
+         <groupId>org.geotools.ogc</groupId>
+         <artifactId>net.opengis.ows</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-anim</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-anim</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-anim/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-awt-util</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-awt-util</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-awt-util/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-bridge</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-bridge</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-bridge/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-codec</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-codec</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-codec/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-constants</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-constants</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-constants/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-css</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-css</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-css/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-dom</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-dom</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-dom/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-ext</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-ext</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-ext/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-gvt</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-gvt</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-gvt/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-i18n</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-i18n</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-i18n/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-parser</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-parser</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-parser/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-rasterizer</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-rasterizer</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-rasterizer/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-script</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-script</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-script/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-shared-resources</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-shared-resources</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-shared-resources/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-svg-dom</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-svg-dom</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-svg-dom/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-svggen</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-svggen</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-svggen/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-svgrasterizer</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-svgrasterizer</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-svgrasterizer/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-transcoder</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-transcoder</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-transcoder/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-util</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-util</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-util/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.apache.xmlgraphics:batik-xml</name>
+         <groupId>org.apache.xmlgraphics</groupId>
+         <artifactId>batik-xml</artifactId>
+         <version>1.17</version>
+         <projectUrl>http://xmlgraphics.apache.org/batik/batik-xml/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.eclipse.emf.common</name>
+         <groupId>org.eclipse.emf</groupId>
+         <artifactId>org.eclipse.emf.common</artifactId>
+         <version>2.15.0</version>
+         <projectUrl>http://www.eclipse.org/emf</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Eclipse Public License Version 1.0</name>
+               <url>http://www.eclipse.org/legal/epl-v10.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.eclipse.emf.ecore</name>
+         <groupId>org.eclipse.emf</groupId>
+         <artifactId>org.eclipse.emf.ecore</artifactId>
+         <version>2.15.0</version>
+         <projectUrl>http://www.eclipse.org/emf</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Eclipse Public License Version 1.0</name>
+               <url>http://www.eclipse.org/legal/epl-v10.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.eclipse.emf.ecore.xmi</name>
+         <groupId>org.eclipse.emf</groupId>
+         <artifactId>org.eclipse.emf.ecore.xmi</artifactId>
+         <version>2.15.0</version>
+         <projectUrl>http://www.eclipse.org/emf</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Eclipse Public License Version 1.0</name>
+               <url>http://www.eclipse.org/legal/epl-v10.html</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.eclipse.imagen:imagen-core</name>
+         <groupId>org.eclipse.imagen</groupId>
+         <artifactId>imagen-core</artifactId>
+         <version>0.9.2</version>
+         <projectUrl>https://projects.eclipse.org/projects/locationtech.rasterprocessingengine/imagen-modules/imagen-core</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.eclipse.imagen:iterators</name>
+         <groupId>org.eclipse.imagen</groupId>
+         <artifactId>iterators</artifactId>
+         <version>0.9.2</version>
+         <projectUrl>https://projects.eclipse.org/projects/locationtech.rasterprocessingengine/imagen-modules/iterators</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.eclipse.imagen:utilities</name>
+         <groupId>org.eclipse.imagen</groupId>
+         <artifactId>utilities</artifactId>
+         <version>0.9.2</version>
+         <projectUrl>https://projects.eclipse.org/projects/locationtech.rasterprocessingengine/imagen-modules/utilities</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>org.locationtech.jts:jts-core</name>
+         <groupId>org.locationtech.jts</groupId>
+         <artifactId>jts-core</artifactId>
+         <version>1.19.0</version>
+         <projectUrl>https://www.locationtech.org/projects/technology.jts/jts-modules/jts-core</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Eclipse Public License, Version 2.0</name>
+               <url>https://github.com/locationtech/jts/blob/master/LICENSE_EPLv2.txt</url>
+            </license>
+            <license>
+               <name>Eclipse Distribution License - v 1.0</name>
+               <url>https://github.com/locationtech/jts/blob/master/LICENSE_EDLv1.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>OSM2World Core</name>
+         <groupId>org.osm2world</groupId>
+         <artifactId>osm2world-core</artifactId>
+         <version>0.5.0-SNAPSHOT</version>
+         <projectUrl>https://osm2world.org/osm2world-core</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The MIT License</name>
+               <url>https://opensource.org/licenses/MIT</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>OSM2World Core JVM</name>
+         <groupId>org.osm2world</groupId>
+         <artifactId>osm2world-core-jvm</artifactId>
+         <version>0.5.0-SNAPSHOT</version>
+         <projectUrl>https://osm2world.org/osm2world-core-jvm</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The MIT License</name>
+               <url>https://opensource.org/licenses/MIT</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>osm4j-core</name>
+         <groupId>de.topobyte</groupId>
+         <artifactId>osm4j-core</artifactId>
+         <version>1.4.1</version>
+         <projectUrl>https://github.com/topobyte/osm4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License (LGPL), Version 3</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>osm4j-pbf (lite runtime)</name>
+         <groupId>de.topobyte</groupId>
+         <artifactId>osm4j-pbf</artifactId>
+         <version>1.4.1</version>
+         <projectUrl>https://github.com/topobyte/osm4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License (LGPL), Version 3</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>osm4j-xml</name>
+         <groupId>de.topobyte</groupId>
+         <artifactId>osm4j-xml</artifactId>
+         <version>1.4.1</version>
+         <projectUrl>https://github.com/topobyte/osm4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License (LGPL), Version 3</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>PNGJ</name>
+         <groupId>ar.com.hjg</groupId>
+         <artifactId>pngj</artifactId>
+         <version>2.1.0</version>
+         <projectUrl>http://pngj.googlecode.com/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Poly2Tri Core</name>
+         <groupId>org.orbisgis</groupId>
+         <artifactId>poly2tri-core</artifactId>
+         <version>0.1.2</version>
+         <projectUrl>http://code.google.com/p/poly2tri/poly2tri-core/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>New BSD License</name>
+               <url>LICENSE.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Protocol Buffers [Core]</name>
+         <groupId>com.google.protobuf</groupId>
+         <artifactId>protobuf-java</artifactId>
+         <version>3.25.5</version>
+         <projectUrl>https://developers.google.com/protocol-buffers/protobuf-java/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD-3-Clause</name>
+               <url>https://opensource.org/licenses/BSD-3-Clause</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Protocol Buffers [Lite]</name>
+         <groupId>com.google.protobuf</groupId>
+         <artifactId>protobuf-javalite</artifactId>
+         <version>4.29.2</version>
+         <projectUrl>https://developers.google.com/protocol-buffers/protobuf-javalite/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD-3-Clause</name>
+               <url>https://opensource.org/licenses/BSD-3-Clause</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>RE2/J</name>
+         <groupId>com.google.re2j</groupId>
+         <artifactId>re2j</artifactId>
+         <version>1.8</version>
+         <projectUrl>http://github.com/google/re2j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Go License</name>
+               <url>https://golang.org/LICENSE</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Referencing services</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-referencing</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Shapefile module</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-shapefile</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>SI Quantities</name>
+         <groupId>si.uom</groupId>
+         <artifactId>si-quantity</artifactId>
+         <version>2.1</version>
+         <projectUrl>https://unitsofmeasurement.github.io/si-parent/si-quantity/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD 3-Clause</name>
+               <url>https://opensource.org/licenses/BSD-3-Clause</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>SI Units</name>
+         <groupId>si.uom</groupId>
+         <artifactId>si-units</artifactId>
+         <version>2.1</version>
+         <projectUrl>https://unitsofmeasurement.github.io/si-parent/si-units/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD 3-Clause</name>
+               <url>https://opensource.org/licenses/BSD-3-Clause</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>SLF4J API Module</name>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-api</artifactId>
+         <version>2.0.16</version>
+         <projectUrl>http://www.slf4j.org</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>MIT License</name>
+               <url>http://www.opensource.org/licenses/mit-license.php</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>SQLite JDBC</name>
+         <groupId>org.xerial</groupId>
+         <artifactId>sqlite-jdbc</artifactId>
+         <version>3.41.2.2</version>
+         <projectUrl>https://github.com/xerial/sqlite-jdbc</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>TeaVM Flavour - Json</name>
+         <groupId>com.frequal.flavour</groupId>
+         <artifactId>teavm-flavour-json</artifactId>
+         <version>0.3.2</version>
+         <projectUrl>https://flavour.sourceforge.io/teavm-flavour-json/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>TeaVM JavaScript objects</name>
+         <groupId>org.teavm</groupId>
+         <artifactId>teavm-jso</artifactId>
+         <version>0.6.1</version>
+         <projectUrl>http://teavm.org/teavm-jso</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>TeaVM metaprogramming API</name>
+         <groupId>org.teavm</groupId>
+         <artifactId>teavm-metaprogramming-api</artifactId>
+         <version>0.6.1</version>
+         <projectUrl>http://teavm.org/teavm-metaprogramming-api</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: advancing-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-advancing-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: constants</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-constants</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: hash</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-hash</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: hash-functions</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-hash-functions</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: hash-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-hash-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: hash-primitive-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-hash-primitive-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: int-collection</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-int-collection</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: int-function</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-int-function</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: int-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-int-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: int-procedure</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-int-procedure</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-array-list</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-array-list</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-collection</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-collection</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-function</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-function</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-hash</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-hash</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-hash-set</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-hash-set</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-list</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-list</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-object-hash-map</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-object-hash-map</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-object-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-object-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-object-map</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-object-map</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-object-procedure</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-object-procedure</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-procedure</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-procedure</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: long-set</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-long-set</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-function</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-function</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-hash</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-hash</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-hash-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-hash-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-int-hash-map</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-int-hash-map</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-int-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-int-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-int-map</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-int-map</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-int-procedure</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-int-procedure</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: object-procedure</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-object-procedure</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: prime-finder</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-prime-finder</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: primitive-hash</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-primitive-hash</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Trove4j Slim: primitive-iterator</name>
+         <groupId>com.slimjars.trove4j</groupId>
+         <artifactId>trove4j-primitive-iterator</artifactId>
+         <version>1.0.1</version>
+         <projectUrl>https://www.slimjars.com/projects/trove4j</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>GNU Lesser General Public License 3.0</name>
+               <url>https://www.gnu.org/licenses/lgpl-3.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Units of Measurement API</name>
+         <groupId>javax.measure</groupId>
+         <artifactId>unit-api</artifactId>
+         <version>2.2</version>
+         <projectUrl>https://unitsofmeasurement.github.io/unit-api/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD 3-Clause</name>
+               <url>LICENSE</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Units of Measurement Common Library for Java</name>
+         <groupId>tech.uom.lib</groupId>
+         <artifactId>uom-lib-common</artifactId>
+         <version>2.2</version>
+         <projectUrl>https://unitsofmeasurement.github.io/uom-lib</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD</name>
+               <url>LICENSE</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Units of Measurement Common Unit Systems</name>
+         <groupId>systems.uom</groupId>
+         <artifactId>systems-common</artifactId>
+         <version>2.1</version>
+         <projectUrl>http://www.uom.systems/systems-common</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD</name>
+               <url>LICENSE</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Units of Measurement Reference Implementation</name>
+         <groupId>tech.units</groupId>
+         <artifactId>indriya</artifactId>
+         <version>2.2</version>
+         <projectUrl>http://units.tech</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>BSD 3-Clause</name>
+               <url>LICENSE</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>Xlink Model</name>
+         <groupId>org.geotools.ogc</groupId>
+         <artifactId>org.w3.xlink</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>XML Commons External Components XML APIs</name>
+         <groupId>xml-apis</groupId>
+         <artifactId>xml-apis</artifactId>
+         <version>1.4.01</version>
+         <projectUrl>http://xml.apache.org/commons/components/external/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+            <license>
+               <name>The SAX License</name>
+               <url>http://www.saxproject.org/copying.html</url>
+            </license>
+            <license>
+               <name>The W3C License</name>
+               <url>http://www.w3.org/TR/2004/REC-DOM-Level-3-Core-20040407/java-binding.zip</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>XML Commons External Components XML APIs Extensions</name>
+         <groupId>xml-apis</groupId>
+         <artifactId>xml-apis-ext</artifactId>
+         <version>1.3.04</version>
+         <projectUrl>http://xml.apache.org/commons/components/external/</projectUrl>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>The Apache Software License, Version 2.0</name>
+               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>XML Parsing Support</name>
+         <groupId>org.geotools</groupId>
+         <artifactId>gt-xml</artifactId>
+         <version>35.1</version>
+         <type>jar</type>
+         <licenses>
+            <license>
+               <name>Lesser General Public License (LGPL)</name>
+               <url>http://www.gnu.org/copyleft/lesser.txt</url>
+            </license>
+         </licenses>
+         <downloadUrls/>
+      </dependency>
+      <dependency>
+         <name>xml-commons-resolver</name>
+         <groupId>org.apache.xml</groupId>
+         <artifactId>xml-commons-resolver</artifactId>
+         <version>1.2</version>
+         <type>jar</type>
+         <licenses/>
+         <downloadUrls/>
+      </dependency>
+   </dependencies>
+</attributionReport>

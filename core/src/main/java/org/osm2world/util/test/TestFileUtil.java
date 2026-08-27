@@ -2,6 +2,7 @@ package org.osm2world.util.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 
 import javax.annotation.Nonnull;
@@ -16,7 +17,11 @@ public final class TestFileUtil {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		var resource = classLoader.getResource(name);
 		if (resource == null) throw new AssertionError("Test file '" + name + "' not found");
-		return new File(resource.getFile());
+		try {
+			return new File(resource.toURI());
+		} catch (URISyntaxException e) {
+			throw new AssertionError("Invalid URI for test file '" + name + "'", e);
+		}
 	}
 
 	/** creates a temporary file for use in tests */

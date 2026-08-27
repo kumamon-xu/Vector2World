@@ -110,7 +110,7 @@ public class GltfModelTest {
 
 	private static GltfModel loadGltfTestModel(String assetName, String extension) throws IOException {
 
-		String fileName = "gltf" + File.separator + assetName + File.separator + assetName + extension;
+		String fileName = "gltf/" + assetName + "/" + assetName + extension;
 
 		File testFile = getTestFile(fileName);
 

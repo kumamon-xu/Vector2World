@@ -72,7 +72,7 @@ public class O2WConverterTest {
 		builder.createNode(0, 0, TagSet.of("amenity", "bench"));
 
 		O2WConverter o2w = new O2WConverter();
-		o2w.setConfig(new O2WConfig(Map.of("logDir", tempDir.getAbsolutePath())));
+		o2w.setConfig(new O2WConfig(Map.of("logDir", tempDir.toURI().toString())));
 		o2w.convert(builder.build(), null);
 
 		File[] logFiles = tempDir.listFiles();

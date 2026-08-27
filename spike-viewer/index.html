@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Vector2World M0 Cesium 验证</title>
+  </head>
+  <body>
+    <div id="cesiumContainer"></div>
+    <aside class="panel">
+      <h1>Vector2World M0</h1>
+      <label>
+        数据源
+        <select id="datasetSelect">
+          <option value="geojson">GeoJSON</option>
+          <option value="shp">Shapefile</option>
+        </select>
+      </label>
+      <p id="status" role="status">正在初始化 Cesium…</p>
+      <pre id="details"></pre>
+      <p class="notice">轮廓与高度来自源数据；屋顶、楼层和材质为程序化简模。</p>
+    </aside>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

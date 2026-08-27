@@ -1,0 +1,7 @@
+D:\Project\Web\Vector2World\building-tiler-backend\src\test\java\org\osm2world\buildingtiler\application\Milestone0PipelineTest.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\test\java\org\osm2world\buildingtiler\architecture\DependencyBoundaryTest.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\test\java\org\osm2world\buildingtiler\gis\GeoJsonBuildingReaderTest.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\test\java\org\osm2world\buildingtiler\gis\UserDatasetParityTest.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\test\java\org\osm2world\buildingtiler\modeling\OsmTagMapperTest.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\test\java\org\osm2world\buildingtiler\osm2world\MetricProjectionTest.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\test\java\org\osm2world\buildingtiler\tiles\TilesetValidatorTest.java

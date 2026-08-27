@@ -44,3 +44,14 @@ nb-configuration.xml
 *.swp
 *.tileset.json
 .DS_Store
+
+# Local product planning generated for the Vector2World extension
+/docs/
+/test/
+
+# Milestone 0 local outputs and browser dependencies
+/output/
+/.playwright-cli/
+/spike-viewer/node_modules/
+/spike-viewer/dist/
+/spike-viewer/public/generated/

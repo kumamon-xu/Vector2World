@@ -1,0 +1,7 @@
+org\osm2world\buildingtiler\gis\UserDatasetParityTest.class
+org\osm2world\buildingtiler\modeling\OsmTagMapperTest.class
+org\osm2world\buildingtiler\tiles\TilesetValidatorTest.class
+org\osm2world\buildingtiler\application\Milestone0PipelineTest.class
+org\osm2world\buildingtiler\gis\GeoJsonBuildingReaderTest.class
+org\osm2world\buildingtiler\osm2world\MetricProjectionTest.class
+org\osm2world\buildingtiler\architecture\DependencyBoundaryTest.class

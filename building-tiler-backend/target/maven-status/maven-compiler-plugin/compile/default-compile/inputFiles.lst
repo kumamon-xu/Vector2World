@@ -1,0 +1,15 @@
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\application\Milestone0Pipeline.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\application\UpstreamBaseline.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\cli\Milestone0Cli.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\domain\BuildingFeature.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\domain\DatasetMetadata.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\gis\BuildingDatasetReaders.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\gis\DatasetReader.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\gis\DatasetReadResult.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\gis\GeoJsonBuildingReader.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\gis\GeometrySupport.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\gis\ShapefileBuildingReader.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\modeling\OsmTagMapper.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\osm2world\Osm2WorldEngineAdapter.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\tiles\TilesetValidator.java
+D:\Project\Web\Vector2World\building-tiler-backend\src\main\java\org\osm2world\buildingtiler\tiles\TilesetWriterAdapter.java

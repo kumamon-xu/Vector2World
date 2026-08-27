@@ -14,6 +14,7 @@
 		<module>core-web</module>
 		<module>desktop</module>
 		<module>opengl</module>
+		<module>building-tiler-backend</module>
 	</modules>
 
 	<name>OSM2World</name>
@@ -101,6 +102,8 @@
 				</executions>
 				<configuration>
 					<outputFile>${project.build.directory}/attribution.xml</outputFile>
+					<!-- Avoid unreliable remote URL probing during normal reproducible builds. -->
+					<skipDownloadUrl>true</skipDownloadUrl>
 				</configuration>
 			</plugin>
 
