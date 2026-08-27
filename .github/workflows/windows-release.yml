@@ -64,8 +64,10 @@ jobs:
           $arguments = @('-Version','${{ steps.version.outputs.version }}','-PackageVersion','${{ steps.version.outputs.package-version }}','-BuildNumber','${{ github.run_number }}','-WixBin',"$env:RUNNER_TEMP\wix")
           if ('${{ github.ref_type }}' -eq 'tag') { $arguments += '-Release' }
           & .\release\windows\build-release.ps1 @arguments
-      - name: Build unsigned upgrade baseline
+      - name: Build upgrade baseline
         shell: pwsh
+        env:
+          VECTOR2WORLD_SIGN_PASSWORD: ${{ secrets.VECTOR2WORLD_SIGN_PASSWORD }}
         run: |
           & .\release\windows\build-release.ps1 -Version 0.9.0 -PackageVersion 0.9.0 -BuildNumber upgrade-baseline -OutputRoot "$env:RUNNER_TEMP\vector2world-upgrade" -WixBin "$env:RUNNER_TEMP\wix" -SkipTests
           $current = Get-ChildItem output\release -Directory | Select-Object -First 1
@@ -117,3 +119,84 @@ jobs:
           $previous = Get-ChildItem release-artifact -Filter 'Vector2World-0.9.0.msi' -Recurse | Select-Object -First 1
           if (-not $msi -or -not $previous) { throw 'Current or upgrade baseline MSI missing' }
           & .\release\windows\test-installer-lifecycle.ps1 -Msi $msi.FullName -PreviousMsi $previous.FullName -ExpectedVersion '${{ needs.build.outputs.package-version }}'
+
+  publish-release:
+    if: github.ref_type == 'tag'
+    needs: [build, clean-windows-smoke, installer-lifecycle]
+    runs-on: windows-2025
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v5
+        with:
+          name: vector2world-windows-${{ needs.build.outputs.version }}-${{ github.run_number }}
+          path: release-artifact
+      - name: Create, download-verify and publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = '${{ github.ref_name }}'
+          $version = '${{ needs.build.outputs.version }}'
+          $root = Get-ChildItem release-artifact -Directory | Select-Object -First 1
+          if (-not $root) { throw 'Release artifact root is missing' }
+          if ((gh release view $tag 2>$null)) { throw "Release $tag already exists and will not be overwritten" }
+          $metadata = Get-Content -Raw -LiteralPath (Join-Path $root.FullName 'release-metadata.json') | ConvertFrom-Json
+          if ($metadata.signingStatus -ne 'SIGNED' -or $metadata.version -ne $version -or $metadata.gitSha -ne '${{ github.sha }}') {
+            throw 'Tag, version, commit or signing metadata mismatch'
+          }
+          $zip = Get-ChildItem -LiteralPath $root.FullName -Filter '*portable.zip' | Select-Object -First 1
+          $msi = Get-ChildItem -LiteralPath (Join-Path $root.FullName 'installer') -Filter '*.msi' | Select-Object -First 1
+          if (-not $zip -or -not $msi) { throw 'Portable ZIP or MSI is missing' }
+          $notes = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          @"
+          # Vector2World $version
+
+          Windows x64 正式版本：把带高度字段的 GeoJSON 或 Shapefile 建筑面转换为经过验证的 3D Tiles。
+
+          - Git commit: ${{ github.sha }}
+          - OSM2World commit: $($metadata.osm2worldCommit)
+          - Rule / preset: $($metadata.ruleVersion) / $($metadata.presetVersion)
+          - Java runtime: $($metadata.javaRuntime)
+          - Signing: Authenticode signed and timestamped
+          - Validation: Windows 2022/2025 packaged E2E and MSI upgrade/repair/uninstall matrix
+
+          下载后请先使用随附 `SHA256SUMS.txt` 校验文件。程序仅监听本机 `127.0.0.1`，默认保留 `%LOCALAPPDATA%\Vector2World` 中的用户成果与配置。
+          "@ | Set-Content -LiteralPath $notes -Encoding utf8
+          $assets = @(
+            $zip.FullName,
+            $msi.FullName,
+            (Join-Path $root.FullName 'SHA256SUMS.txt'),
+            (Join-Path $root.FullName 'release-metadata.json'),
+            (Join-Path $root.FullName 'sbom\java.cdx.json'),
+            (Join-Path $root.FullName 'sbom\web.cdx.json'),
+            (Join-Path $root.FullName 'legal\OSM2World-LICENSE.txt'),
+            (Join-Path $root.FullName 'legal\THIRD-PARTY-NOTICES.txt'),
+            (Join-Path $root.FullName 'legal\JAVA-DEPENDENCIES.txt')
+          )
+          & gh release create $tag --verify-tag --draft --title "Vector2World $version" --notes-file $notes @assets
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to create draft GitHub Release' }
+
+          $download = Join-Path $env:RUNNER_TEMP 'release-download'
+          $null = New-Item -ItemType Directory -Path $download
+          & gh release download $tag --dir $download
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to download draft Release assets' }
+          $verifyRoot = Join-Path $env:RUNNER_TEMP 'release-download-layout'
+          $null = New-Item -ItemType Directory -Path $verifyRoot
+          $null = New-Item -ItemType Directory -Path (Join-Path $verifyRoot 'installer')
+          $null = New-Item -ItemType Directory -Path (Join-Path $verifyRoot 'sbom')
+          $null = New-Item -ItemType Directory -Path (Join-Path $verifyRoot 'portable')
+          Copy-Item -LiteralPath (Join-Path $download 'SHA256SUMS.txt') -Destination $verifyRoot
+          Copy-Item -LiteralPath (Join-Path $download 'release-metadata.json') -Destination $verifyRoot
+          Copy-Item -LiteralPath (Join-Path $download $msi.Name) -Destination (Join-Path $verifyRoot 'installer')
+          Copy-Item -LiteralPath (Join-Path $download 'java.cdx.json') -Destination (Join-Path $verifyRoot 'sbom')
+          Copy-Item -LiteralPath (Join-Path $download 'web.cdx.json') -Destination (Join-Path $verifyRoot 'sbom')
+          Expand-Archive -LiteralPath (Join-Path $download $zip.Name) -DestinationPath (Join-Path $verifyRoot 'portable')
+          Copy-Item -LiteralPath (Join-Path $download $zip.Name) -Destination $verifyRoot
+          & .\release\windows\verify-release.ps1 -ReleaseRoot $verifyRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Downloaded GitHub Release assets failed verification' }
+          & gh release edit $tag --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to publish verified GitHub Release' }
+          Write-Host "VECTOR2WORLD_GITHUB_RELEASE_OK $tag"

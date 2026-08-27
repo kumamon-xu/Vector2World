@@ -7,6 +7,7 @@
 3. 保留完整的 `release-metadata.json`、`SHA256SUMS.txt`、Java/Web SBOM、许可证和 GitHub Actions 日志。
 4. Windows 2022/2025 必须通过便携双 profile smoke 和样例 import → preview → generate → report/tileset E2E；安装任务必须通过 0.9.0 基线升级、repair、uninstall 和用户数据保留。
 5. Release notes 至少列出产品版本/build、Git SHA、OSM2World SHA、签名状态、支持系统、SHA-256、已知限制、升级与卸载语义。
+6. 推送 tag 前运行 `preflight-production.ps1`；tag workflow 会先创建 draft Release，重新下载并验证哈希和 Authenticode 后才公开发布。
 
 ## 发布规则
 
