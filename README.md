@@ -385,9 +385,6 @@ GLB / 3D Tiles / Manifest / Report
 | `spike-viewer/` | React/Cesium 四步工作台 |
 | `release/windows/` | Windows 构建、smoke、E2E、安装生命周期和发布校验脚本 |
 | `.github/workflows/` | Windows RC/正式发布流水线 |
-| `test/` | 本地真实 SHP/GeoJSON 测试数据，不进入 Git |
-| `docs/` | 本地 Milestone、Task 和验收报告，不进入 Git |
-| `output/` | benchmark、浏览器证据和发布制品，不进入 Git |
 
 ## 测试
 
@@ -553,14 +550,6 @@ VECTOR2WORLD_READY http://127.0.0.1:<port>/
 - Cesium/WebGL 表现受浏览器、GPU 和驱动影响。
 - 程序化屋顶、楼层和材质是规则化表达，不等同于测绘或 BIM 真值。
 - RC 可以明确为 `UNSIGNED_RC`；正式发布必须提供有效签名证书。
-
-## 贡献与开发约束
-
-- 产品层不要直接引用 OSM2World 实现类；通过既有 adapter 扩展。
-- 新的输入格式、输出格式、LOD 或 exporter 必须补齐真实产物、结构校验和 Cesium 证据后才能加入白名单。
-- 修改规则时必须更新规则版本或保持稳定 hash/golden test 等价。
-- 不要提交 `docs/`、`test/`、`output/`、`node_modules/`、前端 build 或用户生成成果。
-- 提交前至少运行后端 reactor 测试和 `npm run check`。
 
 ## 许可证
 
