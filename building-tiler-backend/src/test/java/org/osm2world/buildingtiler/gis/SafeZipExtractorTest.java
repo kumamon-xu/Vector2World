@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,6 +19,20 @@ import org.junit.jupiter.api.io.TempDir;
 class SafeZipExtractorTest {
 
 	@TempDir Path temporaryDirectory;
+
+	@Test
+	void fallsBackToGb18030ForLegacyChineseEntryNames() throws Exception {
+		Map<String, byte[]> entries = new LinkedHashMap<>();
+		entries.put("建筑面.shp", new byte[] { 1, 2, 3 });
+		entries.put("建筑面.dbf", new byte[] { 4, 5, 6 });
+		var extraction = SafeZipExtractor.extract(
+				writeZip(entries, Charset.forName("GB18030")), temporaryDirectory.resolve("legacy"),
+				UploadLimits.defaults());
+
+		assertEquals("GB18030", extraction.entryNameEncoding());
+		assertEquals(true, extraction.legacyEncodingFallback());
+		assertEquals(true, Files.isRegularFile(temporaryDirectory.resolve("legacy/建筑面.shp")));
+	}
 
 	@Test
 	void rejectsZipSlipBeforeWritingOutsideDatasetDirectory() throws Exception {
@@ -71,8 +86,12 @@ class SafeZipExtractorTest {
 	}
 
 	private Path writeZip(Map<String, byte[]> entries) throws Exception {
+		return writeZip(entries, UTF_8);
+	}
+
+	private Path writeZip(Map<String, byte[]> entries, Charset charset) throws Exception {
 		Path path = temporaryDirectory.resolve("fixture-" + System.nanoTime() + ".zip");
-		try (var output = Files.newOutputStream(path); ZipOutputStream zip = new ZipOutputStream(output, UTF_8)) {
+		try (var output = Files.newOutputStream(path); ZipOutputStream zip = new ZipOutputStream(output, charset)) {
 			for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
 				zip.putNextEntry(new ZipEntry(entry.getKey()));
 				zip.write(entry.getValue());

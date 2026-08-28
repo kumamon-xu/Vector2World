@@ -27,9 +27,11 @@ export class ApiClientError extends Error {
 function actionableMessage(status: number, body: ApiErrorBody): string {
   const source = body.message || `服务请求失败（HTTP ${status}）`;
   const suggestions: Record<string, string> = {
-    CRS_MISSING: "请在导入高级选项中填写源坐标系，例如 EPSG:4326。",
+    CRS_REQUIRED: "请在导入高级选项中明确填写源坐标系，例如 EPSG:4326。",
     SHAPEFILE_COMPONENT_MISSING: "请将 .shp、.shx、.dbf、.prj 一起打包为 ZIP。",
     UPLOAD_TOO_LARGE: "请拆分数据或提高服务端上传限制。",
+    IMPORT_RESOURCE_LIMIT: "数据复杂度超过当前 JVM 的安全内存余量，请拆分数据后分批导入。",
+    IMPORT_CANCELLED: "导入已取消，临时文件已清理。",
     INVALID_HEIGHT_FIELD: "请选择包含有限正数的高度字段。",
     DATASET_NOT_FOUND: "数据集已失效，请返回第一步重新导入。",
     GENERATION_JOB_NOT_FOUND: "任务已失效，请重新发起生成。"

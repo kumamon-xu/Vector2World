@@ -16,7 +16,7 @@
 		<geotools.version>35.1</geotools.version>
 		<spring-boot.version>3.5.6</spring-boot.version>
 		<exec.mainClass>org.osm2world.buildingtiler.cli.Milestone0Cli</exec.mainClass>
-		<vector2world.release.version>1.0.0-rc.1</vector2world.release.version>
+		<vector2world.release.version>1.0.1</vector2world.release.version>
 		<vector2world.build.number>dev</vector2world.build.number>
 		<vector2world.git.sha>unknown</vector2world.git.sha>
 		<vector2world.git.dirty>true</vector2world.git.dirty>

@@ -13,7 +13,7 @@ describe("API client contract", () => {
     await api.createJob("dataset-1", { ...DEFAULT_CONFIG, heightField: "Elevation", heightUnit: "m" });
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(String(init.body));
-    expect(body).toMatchObject({ datasetId: "dataset-1", heightField: "Elevation", heightUnit: "m", lods: [2], outputFormats: ["3DTILES"] });
+    expect(body).toMatchObject({ datasetId: "dataset-1", heightField: "Elevation", heightUnit: "m", lods: [3], outputFormats: ["3DTILES"] });
     expect(body).not.toHaveProperty("lod");
     expect(body).not.toHaveProperty("sampleSize");
   });

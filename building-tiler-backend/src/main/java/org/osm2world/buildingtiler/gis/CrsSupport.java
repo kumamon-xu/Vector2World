@@ -47,7 +47,8 @@ final class CrsSupport {
 			throws DatasetImportException {
 		try {
 			MathTransform transform = CRS.findMathTransform(source, WGS84, true);
-			return new ResolvedCrs(source, name, transform, overridden);
+			return new ResolvedCrs(source, name, transform,
+					overridden ? CrsSource.EXPLICIT_OVERRIDE : CrsSource.DECLARED_VALID);
 		} catch (Exception exception) {
 			throw new DatasetImportException(DatasetErrorCode.CRS_TRANSFORM_FAILED,
 					"Could not create a longitude-first WGS84 transform for " + name, exception);
@@ -108,5 +109,5 @@ final class CrsSupport {
 	}
 
 	record ResolvedCrs(CoordinateReferenceSystem source, String name,
-			MathTransform transform, boolean overridden) {}
+			MathTransform transform, CrsSource sourceKind) {}
 }

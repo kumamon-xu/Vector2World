@@ -26,6 +26,27 @@ class UserDatasetM1ImportTest {
 	@TempDir Path temporaryDirectory;
 
 	@Test
+	void importsSuppliedLegacyEncodedZipWithoutRepacking() throws Exception {
+		Path zip = workspaceRoot().resolve("test/shp/建筑面.zip");
+		Assumptions.assumeTrue(Files.isRegularFile(zip),
+				"User-owned legacy ZIP fixture is not present in this checkout");
+
+		DatasetService service = new DatasetService(temporaryDirectory.resolve("legacy-datasets"),
+				UploadLimits.defaults());
+		ManagedDataset dataset;
+		try (var input = Files.newInputStream(zip)) {
+			dataset = service.upload("建筑面.zip", "application/zip", Files.size(zip), input,
+					ImportOptions.defaults());
+		}
+
+		assertEquals(7412, dataset.inspection().featureCount());
+		assertEquals("GB18030", dataset.inspection().archiveEntryEncoding());
+		assertEquals(true, dataset.inspection().archiveEntryEncodingFallback());
+		assertTrue(dataset.inspection().issues().stream()
+				.anyMatch(issue -> issue.code().equals("ZIP_ENTRY_ENCODING_FALLBACK")));
+	}
+
+	@Test
 	void suppliedGeoJsonAndCompleteShapefileZipPassM1ImportAndMapping() throws Exception {
 		Path root = workspaceRoot();
 		Path geojson = root.resolve("test/geojson/建筑面.geojson");

@@ -1,9 +1,9 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')]
-    [string]$Version = '1.0.0-rc.1',
+    [string]$Version = '1.0.1',
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$PackageVersion = '1.0.0',
+    [string]$PackageVersion = '1.0.1',
     [string]$BuildNumber = (Get-Date -Format 'yyyyMMddHHmmss'),
     [string]$OutputRoot,
     [string]$WixBin,

@@ -13,6 +13,7 @@ import java.time.Instant;
 	import java.io.ByteArrayInputStream;
 	import java.io.ByteArrayOutputStream;
 	import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +25,7 @@ import org.osm2world.buildingtiler.domain.HeightMapping;
 import org.osm2world.buildingtiler.domain.HeightUnit;
 import org.osm2world.buildingtiler.domain.InvalidHeightPolicy;
 import org.osm2world.buildingtiler.domain.ModelingConfig;
+import org.osm2world.buildingtiler.domain.OutputFormat;
 import org.osm2world.buildingtiler.domain.TilingConfig;
 import org.osm2world.buildingtiler.gis.ImportOptions;
 import org.osm2world.buildingtiler.gis.UploadLimits;
@@ -66,7 +68,7 @@ class GenerationJobServiceTest {
 	}
 
 	@Test
-	void isolatesDeterministicTileFailureAndPublishesPartialResult() throws Exception {
+	void rejectsDeterministicTileFailureByDefaultWithoutPublishingAResult() throws Exception {
 		AtomicBoolean failedOne = new AtomicBoolean();
 		TileRenderer delegate = realRenderer();
 		TileRenderer renderer = (work, lods, config, staging, cancelled) -> {
@@ -77,11 +79,62 @@ class GenerationJobServiceTest {
 		};
 		try (Fixture fixture = fixture(renderer, Duration.ofHours(1))) {
 			ManagedGenerationJob job = await(fixture.jobs().create(spec(fixture.datasetId())));
+			assertEquals(GenerationJobState.FAILED, job.state());
+			assertEquals(null, job.result());
+			assertTrue(job.error().contains("INCOMPLETE_RESULT"));
+			assertFalse(Files.exists(job.workDirectory().resolve("result")));
+		}
+	}
+
+	@Test
+	void publishesClearlyMarkedPartialResultOnlyWhenExplicitThresholdsPermitIt() throws Exception {
+		AtomicBoolean failedOne = new AtomicBoolean();
+		TileRenderer delegate = realRenderer();
+		TileRenderer renderer = (work, lods, config, staging, cancelled) -> {
+			if (failedOne.compareAndSet(false, true)) {
+				throw new TileRenderException(TileFailureCategory.GEOMETRY, "injected deterministic geometry error");
+			}
+			return delegate.render(work, lods, config, staging, cancelled);
+		};
+		try (Fixture fixture = fixture(renderer, Duration.ofHours(1))) {
+			GenerationJobSpec partial = spec(fixture.datasetId(),
+					DeliveryPolicy.allowPartial(1, 1, 100, 1));
+			ManagedGenerationJob job = await(fixture.jobs().create(partial));
 			assertEquals(GenerationJobState.COMPLETED_WITH_WARNINGS, job.state());
+			assertTrue(job.result().incomplete());
 			assertEquals(1, job.result().failedTiles());
+			assertTrue(job.result().failedBuildings() > 0);
 			assertTrue(job.result().successfulTiles() > 0);
 			assertTrue(job.result().validation().valid());
 			assertEquals(1, job.result().tileFailures().get(0).attempts());
+			assertTrue(Files.isRegularFile(job.result().resultDirectory().resolve("INCOMPLETE-RESULT.txt")));
+			String ledger = Files.readString(job.result().resultDirectory().resolve("modeling-ledger.json"));
+			assertTrue(ledger.contains("FAILED_TILE"));
+			for (String featureId : job.result().tileFailures().get(0).failedFeatureIds()) {
+				assertTrue(ledger.contains(featureId), "Every missing building must have an attributed ledger entry");
+			}
+			var bytes = new ByteArrayOutputStream();
+			fixture.jobs().streamZip(job.id().toString(), bytes);
+			assertTrue(zipEntries(bytes).contains("INCOMPLETE-RESULT.txt"));
+		}
+	}
+
+	@Test
+	void rejectsPartialResultWhenExplicitThresholdIsExceeded() throws Exception {
+		AtomicBoolean failedOne = new AtomicBoolean();
+		TileRenderer delegate = realRenderer();
+		TileRenderer renderer = (work, lods, config, staging, cancelled) -> {
+			if (failedOne.compareAndSet(false, true)) {
+				throw new TileRenderException(TileFailureCategory.GEOMETRY, "one failed tile");
+			}
+			return delegate.render(work, lods, config, staging, cancelled);
+		};
+		try (Fixture fixture = fixture(renderer, Duration.ofHours(1))) {
+			ManagedGenerationJob job = await(fixture.jobs().create(spec(fixture.datasetId(),
+					DeliveryPolicy.allowPartial(0, 1, 100, 1))));
+			assertEquals(GenerationJobState.FAILED, job.state());
+			assertTrue(job.error().contains("INCOMPLETE_RESULT_THRESHOLD_EXCEEDED"));
+			assertEquals(null, job.result());
 		}
 	}
 
@@ -149,6 +202,45 @@ class GenerationJobServiceTest {
 	}
 
 	@Test
+	void largeJobCannotFillTheGlobalQueueAheadOfASmallJob() throws Exception {
+		AtomicInteger activeLargeTiles = new AtomicInteger();
+		AtomicInteger smallStartsWhileLargeWasRunning = new AtomicInteger();
+		TileRenderer delegate = realRenderer();
+		TileRenderer renderer = (work, lods, config, staging, cancelled) -> {
+			if (config.lod() == 2) {
+				activeLargeTiles.incrementAndGet();
+				try {
+					try { Thread.sleep(1_500); }
+					catch (InterruptedException exception) {
+						Thread.currentThread().interrupt();
+						throw new CancellationException("interrupted");
+					}
+					return delegate.render(work, lods, config, staging, cancelled);
+				} finally {
+					activeLargeTiles.decrementAndGet();
+				}
+			}
+			if (activeLargeTiles.get() > 0) smallStartsWhileLargeWasRunning.incrementAndGet();
+			return delegate.render(work, lods, config, staging, cancelled);
+		};
+		try (Fixture fixture = fixture(renderer, Duration.ofHours(1))) {
+			ManagedGenerationJob large = fixture.jobs().create(spec(fixture.datasetId(), 2, 20, 1));
+			waitFor(() -> activeLargeTiles.get() == 1, 10_000);
+			ManagedGenerationJob firstSmall = fixture.jobs().create(spec(fixture.datasetId(), 3, 20, 1));
+			ManagedGenerationJob secondSmall = fixture.jobs().create(spec(fixture.datasetId(), 3, 20, 1));
+			waitFor(() -> smallStartsWhileLargeWasRunning.get() > 0, 750);
+			await(firstSmall);
+			await(secondSmall);
+			await(large);
+			assertTrue(smallStartsWhileLargeWasRunning.get() > 0,
+					"The small job must enter the worker pool before the large job drains all of its tiles");
+			assertNotNull(firstSmall.result());
+			assertNotNull(secondSmall.result());
+			assertNotNull(large.result());
+		}
+	}
+
+	@Test
 	void terminalAndOrphanDirectoriesAreRemovedAfterTtl() throws Exception {
 		try (Fixture fixture = fixture(realRenderer(), Duration.ofMillis(1))) {
 			ManagedGenerationJob job = await(fixture.jobs().create(spec(fixture.datasetId())));
@@ -178,6 +270,7 @@ class GenerationJobServiceTest {
 			assertTrue(entries.contains("tileset.json"));
 			assertTrue(entries.contains("manifest.json"));
 			assertTrue(entries.contains("generation-report.json"));
+			assertTrue(entries.contains("modeling-ledger.json"));
 			assertFalse(entries.stream().anyMatch(value -> value.startsWith("logs/")
 					|| value.startsWith("diagnostics/") || value.startsWith("staging/")));
 		}
@@ -204,9 +297,35 @@ class GenerationJobServiceTest {
 	}
 
 	private static GenerationJobSpec spec(String datasetId) {
+		return spec(datasetId, DeliveryPolicy.requireComplete());
+	}
+
+	private static GenerationJobSpec spec(String datasetId, DeliveryPolicy deliveryPolicy) {
 		return new GenerationJobSpec(datasetId,
 				new HeightMapping("Elevation", HeightUnit.M, InvalidHeightPolicy.SKIP, 10_000),
-				ModelingConfig.defaults().withLod(2), TilingConfig.defaults(2, 4));
+				ModelingConfig.defaults().withLod(2), TilingConfig.defaults(2, 4), deliveryPolicy);
+	}
+
+	private static GenerationJobSpec spec(String datasetId, int lod, int zoom) {
+		return spec(datasetId, lod, zoom, 2);
+	}
+
+	private static GenerationJobSpec spec(String datasetId, int lod, int zoom, int workers) {
+		TilingConfig tiling = new TilingConfig(zoom, List.of(lod), workers, 4, 1, 0, 4,
+				List.of(OutputFormat.THREE_D_TILES));
+		return new GenerationJobSpec(datasetId,
+				new HeightMapping("Elevation", HeightUnit.M, InvalidHeightPolicy.SKIP, 10_000),
+				ModelingConfig.defaults().withLod(lod), tiling);
+	}
+
+	private static HashSet<String> zipEntries(ByteArrayOutputStream bytes) throws Exception {
+		var entries = new HashSet<String>();
+		try (var zip = new ZipInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+			for (var entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
+				entries.add(entry.getName());
+			}
+		}
+		return entries;
 	}
 
 	private static ManagedGenerationJob await(ManagedGenerationJob job) throws Exception {

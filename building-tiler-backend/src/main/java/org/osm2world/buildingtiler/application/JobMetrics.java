@@ -14,6 +14,16 @@ final class JobMetrics {
 	private final AtomicLong peakHeapBytes = new AtomicLong();
 	private final AtomicLong emittedBytes = new AtomicLong();
 	private final AtomicInteger retryAttempts = new AtomicInteger();
+	private final AtomicInteger queuedTiles = new AtomicInteger();
+	private final AtomicInteger runningTiles = new AtomicInteger();
+	private final AtomicInteger inFlightTiles = new AtomicInteger();
+	private final AtomicInteger maxQueuedTiles = new AtomicInteger();
+	private final AtomicInteger maxRunningTiles = new AtomicInteger();
+	private final AtomicInteger maxInFlightTiles = new AtomicInteger();
+	private final AtomicInteger maxGlobalQueueDepth = new AtomicInteger();
+	private final AtomicLong tileWaitNanos = new AtomicLong();
+	private final AtomicLong tileExecutionNanos = new AtomicLong();
+	private final AtomicInteger startedTiles = new AtomicInteger();
 	private final long gcCollectionsAtStart = gcCollections();
 	private final long gcTimeMillisAtStart = gcTimeMillis();
 
@@ -36,6 +46,30 @@ final class JobMetrics {
 		retryAttempts.incrementAndGet();
 	}
 
+	void tileQueued(int globalQueueDepth) {
+		int queued = queuedTiles.incrementAndGet();
+		int inFlight = inFlightTiles.incrementAndGet();
+		maxQueuedTiles.accumulateAndGet(queued, Math::max);
+		maxInFlightTiles.accumulateAndGet(inFlight, Math::max);
+		maxGlobalQueueDepth.accumulateAndGet(Math.max(0, globalQueueDepth), Math::max);
+	}
+
+	long tileStarted(long queuedAtNanos) {
+		queuedTiles.updateAndGet(value -> Math.max(0, value - 1));
+		int running = runningTiles.incrementAndGet();
+		maxRunningTiles.accumulateAndGet(running, Math::max);
+		startedTiles.incrementAndGet();
+		long started = System.nanoTime();
+		tileWaitNanos.addAndGet(Math.max(0, started - queuedAtNanos));
+		return started;
+	}
+
+	void tileFinished(long startedNanos) {
+		tileExecutionNanos.addAndGet(Math.max(0, System.nanoTime() - startedNanos));
+		runningTiles.updateAndGet(value -> Math.max(0, value - 1));
+		inFlightTiles.updateAndGet(value -> Math.max(0, value - 1));
+	}
+
 	long emittedBytes() { return emittedBytes.get(); }
 
 	Map<String, Object> snapshot(int effectiveWorkers) {
@@ -51,6 +85,13 @@ final class JobMetrics {
 		result.put("emittedTileBytes", emittedBytes.get());
 		result.put("retryAttempts", retryAttempts.get());
 		result.put("effectiveWorkers", effectiveWorkers);
+		result.put("maxQueuedTiles", maxQueuedTiles.get());
+		result.put("maxRunningTiles", maxRunningTiles.get());
+		result.put("maxInFlightTiles", maxInFlightTiles.get());
+		result.put("maxGlobalQueueDepth", maxGlobalQueueDepth.get());
+		result.put("tileWaitNanos", tileWaitNanos.get());
+		result.put("tileExecutionNanos", tileExecutionNanos.get());
+		result.put("startedTiles", startedTiles.get());
 		return result;
 	}
 

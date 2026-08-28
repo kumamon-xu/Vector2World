@@ -3,6 +3,7 @@ package org.osm2world.buildingtiler.api;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -70,6 +71,7 @@ class GenerationJobApiContractTest {
 			String jobId = new ObjectMapper().readTree(response).get("id").asText();
 			var job = jobs.get(jobId);
 			waitFor(() -> job.state().terminal(), 30_000);
+			assertNotEquals(GenerationJobState.FAILED, job.state(), job.error());
 
 			mvc.perform(get("/api/jobs/{id}", jobId)).andExpect(status().isOk())
 					.andExpect(jsonPath("$.state", anyOf(is("COMPLETED"), is("COMPLETED_WITH_WARNINGS"))))

@@ -10,7 +10,10 @@ public record DatasetMetadata(
 		Path input,
 		String format,
 		String sourceCrs,
+		String crsSource,
 		String sourceEncoding,
+		String archiveEntryEncoding,
+		boolean archiveEntryEncodingFallback,
 		long featureCount,
 		long validBuildings,
 		long skippedInvalidHeight,
@@ -33,7 +36,7 @@ public record DatasetMetadata(
 			long featureCount, long validBuildings, long skippedInvalidHeight,
 			long skippedInvalidGeometry, Envelope boundsWgs84, Map<String, Long> geometryTypes,
 			double minHeightMeters, double maxHeightMeters) {
-		this(input, format, sourceCrs, sourceEncoding, featureCount, validBuildings,
+		this(input, format, sourceCrs, "DECLARED_VALID", sourceEncoding, null, false, featureCount, validBuildings,
 				skippedInvalidHeight, skippedInvalidGeometry, boundsWgs84, geometryTypes,
 				minHeightMeters, maxHeightMeters, SCHEMA_VERSION,
 				validBuildings + skippedInvalidHeight, 0, List.of(), List.of(),
@@ -46,6 +49,7 @@ public record DatasetMetadata(
 	public DatasetMetadata {
 		if (format == null || format.isBlank()) throw new IllegalArgumentException("Dataset format is required");
 		if (sourceCrs == null || sourceCrs.isBlank()) throw new IllegalArgumentException("Source CRS is required");
+		if (crsSource == null || crsSource.isBlank()) throw new IllegalArgumentException("CRS source is required");
 		if (featureCount < 0 || validBuildings < 0 || skippedInvalidHeight < 0
 				|| skippedInvalidGeometry < 0 || validGeometryCount < 0 || repairedGeometryCount < 0) {
 			throw new IllegalArgumentException("Dataset counts must not be negative");

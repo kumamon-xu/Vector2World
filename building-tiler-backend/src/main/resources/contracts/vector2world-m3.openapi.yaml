@@ -174,9 +174,10 @@ components:
         zoom: { type: integer, minimum: 0, maximum: 22, default: 15 }
         lods:
           type: array
-          prefixItems: [{ const: 2 }]
-          items: false
-          default: [2]
+          minItems: 1
+          maxItems: 1
+          items: { type: integer, enum: [2, 3, 4] }
+          default: [3]
         workerCount: { type: integer, minimum: 1, maximum: 64 }
         queueCapacity: { type: integer, minimum: 1, maximum: 4096 }
         transientRetryCount: { type: integer, minimum: 0, maximum: 3, default: 1 }
@@ -188,6 +189,14 @@ components:
           items: false
           default: [3DTILES]
         variantSeed: { type: integer, default: 1446139724 }
+        allowPartialResult:
+          type: boolean
+          default: false
+          description: Must be explicitly enabled; complete delivery is the default.
+        maxFailedTiles: { type: integer, minimum: 0 }
+        maxFailedTileRatio: { type: number, minimum: 0, maximum: 1 }
+        maxFailedBuildings: { type: integer, minimum: 0 }
+        maxFailedBuildingRatio: { type: number, minimum: 0, maximum: 1 }
     GenerationJob:
       type: object
       required: [schemaVersion, id, datasetId, state, progress, modelingConfig, tilingConfig, links]
@@ -209,6 +218,8 @@ components:
         tilingConfig: { type: object }
         successfulTiles: { type: [integer, 'null'], minimum: 0 }
         failedTiles: { type: [integer, 'null'], minimum: 0 }
+        incomplete: { type: [boolean, 'null'] }
+        failedBuildings: { type: [integer, 'null'], minimum: 0 }
         modeledBuildings: { type: [integer, 'null'], minimum: 0 }
         outputBytes: { type: [integer, 'null'], minimum: 0 }
         ownershipHash: { type: [string, 'null'] }

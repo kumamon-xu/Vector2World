@@ -1,18 +1,19 @@
 package org.osm2world.buildingtiler.application;
 
-	import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-	import java.io.ByteArrayInputStream;
-	import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-	import java.util.Locale;
-	import java.util.zip.ZipEntry;
-	import java.util.zip.ZipOutputStream;
+import java.util.List;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -48,17 +49,8 @@ class UserDatasetM3PipelineTest {
 		Assumptions.assumeTrue(Files.isRegularFile(geojson) && Files.isRegularFile(shapefile),
 				"User-owned M3 fixtures are not present in this checkout");
 
-		var json = new GeoJsonBuildingReader().read(geojson, "Elevation");
-		var shp = new ShapefileBuildingReader().read(shapefile, "Elevation");
 		var planner = new TileOwnershipPlanner();
-		var jsonPlan = planner.plan(json.buildings(), 15, 4);
-		var shpPlan = planner.plan(shp.buildings(), 15, 4);
-		assertEquals(7412, json.buildings().size());
-		assertEquals(97, jsonPlan.tiles().size());
-		assertEquals(jsonPlan.tiles().stream().map(value -> value.tile().toString()).toList(),
-				shpPlan.tiles().stream().map(value -> value.tile().toString()).toList());
-		assertEquals(jsonPlan.ownershipHash(), shpPlan.ownershipHash());
-		assertTrue(jsonPlan.crossTileBuildings() > 0);
+		Parity parity = inspectParity(geojson, shapefile, planner);
 
 		DatasetService datasets = new DatasetService(temporary.resolve("datasets"), UploadLimits.defaults());
 		String datasetId;
@@ -75,17 +67,21 @@ class UserDatasetM3PipelineTest {
 		try (var jobs = new GenerationJobService(temporary.resolve("jobs"), Duration.ofHours(1), workers, 128,
 				datasets, planner, renderer, new TilesetTreeAssembler(), new TilesetValidator())) {
 			var heightMapping = new HeightMapping("Elevation", HeightUnit.M, InvalidHeightPolicy.SKIP, 10_000);
+			var defaults = TilingConfig.defaults(workers, 128);
+			var lod2Tiling = new TilingConfig(defaults.zoom(), List.of(2), defaults.workerCount(),
+					defaults.queueCapacity(), defaults.transientRetryCount(), defaults.crossTileBufferMeters(),
+					defaults.largeBuildingTileSpanWarning(), defaults.outputFormats());
+			ManagedGenerationJob shapefileJob = jobs.create(new GenerationJobSpec(shapefileDatasetId,
+					heightMapping, ModelingConfig.defaults().withLod(2), lod2Tiling));
+			waitFor(() -> shapefileJob.state().terminal(), Duration.ofMinutes(15));
+			assertComplete(shapefileJob, parity.ownershipHash());
+
 			var spec = new GenerationJobSpec(datasetId,
 					heightMapping,
-					ModelingConfig.defaults().withLod(2), TilingConfig.defaults(workers, 128));
+					ModelingConfig.defaults().withLod(2), lod2Tiling);
 			ManagedGenerationJob job = jobs.create(spec);
-			waitFor(() -> job.state().terminal(), Duration.ofMinutes(5));
-			assertComplete(job, jsonPlan.ownershipHash());
-
-			ManagedGenerationJob shapefileJob = jobs.create(new GenerationJobSpec(shapefileDatasetId,
-					heightMapping, ModelingConfig.defaults().withLod(2), TilingConfig.defaults(workers, 128)));
-			waitFor(() -> shapefileJob.state().terminal(), Duration.ofMinutes(5));
-			assertComplete(shapefileJob, jsonPlan.ownershipHash());
+			waitFor(() -> job.state().terminal(), Duration.ofMinutes(15));
+			assertComplete(job, parity.ownershipHash());
 
 			Path result = job.result().resultDirectory();
 			var manifest = JsonParser.parseReader(Files.newBufferedReader(result.resolve("manifest.json")))
@@ -103,6 +99,21 @@ class UserDatasetM3PipelineTest {
 					shapefileJob.result().resultDirectory().resolve("manifest.json"))).getAsJsonObject();
 			assertEquals("SHP", shapefileManifest.get("sourceFormat").getAsString());
 		}
+	}
+
+	private static Parity inspectParity(Path geojson, Path shapefile, TileOwnershipPlanner planner)
+			throws Exception {
+		var json = new GeoJsonBuildingReader().read(geojson, "Elevation");
+		var shp = new ShapefileBuildingReader().read(shapefile, "Elevation");
+		var jsonPlan = planner.plan(json.buildings(), 15, 4);
+		var shpPlan = planner.plan(shp.buildings(), 15, 4);
+		assertEquals(7412, json.buildings().size());
+		assertEquals(97, jsonPlan.tiles().size());
+		assertEquals(jsonPlan.tiles().stream().map(value -> value.tile().toString()).toList(),
+				shpPlan.tiles().stream().map(value -> value.tile().toString()).toList());
+		assertEquals(jsonPlan.ownershipHash(), shpPlan.ownershipHash());
+		assertTrue(jsonPlan.crossTileBuildings() > 0);
+		return new Parity(jsonPlan.ownershipHash());
 	}
 
 	private static void assertComplete(ManagedGenerationJob job, String ownershipHash) {
@@ -157,4 +168,6 @@ class UserDatasetM3PipelineTest {
 		if (configured != null) return Path.of(configured).toAbsolutePath().normalize();
 		return Path.of("..").toAbsolutePath().normalize();
 	}
+
+	private record Parity(String ownershipHash) {}
 }

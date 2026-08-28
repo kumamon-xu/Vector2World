@@ -23,7 +23,7 @@ public record BuildingFeature(
 		if (!Double.isFinite(heightMeters) || heightMeters <= 0) {
 			throw new IllegalArgumentException("Building height must be a finite positive number of meters");
 		}
-		sourceAttributes = sourceAttributes == null ? Map.of() : Map.copyOf(sourceAttributes);
+		sourceAttributes = ImmutableAttributes.copyOf(sourceAttributes);
 	}
 
 }

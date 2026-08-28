@@ -1,0 +1,5 @@
+Vector2World procedural texture bundle v1
+
+The SVG patterns in this directory were created specifically for Vector2World.
+They are distributed under the repository's MIT License. No third-party image
+assets are included in this bundle.

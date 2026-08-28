@@ -10,6 +10,8 @@ public record GenerationJobResult(
 		int plannedTiles,
 		int successfulTiles,
 		int failedTiles,
+		boolean incomplete,
+		int failedBuildings,
 		int modeledBuildings,
 		int meshCount,
 		long vertexCount,

@@ -19,6 +19,7 @@ import static org.osm2world.scene.texcoord.TexCoordUtil.mirroredVertically;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import javax.annotation.Nullable;
@@ -864,7 +865,7 @@ public class GltfOutput extends AbstractOutput {
 
 		/* write the JSON file */
 
-		try (var writer = new OutputStreamWriter(outputStream)) {
+		try (var writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
 			JsonUtil.toJson(gltf, writer, true);
 		}
 

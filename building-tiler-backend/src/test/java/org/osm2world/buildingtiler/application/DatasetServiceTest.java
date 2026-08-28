@@ -70,12 +70,36 @@ class DatasetServiceTest {
 		byte[] fixture = fixture();
 		ManagedDataset dataset = service.upload("buildings.geojson", "application/geo+json", fixture.length,
 				new ByteArrayInputStream(fixture), ImportOptions.defaults());
+		assertTrue(Files.isRegularFile(dataset.workDirectory().resolve("normalized-features.v2w")));
+		assertEquals(4, dataset.inspection().features().size());
+		assertEquals(1, ((org.locationtech.jts.geom.Polygon)dataset.inspection().features().get(0)
+				.geometryWgs84()).getNumInteriorRing());
 
 		var result = service.materialize(dataset.id().toString(), new HeightMapping("Elevation", HeightUnit.CM));
 		assertEquals(3, result.buildings().size());
 		assertEquals(0.12, result.metadata().minHeightMeters(), 1e-12);
 		assertEquals(0.48, result.metadata().maxHeightMeters(), 1e-12);
 		assertEquals(1, result.metadata().heightQuality().invalid());
+	}
+
+	@Test
+	void normalizedStoreQuotaAndCorruptionFailCleanly() throws Exception {
+		byte[] fixture = fixture();
+		DatasetService quotaService = service(new UploadLimits(1_000_000, 64, 100, 100,
+				Duration.ofHours(1)));
+		DatasetImportException quota = assertThrows(DatasetImportException.class,
+				() -> quotaService.upload("quota.geojson", "application/geo+json", fixture.length,
+						new ByteArrayInputStream(fixture), ImportOptions.defaults()));
+		assertEquals(DatasetErrorCode.IMPORT_RESOURCE_LIMIT, quota.code());
+		assertEquals(0, quotaService.size());
+
+		DatasetService service = service(UploadLimits.defaults());
+		ManagedDataset dataset = service.upload("corrupt.geojson", "application/geo+json", fixture.length,
+				new ByteArrayInputStream(fixture), ImportOptions.defaults());
+		Files.writeString(dataset.workDirectory().resolve("normalized-features.v2w"), "corrupt", UTF_8);
+		DatasetImportException corrupt = assertThrows(DatasetImportException.class,
+				() -> service.materialize(dataset.id().toString(), new HeightMapping("Elevation", HeightUnit.M)));
+		assertEquals(DatasetErrorCode.STORAGE_UNAVAILABLE, corrupt.code());
 	}
 
 	@Test
@@ -116,6 +140,36 @@ class DatasetServiceTest {
 				() -> service.upload("x.geojson", "application/json", 2,
 						new ByteArrayInputStream("{}".getBytes(UTF_8)), ImportOptions.defaults()));
 		assertEquals(DatasetErrorCode.STORAGE_UNAVAILABLE, exception.code());
+	}
+
+	@Test
+	void oneImportBudgetCoversUploadCopyAndMaterializationCancellation() throws Exception {
+		DatasetService service = service(UploadLimits.defaults());
+		byte[] fixture = fixture();
+		var slow = new ByteArrayInputStream(fixture) {
+			@Override public synchronized int read(byte[] buffer, int offset, int length) {
+				try { Thread.sleep(10); }
+				catch (InterruptedException exception) { Thread.currentThread().interrupt(); }
+				return super.read(buffer, offset, Math.min(length, 64));
+			}
+		};
+		ImportOptions tinyBudget = new ImportOptions(null, null, null, Duration.ofMillis(2), 0.05, 0.50);
+		DatasetImportException timeout = assertThrows(DatasetImportException.class,
+				() -> service.upload("slow.geojson", "application/geo+json", fixture.length, slow, tinyBudget));
+		assertEquals(DatasetErrorCode.IMPORT_TIMEOUT, timeout.code());
+		assertEquals(0, service.size());
+
+		ManagedDataset dataset = service.upload("normal.geojson", "application/geo+json", fixture.length,
+				new ByteArrayInputStream(fixture), ImportOptions.defaults());
+		Thread.currentThread().interrupt();
+		try {
+			DatasetImportException cancelled = assertThrows(DatasetImportException.class,
+					() -> service.materialize(dataset.id().toString(),
+							new HeightMapping("Elevation", HeightUnit.M)));
+			assertEquals(DatasetErrorCode.IMPORT_CANCELLED, cancelled.code());
+		} finally {
+			Thread.interrupted();
+		}
 	}
 
 	private DatasetService service(UploadLimits limits) {

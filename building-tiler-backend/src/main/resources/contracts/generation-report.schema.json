@@ -7,7 +7,7 @@
   "required": [
     "schemaVersion", "jobId", "state", "buildStarted", "buildFinished", "elapsedMillis",
     "inputFeatures", "validBuildings", "skippedInvalidHeight", "skippedInvalidGeometry",
-    "plannedTiles", "successfulTiles", "failedTiles", "successfulTileContents",
+    "plannedTiles", "successfulTiles", "failedTiles", "incomplete", "failedBuildings", "deliveryPolicy", "successfulTileContents",
     "modeledBuildings", "meshCount", "vertexCount", "triangleCount", "crossTileBuildings",
     "largeBuildings", "ownershipHash", "configHash", "contentBytes", "outputBytes",
     "quantization", "tileResults", "tileFailures", "warnings", "validation", "resourceMetrics", "volatileFields"
@@ -26,6 +26,20 @@
     "plannedTiles": { "$ref": "#/$defs/nonNegativeInteger" },
     "successfulTiles": { "$ref": "#/$defs/nonNegativeInteger" },
     "failedTiles": { "$ref": "#/$defs/nonNegativeInteger" },
+    "incomplete": { "type": "boolean" },
+    "failedBuildings": { "$ref": "#/$defs/nonNegativeInteger" },
+    "deliveryPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowPartialResult", "maxFailedTiles", "maxFailedTileRatio", "maxFailedBuildings", "maxFailedBuildingRatio"],
+      "properties": {
+        "allowPartialResult": { "type": "boolean" },
+        "maxFailedTiles": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxFailedTileRatio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "maxFailedBuildings": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxFailedBuildingRatio": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
     "successfulTileContents": { "$ref": "#/$defs/nonNegativeInteger" },
     "modeledBuildings": { "$ref": "#/$defs/nonNegativeInteger" },
     "meshCount": { "$ref": "#/$defs/nonNegativeInteger" },
@@ -55,7 +69,7 @@
     },
     "resourceMetrics": {
       "type": "object",
-      "required": ["phaseNanos", "peakHeapBytes", "gcCollections", "gcTimeMillis", "emittedTileBytes", "retryAttempts", "effectiveWorkers"],
+      "required": ["phaseNanos", "peakHeapBytes", "gcCollections", "gcTimeMillis", "emittedTileBytes", "retryAttempts", "effectiveWorkers", "maxQueuedTiles", "maxRunningTiles", "maxInFlightTiles", "maxGlobalQueueDepth", "tileWaitNanos", "tileExecutionNanos", "startedTiles"],
       "properties": {
         "phaseNanos": { "type": "object", "additionalProperties": { "$ref": "#/$defs/nonNegativeInteger" } },
         "peakHeapBytes": { "$ref": "#/$defs/nonNegativeInteger" },
@@ -63,7 +77,14 @@
         "gcTimeMillis": { "$ref": "#/$defs/nonNegativeInteger" },
         "emittedTileBytes": { "$ref": "#/$defs/nonNegativeInteger" },
         "retryAttempts": { "$ref": "#/$defs/nonNegativeInteger" },
-        "effectiveWorkers": { "type": "integer", "minimum": 1 }
+        "effectiveWorkers": { "type": "integer", "minimum": 1 },
+        "maxQueuedTiles": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxRunningTiles": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxInFlightTiles": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxGlobalQueueDepth": { "$ref": "#/$defs/nonNegativeInteger" },
+        "tileWaitNanos": { "$ref": "#/$defs/nonNegativeInteger" },
+        "tileExecutionNanos": { "$ref": "#/$defs/nonNegativeInteger" },
+        "startedTiles": { "$ref": "#/$defs/nonNegativeInteger" }
       }
     },
     "volatileFields": { "type": "array", "items": { "type": "string" } }

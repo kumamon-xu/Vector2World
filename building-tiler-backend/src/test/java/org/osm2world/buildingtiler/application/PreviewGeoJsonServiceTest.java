@@ -37,7 +37,7 @@ class PreviewGeoJsonServiceTest {
 					List.of(new BuildingPartId(id, 0)), "Polygon", false));
 			bounds.expandToInclude(polygon.getEnvelopeInternal());
 		}
-		DatasetInspection inspection = new DatasetInspection(null, "GEOJSON", "OGC:CRS84", "UTF-8",
+		DatasetInspection inspection = new DatasetInspection(null, "GEOJSON", "OGC:CRS84", "DECLARED_VALID", "UTF-8", null, false,
 				List.of(new LayerMetadata("test", "Polygon", true)), 100, features, List.of(), List.of(),
 				Map.of("Polygon", 100L), bounds, 0, 0, List.of());
 		ObjectMapper mapper = new ObjectMapper();

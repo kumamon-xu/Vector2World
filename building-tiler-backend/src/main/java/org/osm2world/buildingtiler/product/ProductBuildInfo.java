@@ -45,7 +45,7 @@ public record ProductBuildInfo(
 			// Defaults below keep development launches diagnostic instead of preventing startup.
 		}
 		return new ProductBuildInfo(
-				value(properties, "product.version", "1.0.0-rc.1"),
+				value(properties, "product.version", "1.0.1"),
 				value(properties, "product.buildNumber", "dev"),
 				value(properties, "product.gitSha", "unknown"),
 				Boolean.parseBoolean(value(properties, "product.gitDirty", "true")),

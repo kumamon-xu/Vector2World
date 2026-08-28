@@ -113,12 +113,15 @@ export function GenerateStep({ dataset, config, job, onJob, onEvent, onResetJob,
           </div>
         )}
         {error && <Alert className="block-alert" type="error" showIcon title="任务通信失败" description={error} closable onClose={() => setError("")} />}
+		{job?.incomplete && <Alert className="block-alert" type="warning" showIcon
+			title="这是显式允许交付的不完整成果"
+			description={`缺失 ${job.failedTiles ?? 0} 个切片、${job.failedBuildings ?? 0} 个建筑。下载包和清单均带有 INCOMPLETE 标记，不可作为完整数据集使用。`} />}
       </section>
 
       {job && completed && report && manifest && (
         <>
           <section className="content-card" aria-labelledby="result-map-title">
-            <div className="section-heading"><div><Typography.Title id="result-map-title" level={3}>最终成果</Typography.Title><Typography.Text type="secondary">仅在生成报告通过结构验证后加载。</Typography.Text></div><Tag color={validationPassed && mapReady ? "green" : "processing"}>{validationPassed ? (mapReady ? "成果可交付" : "正在加载成果") : "验证未通过"}</Tag></div>
+            <div className="section-heading"><div><Typography.Title id="result-map-title" level={3}>最终成果</Typography.Title><Typography.Text type="secondary">仅在生成报告通过结构验证后加载。</Typography.Text></div><Tag color={job.incomplete ? "orange" : validationPassed && mapReady ? "green" : "processing"}>{job.incomplete ? "不完整成果" : validationPassed ? (mapReady ? "成果可交付" : "正在加载成果") : "验证未通过"}</Tag></div>
             {validationPassed ? (
               <CesiumViewport source={{ kind: "tileset", url: job.links.tileset, bounds: manifest.boundsWgs84 }} label="最终 3D Tiles 成果" height={500} onReadyChange={setMapReady} />
             ) : <Alert type="error" showIcon title="成果结构验证未通过" description={report.validation.errors.join("；") || "请查看生成报告。"} />}
@@ -127,7 +130,7 @@ export function GenerateStep({ dataset, config, job, onJob, onEvent, onResetJob,
           <section className="content-card" aria-labelledby="report-title" data-testid="generation-report">
             <div className="section-heading"><Typography.Title id="report-title" level={3}>生成报告</Typography.Title><Tag color={report.validation.valid ? "green" : "red"}>3D Tiles {report.validation.valid ? "验证通过" : "验证失败"}</Tag></div>
             <div className="metric-grid four">
-              <MetricCard label="建模建筑" value={report.modeledBuildings.toLocaleString("zh-CN")} />
+              <MetricCard label="建模建筑" value={report.modeledBuildings.toLocaleString("zh-CN")} detail={`缺失 ${report.failedBuildings}`} />
               <MetricCard label="成功切片" value={report.successfulTiles.toLocaleString("zh-CN")} detail={`失败 ${report.failedTiles}`} />
               <MetricCard label="三角形" value={report.triangleCount.toLocaleString("zh-CN")} />
               <MetricCard label="成果体积" value={formatBytes(report.outputBytes)} />
@@ -153,10 +156,10 @@ export function GenerateStep({ dataset, config, job, onJob, onEvent, onResetJob,
               columns={[{ title: "成果", dataIndex: "name" }, { title: "相对路径", dataIndex: "relativePath", responsive: ["md"] }, { title: "类型", dataIndex: "mediaType", responsive: ["lg"] }, { title: "大小", dataIndex: "bytes", render: (value: number) => formatBytes(value) }]}
             />
             <div className="delivery-actions">
-              <span>{downloadReady ? "空间内容与报告均已验证，可以下载。" : "等待成果在 Cesium 中成功加载后开放下载。"}</span>
+              <span>{downloadReady ? (job.incomplete ? "结构验证已通过，但这是有明确缺失项的不完整成果。" : "空间内容与报告均已验证，可以下载。") : "等待成果在 Cesium 中成功加载后开放下载。"}</span>
               <Space wrap>
                 <Button size="large" icon={<FolderOpenOutlined />} loading={openingDirectory} onClick={() => void openDirectory()} data-testid="open-result-directory">打开成果目录</Button>
-                <Button type="primary" size="large" icon={<CloudDownloadOutlined />} disabled={!downloadReady} href={job.links.download} data-testid="download-result">下载完整 ZIP</Button>
+                <Button type="primary" danger={Boolean(job.incomplete)} size="large" icon={<CloudDownloadOutlined />} disabled={!downloadReady} href={job.links.download} data-testid="download-result">{job.incomplete ? "下载不完整 ZIP" : "下载完整 ZIP"}</Button>
               </Space>
             </div>
           </section>

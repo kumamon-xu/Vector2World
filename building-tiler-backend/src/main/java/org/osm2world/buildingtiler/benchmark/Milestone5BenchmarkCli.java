@@ -28,7 +28,6 @@ import org.osm2world.buildingtiler.domain.HeightUnit;
 import org.osm2world.buildingtiler.domain.InvalidHeightPolicy;
 import org.osm2world.buildingtiler.domain.ModelingConfig;
 import org.osm2world.buildingtiler.domain.TilingConfig;
-import org.osm2world.buildingtiler.gis.GeoJsonDatasetReader;
 import org.osm2world.buildingtiler.gis.ImportOptions;
 import org.osm2world.buildingtiler.gis.UploadLimits;
 import org.osm2world.buildingtiler.modeling.BuildingRuleEngine;
@@ -54,6 +53,8 @@ public final class Milestone5BenchmarkCli {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final HeightMapping HEIGHT = new HeightMapping("Elevation", HeightUnit.M,
 			InvalidHeightPolicy.FAIL, 10_000);
+	private static final UploadLimits BENCHMARK_UPLOAD_LIMITS = new UploadLimits(
+			2L * 1024 * 1024 * 1024, 4L * 1024 * 1024 * 1024, 20_000, 200.0, Duration.ofHours(24));
 
 	public static void main(String[] args) throws Exception {
 		Options options = Options.parse(args);
@@ -85,21 +86,25 @@ public final class Milestone5BenchmarkCli {
 		long gcCount = gcCount();
 		long gcMillis = gcMillis();
 		long peakHeap = usedHeap();
+		long peakRss = rssBytes();
 		Map<String, Long> phases = new LinkedHashMap<>();
 		long totalStarted = System.nanoTime();
 		if (corpus.featureCount() <= options.fullUpTo()) {
 			try {
 			Path work = options.output().resolve("work-" + corpus.featureCount() + "-" + repetition);
 			Files.createDirectories(work);
-			DatasetService datasets = new DatasetService(work.resolve("datasets"), UploadLimits.defaults());
+			DatasetService datasets = new DatasetService(work.resolve("datasets"), BENCHMARK_UPLOAD_LIMITS);
 			ManagedDataset dataset;
 			long started = System.nanoTime();
 			try (var input = Files.newInputStream(corpus.geoJson())) {
 				dataset = datasets.upload(corpus.geoJson().getFileName().toString(), "application/geo+json",
-						Files.size(corpus.geoJson()), input, ImportOptions.defaults());
+						Files.size(corpus.geoJson()), input, benchmarkImportOptions(options));
 			}
 			phases.put("parseInspect", System.nanoTime() - started);
 			peakHeap = Math.max(peakHeap, usedHeap());
+			peakRss = Math.max(peakRss, rssBytes());
+			long storeBytes = Files.size(datasets.managedDirectory(dataset.id().toString())
+					.resolve("normalized-features.v2w"));
 			int workers = Math.max(1, Math.min(options.workers(), Runtime.getRuntime().availableProcessors()));
 			try (GenerationJobService jobs = new GenerationJobService(work.resolve("jobs"), Duration.ofHours(1),
 					workers, options.queueCapacity(), datasets, new TileOwnershipPlanner(),
@@ -109,8 +114,9 @@ public final class Milestone5BenchmarkCli {
 						ModelingConfig.defaults().withLod(2), TilingConfig.defaults(workers, options.queueCapacity())));
 				await(job, options.timeout());
 				peakHeap = Math.max(peakHeap, usedHeap());
+				peakRss = Math.max(peakRss, rssBytes());
 				if (job.result() == null) return failed(corpus, repetition, "full", totalStarted, peakHeap,
-						gcCount, gcMillis, phases, job.error());
+						peakRss, gcCount, gcMillis, phases, job.error());
 				JsonObject generation = JsonParser.parseString(Files.readString(
 						jobs.resultFile(job.id().toString(), "generation-report.json"), UTF_8)).getAsJsonObject();
 				JsonObject metrics = generation.getAsJsonObject("resourceMetrics");
@@ -118,50 +124,67 @@ public final class Milestone5BenchmarkCli {
 				JsonObject phaseNanos = metrics.getAsJsonObject("phaseNanos");
 				for (String name : phaseNanos.keySet()) phases.put(name, phaseNanos.get(name).getAsLong());
 				return new Run(corpus.featureCount(), repetition, repetition == 1 ? "cold" : "hot", "full",
-						"PASSED", millis(totalStarted), peakHeap,
+						"PASSED", millis(totalStarted), peakHeap, peakRss,
 						Math.max(0, gcCount() - gcCount), Math.max(0, gcMillis() - gcMillis),
 						generation.get("plannedTiles").getAsInt(), generation.get("triangleCount").getAsLong(),
-						generation.get("outputBytes").getAsLong(), corpus.bytes(), corpus.sha256(),
+						generation.get("outputBytes").getAsLong(), storeBytes, corpus.bytes(), corpus.sha256(),
 						Map.copyOf(phases), null);
 			}
 			} catch (Exception exception) {
 				return failed(corpus, repetition, "full", totalStarted, peakHeap,
-						gcCount, gcMillis, phases, exception.toString());
+						peakRss, gcCount, gcMillis, phases, exception.toString());
 			}
 		}
 
 		try {
+			Path work = options.output().resolve("work-" + corpus.featureCount() + "-" + repetition);
+			Files.createDirectories(work);
+			DatasetService datasets = new DatasetService(work.resolve("datasets"), BENCHMARK_UPLOAD_LIMITS);
 			long started = System.nanoTime();
-			var inspection = new GeoJsonDatasetReader().inspect(corpus.geoJson(), ImportOptions.defaults());
-			var dataset = inspection.materialize(HEIGHT);
+			ManagedDataset managed;
+			try (var input = Files.newInputStream(corpus.geoJson())) {
+				managed = datasets.upload(corpus.geoJson().getFileName().toString(), "application/geo+json",
+						Files.size(corpus.geoJson()), input, benchmarkImportOptions(options));
+			}
+			var dataset = datasets.materialize(managed.id().toString(), HEIGHT);
 			phases.put("parseInspectMaterialize", System.nanoTime() - started);
 			peakHeap = Math.max(peakHeap, usedHeap());
+			peakRss = Math.max(peakRss, rssBytes());
+			long storeBytes = Files.size(datasets.managedDirectory(managed.id().toString())
+					.resolve("normalized-features.v2w"));
 			started = System.nanoTime();
 			BuildingRuleEngine rules = new BuildingRuleEngine();
 			ModelingConfig modeling = ModelingConfig.defaults().withLod(2);
 			for (var building : dataset.buildings()) rules.evaluate(building, modeling);
 			phases.put("rules", System.nanoTime() - started);
 			peakHeap = Math.max(peakHeap, usedHeap());
+			peakRss = Math.max(peakRss, rssBytes());
 			started = System.nanoTime();
 			var plan = new TileOwnershipPlanner().plan(dataset.buildings(), TilingConfig.DEFAULT_ZOOM, 4);
 			phases.put("tiling", System.nanoTime() - started);
 			peakHeap = Math.max(peakHeap, usedHeap());
+			peakRss = Math.max(peakRss, rssBytes());
 			return new Run(corpus.featureCount(), repetition, repetition == 1 ? "cold" : "hot", "analysis",
-					"PASSED", millis(totalStarted), peakHeap, Math.max(0, gcCount() - gcCount),
-					Math.max(0, gcMillis() - gcMillis), plan.tiles().size(), 0, 0, corpus.bytes(),
+					"PASSED", millis(totalStarted), peakHeap, peakRss, Math.max(0, gcCount() - gcCount),
+					Math.max(0, gcMillis() - gcMillis), plan.tiles().size(), 0, 0, storeBytes, corpus.bytes(),
 					corpus.sha256(), Map.copyOf(phases), null);
 		} catch (Exception exception) {
 			return failed(corpus, repetition, "analysis", totalStarted, peakHeap,
-					gcCount, gcMillis, phases, exception.toString());
+					peakRss, gcCount, gcMillis, phases, exception.toString());
 		}
 	}
 
 	private static Run failed(BenchmarkCorpusGenerator.Corpus corpus, int repetition, String scope,
-			long started, long peakHeap, long gcCount, long gcMillis, Map<String, Long> phases, String error) {
+			long started, long peakHeap, long peakRss, long gcCount, long gcMillis,
+			Map<String, Long> phases, String error) {
 		return new Run(corpus.featureCount(), repetition, repetition == 1 ? "cold" : "hot", scope,
-				"FAILED", millis(started), peakHeap, Math.max(0, gcCount() - gcCount),
-				Math.max(0, gcMillis() - gcMillis), 0, 0, 0, corpus.bytes(), corpus.sha256(),
+				"FAILED", millis(started), peakHeap, peakRss, Math.max(0, gcCount() - gcCount),
+				Math.max(0, gcMillis() - gcMillis), 0, 0, 0, 0, corpus.bytes(), corpus.sha256(),
 				Map.copyOf(phases), error);
+	}
+
+	private static ImportOptions benchmarkImportOptions(Options options) {
+		return new ImportOptions(null, null, null, options.timeout(), 0.05, 0.50);
 	}
 
 	private static Map<String, Object> report(Options options, List<Run> runs) {
@@ -188,7 +211,10 @@ public final class Milestone5BenchmarkCli {
 			summary.put("coefficientOfVariation", coefficientOfVariation(
 					successful.stream().map(Run::totalMillis).toList()));
 			summary.put("medianPeakHeapBytes", median(successful.stream().map(Run::peakHeapBytes).toList()));
+			summary.put("medianPeakRssBytes", median(successful.stream().map(Run::peakRssBytes).toList()));
 			summary.put("medianOutputBytes", median(successful.stream().map(Run::outputBytes).toList()));
+			summary.put("medianNormalizedStoreBytes", median(
+					successful.stream().map(Run::normalizedStoreBytes).toList()));
 			summary.put("medianTriangleCount", median(successful.stream().map(Run::triangleCount).toList()));
 			summary.put("medianTileCount", median(successful.stream().map(run -> (long)run.tileCount()).toList()));
 			summaries.add(summary);
@@ -243,14 +269,16 @@ public final class Milestone5BenchmarkCli {
 
 	private static void writeCsv(Path file, List<Run> runs) throws IOException {
 		try (BufferedWriter writer = Files.newBufferedWriter(file, UTF_8)) {
-			writer.write("featureCount,repetition,cacheState,scope,status,totalMillis,peakHeapBytes,gcCollections,gcMillis,tileCount,triangleCount,outputBytes,inputBytes,sha256,error\n");
+			writer.write("featureCount,repetition,cacheState,scope,status,totalMillis,peakHeapBytes,peakRssBytes,gcCollections,gcMillis,tileCount,triangleCount,outputBytes,normalizedStoreBytes,inputBytes,sha256,error\n");
 			for (Run run : runs) {
 				writer.write(String.join(",", Integer.toString(run.featureCount()), Integer.toString(run.repetition()),
 						run.cacheState(), run.scope(), run.status(), Long.toString(run.totalMillis()),
-						Long.toString(run.peakHeapBytes()), Long.toString(run.gcCollections()),
+						Long.toString(run.peakHeapBytes()), Long.toString(run.peakRssBytes()),
+						Long.toString(run.gcCollections()),
 						Long.toString(run.gcMillis()), Integer.toString(run.tileCount()),
 						Long.toString(run.triangleCount()), Long.toString(run.outputBytes()),
-						Long.toString(run.inputBytes()), run.sha256(), csv(run.error())));
+						Long.toString(run.normalizedStoreBytes()), Long.toString(run.inputBytes()),
+						run.sha256(), csv(run.error())));
 				writer.newLine();
 			}
 		}
@@ -282,6 +310,29 @@ public final class Milestone5BenchmarkCli {
 		return runtime.totalMemory() - runtime.freeMemory();
 	}
 
+	private static long rssBytes() {
+		long pid = ProcessHandle.current().pid();
+		try {
+			String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+			if (os.contains("win")) {
+				Process process = new ProcessBuilder("powershell", "-NoProfile", "-NonInteractive", "-Command",
+						"(Get-Process -Id " + pid + ").WorkingSet64").redirectErrorStream(true).start();
+				String value = new String(process.getInputStream().readAllBytes(), UTF_8).trim();
+				return process.waitFor() == 0 ? Long.parseLong(value) : 0;
+			}
+			Path status = Path.of("/proc/self/status");
+			if (Files.isRegularFile(status)) {
+				String line = Files.readAllLines(status, UTF_8).stream()
+						.filter(value -> value.startsWith("VmRSS:")).findFirst().orElse("");
+				String digits = line.replaceAll("[^0-9]", "");
+				return digits.isEmpty() ? 0 : Long.parseLong(digits) * 1024;
+			}
+		} catch (Exception ignored) {
+			// RSS is best-effort and remains zero when the host cannot expose it.
+		}
+		return 0;
+	}
+
 	private static long gcCount() {
 		return ManagementFactory.getGarbageCollectorMXBeans().stream()
 				.mapToLong(GarbageCollectorMXBean::getCollectionCount).filter(value -> value >= 0).sum();
@@ -307,8 +358,8 @@ public final class Milestone5BenchmarkCli {
 	}
 
 	public record Run(int featureCount, int repetition, String cacheState, String scope, String status,
-			long totalMillis, long peakHeapBytes, long gcCollections, long gcMillis, int tileCount,
-			long triangleCount, long outputBytes, long inputBytes, String sha256,
+			long totalMillis, long peakHeapBytes, long peakRssBytes, long gcCollections, long gcMillis, int tileCount,
+			long triangleCount, long outputBytes, long normalizedStoreBytes, long inputBytes, String sha256,
 			Map<String, Long> phaseNanos, String error) {}
 
 	record Options(Path output, List<Integer> sizes, int warmups, int repetitions, int fullUpTo,

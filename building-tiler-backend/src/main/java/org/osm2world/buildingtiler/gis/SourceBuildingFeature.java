@@ -1,12 +1,11 @@
 package org.osm2world.buildingtiler.gis;
 
 import java.util.List;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.locationtech.jts.geom.Geometry;
 import org.osm2world.buildingtiler.domain.BuildingPartId;
+import org.osm2world.buildingtiler.domain.ImmutableAttributes;
 
 public record SourceBuildingFeature(
 		String id,
@@ -19,8 +18,7 @@ public record SourceBuildingFeature(
 	public SourceBuildingFeature {
 		if (id == null || id.isBlank()) throw new IllegalArgumentException("Feature id must not be blank");
 		if (geometryWgs84 == null || geometryWgs84.isEmpty()) throw new IllegalArgumentException("Feature geometry is required");
-		properties = properties == null ? Map.of()
-				: Collections.unmodifiableMap(new LinkedHashMap<>(properties));
+		properties = ImmutableAttributes.copyOf(properties);
 		parts = parts == null ? List.of() : List.copyOf(parts);
 	}
 }

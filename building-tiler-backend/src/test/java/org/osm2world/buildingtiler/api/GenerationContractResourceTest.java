@@ -24,8 +24,9 @@ class GenerationContractResourceTest {
 				.getAsJsonObject("zoom").get("default").getAsInt());
 		assertEquals(22, manifest.getAsJsonObject("properties")
 				.getAsJsonObject("zoom").get("maximum").getAsInt());
-		assertEquals(2, manifest.getAsJsonObject("properties").getAsJsonObject("lods")
-				.getAsJsonArray("prefixItems").get(0).getAsJsonObject().get("const").getAsInt());
+		assertEquals(java.util.List.of(2, 3, 4), manifest.getAsJsonObject("properties").getAsJsonObject("lods")
+				.getAsJsonObject("items").getAsJsonArray("enum").asList().stream()
+				.map(value -> value.getAsInt()).toList());
 		assertEquals("3DTILES", manifest.getAsJsonObject("properties").getAsJsonObject("outputFormats")
 				.getAsJsonArray("prefixItems").get(0).getAsJsonObject().get("const").getAsString());
 		assertEquals(java.util.List.of("GEOJSON", "SHP"),

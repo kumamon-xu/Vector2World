@@ -1,0 +1,39 @@
+name: Vector2World Production Patch Gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  production-patch:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: spike-viewer/package-lock.json
+      - name: Install locked frontend and validator dependencies
+        working-directory: spike-viewer
+        run: npm ci
+      - name: Verify frontend contracts and production bundle
+        working-directory: spike-viewer
+        run: npm run check
+      - name: Run production patch backend gate
+        shell: pwsh
+        run: |
+          $gateOutput = Join-Path '${{ github.workspace }}' 'building-tiler-backend\target\production-patch-glb'
+          .\mvnw.cmd -pl building-tiler-backend -am `
+            '-Dtest=SafeZipExtractorTest,ShapefileZipImportTest,UserDatasetM1ImportTest,Osm2WorldStyleBundleExportTest,Osm2WorldEngineAdapterM2Test,M2GoldenSuiteTest,TilesetValidatorTest,GenerationJobApiContractTest,GenerationJobServiceTest,Milestone5ResourcePolicyTest' `
+            '-Dsurefire.failIfNoSpecifiedTests=false' `
+            "-Dvector2world.patchGateOutput=$gateOutput" test
+      - name: Run Khronos glTF Validator on generated production GLBs
+        working-directory: spike-viewer
+        run: npm run validate:glb -- ../building-tiler-backend/target/production-patch-glb

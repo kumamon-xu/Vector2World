@@ -21,7 +21,7 @@ import com.google.gson.GsonBuilder;
 /** Rebuilds deterministic benchmark inputs; generated corpora stay outside Git. */
 public final class BenchmarkCorpusGenerator {
 
-	public static final String GENERATOR_VERSION = "m5-corpus-v1";
+	public static final String GENERATOR_VERSION = "m5-corpus-v3";
 
 	public Corpus generate(Path outputDirectory, int featureCount) throws IOException {
 		if (featureCount < 1) throw new IllegalArgumentException("featureCount must be positive");
@@ -29,7 +29,7 @@ public final class BenchmarkCorpusGenerator {
 		Path geoJson = outputDirectory.resolve("buildings-" + featureCount + ".geojson");
 		try (BufferedWriter writer = Files.newBufferedWriter(geoJson, UTF_8)) {
 			writer.write("{\"type\":\"FeatureCollection\",\"name\":\"vector2world-m5-"
-					+ featureCount + "\",\"features\":[");
+					+ featureCount + "\",\"crs\":{\"type\":\"name\",\"properties\":{\"name\":\"OGC:CRS84\"}},\"features\":[");
 			for (int index = 0; index < featureCount; index++) {
 				if (index > 0) writer.write(',');
 				writeFeature(writer, index);
@@ -74,7 +74,19 @@ public final class BenchmarkCorpusGenerator {
 		writer.write(scenario);
 		writer.write("\",\"building:material\":\"");
 		writer.write(index % 3 == 0 ? "brick" : index % 3 == 1 ? "concrete" : "glass");
-		writer.write("\"},\"geometry\":");
+		writer.write('"');
+		if ("wide-attributes".equals(scenario)) {
+			for (int attribute = 0; attribute < 32; attribute++) {
+				writer.write(",\"source_attribute_");
+				writer.write(Integer.toString(attribute));
+				writer.write("\":\"value-");
+				writer.write(Integer.toString(index % 1000));
+				writer.write('-');
+				writer.write(Integer.toString(attribute));
+				writer.write('"');
+			}
+		}
+		writer.write("},\"geometry\":");
 		if ("holes".equals(scenario)) writePolygonWithHole(writer, x, y, width, depth);
 		else if ("multipolygon".equals(scenario)) writeMultiPolygon(writer, x, y, width, depth);
 		else if ("complex".equals(scenario)) writeComplexPolygon(writer, x, y, width, depth);
@@ -145,6 +157,7 @@ public final class BenchmarkCorpusGenerator {
 		if (index % 43 == 0) return "holes";
 		if (index % 17 == 0) return "complex";
 		if (index % 97 == 0) return "cross-tile";
+		if (index % 13 == 0) return "wide-attributes";
 		return "simple";
 	}
 

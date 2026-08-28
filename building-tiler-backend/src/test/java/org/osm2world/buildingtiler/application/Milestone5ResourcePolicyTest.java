@@ -110,8 +110,9 @@ class Milestone5ResourcePolicyTest {
 		try (Fixture fixture = fixture(renderer, policy(8L * 1024 * 1024 * 1024,
 				Duration.ofMinutes(1), Duration.ofSeconds(5), 8L * 1024 * 1024 * 1024))) {
 			ManagedGenerationJob original = await(fixture.jobs().create(spec(fixture.datasetId())), 10_000);
-			assertEquals(GenerationJobState.COMPLETED_WITH_WARNINGS, original.state());
-			assertEquals(1, original.result().failedTiles());
+			assertEquals(GenerationJobState.FAILED, original.state());
+			assertEquals(null, original.result());
+			assertTrue(original.error().contains("INCOMPLETE_RESULT"));
 			ManagedGenerationJob recovery = await(
 					fixture.jobs().retryFailed(original.id().toString()), 10_000);
 			assertEquals(GenerationJobState.COMPLETED, recovery.state());
@@ -124,7 +125,7 @@ class Milestone5ResourcePolicyTest {
 	@Test
 	void consecutiveAndConcurrentJobsShareOnlyTheBoundedWorkerPool() throws Exception {
 		try (Fixture fixture = fixture(realRenderer(), policy(8L * 1024 * 1024 * 1024,
-				Duration.ofMinutes(1), Duration.ofSeconds(10), 8L * 1024 * 1024 * 1024))) {
+				Duration.ofMinutes(1), Duration.ofMinutes(1), 8L * 1024 * 1024 * 1024))) {
 			java.util.List<ManagedGenerationJob> jobs = new java.util.ArrayList<>();
 			for (int index = 0; index < 8; index++) jobs.add(
 					fixture.jobs().create(spec(fixture.datasetId())));

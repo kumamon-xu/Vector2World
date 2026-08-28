@@ -33,7 +33,7 @@ public final class TilesetValidator {
 	public ValidationResult validate(Path baseDirectory, int expectedGlbCount) throws IOException {
 		Path root = baseDirectory.toAbsolutePath().normalize();
 		ValidationState state = new ValidationState(root);
-		validateTileset(root.resolve("tileset.json"), state, true);
+		validateTileset(root.resolve("tileset.json"), state, true, GlbSemanticValidator.identity(), true);
 		if (expectedGlbCount >= 0 && state.visitedGlbs.size() != expectedGlbCount) {
 			state.errors.add("Expected " + expectedGlbCount + " GLB contents but tileset references "
 					+ state.visitedGlbs.size());
@@ -41,10 +41,42 @@ public final class TilesetValidator {
 		reconcileReports(state, expectedGlbCount);
 		return new ValidationResult(state.errors.isEmpty(), state.assetVersion,
 				state.visitedTilesets.size(), state.visitedGlbs.size(),
+				state.vertexCount, state.triangleCount, state.slopedSurfaceTriangleCount,
+				state.minimumModelHeight == Double.POSITIVE_INFINITY ? Double.NaN : state.minimumModelHeight,
+				state.maximumModelHeight == Double.NEGATIVE_INFINITY ? Double.NaN : state.maximumModelHeight,
+				GlbSemanticValidator.PROFILE,
 				List.copyOf(state.errors), Set.copyOf(state.extensionsUsed));
 	}
 
-	private static void validateTileset(Path file, ValidationState state, boolean rootTileset) throws IOException {
+	/**
+	 * Reconciles result metadata written after a successful semantic validation. The staging directory is
+	 * private to the job, so GLB geometry cannot change between these two phases; only the newly written
+	 * manifest, report and ledger need to be checked. GLB JSON metadata is still reread to prove the ledger
+	 * mapping, while the potentially large BIN chunks are not decoded a second time.
+	 */
+	public ValidationResult validateReconciliation(Path baseDirectory, int expectedGlbCount,
+			ValidationResult semanticValidation) throws IOException {
+		if (semanticValidation == null || !semanticValidation.valid()) {
+			throw new IllegalArgumentException("A successful semantic validation is required before reconciliation");
+		}
+		Path root = baseDirectory.toAbsolutePath().normalize();
+		ValidationState state = new ValidationState(root);
+		validateTileset(root.resolve("tileset.json"), state, true, GlbSemanticValidator.identity(), false);
+		if (expectedGlbCount >= 0 && state.visitedGlbs.size() != expectedGlbCount) {
+			state.errors.add("Expected " + expectedGlbCount + " GLB contents but tileset references "
+					+ state.visitedGlbs.size());
+		}
+		reconcileReports(state, expectedGlbCount);
+		return new ValidationResult(state.errors.isEmpty(), state.assetVersion,
+				state.visitedTilesets.size(), state.visitedGlbs.size(),
+				semanticValidation.vertexCount(), semanticValidation.triangleCount(),
+				semanticValidation.slopedSurfaceTriangleCount(), semanticValidation.minimumModelHeight(),
+				semanticValidation.maximumModelHeight(), semanticValidation.validationProfile(),
+				List.copyOf(state.errors), semanticValidation.extensionsUsed());
+	}
+
+	private static void validateTileset(Path file, ValidationState state, boolean rootTileset,
+			double[] inheritedTransform, boolean validateGeometry) throws IOException {
 		file = safePath(file, state);
 		if (file == null) return;
 		if (!state.visitedTilesets.add(file)) return;
@@ -70,15 +102,19 @@ public final class TilesetValidator {
 			state.errors.add("Missing root tile in " + file);
 			return;
 		}
-		validateEntry(root, file.getParent(), state);
+		validateEntry(root, file.getParent(), state, inheritedTransform, validateGeometry);
 	}
 
-	private static void validateEntry(JsonObject entry, Path directory, ValidationState state) throws IOException {
+	private static void validateEntry(JsonObject entry, Path directory, ValidationState state,
+			double[] parentTransform, boolean validateGeometry) throws IOException {
 		JsonElement geometricError = entry.get("geometricError");
 		if (geometricError == null || !finiteNonNegative(geometricError)) {
 			state.errors.add("Tile geometricError must be finite and non-negative");
 		}
 		validateFiniteArray(entry.get("transform"), 16, "transform", state);
+		double[] transform = entry.has("transform")
+				? GlbSemanticValidator.matrix(entry.get("transform")) : GlbSemanticValidator.identity();
+		double[] cumulativeTransform = GlbSemanticValidator.multiply(parentTransform, transform);
 		JsonObject volume = object(entry.get("boundingVolume"));
 		if (volume.isEmpty()) {
 			state.errors.add("Tile is missing boundingVolume");
@@ -99,8 +135,12 @@ public final class TilesetValidator {
 			Path target = resolveUri(directory, uri, state);
 			if (target != null) {
 				String lower = target.getFileName().toString().toLowerCase();
-				if (lower.endsWith(".json")) validateTileset(target, state, false);
-				else if (lower.endsWith(".glb")) validateGlb(target, state);
+				if (lower.endsWith(".json")) validateTileset(target, state, false, cumulativeTransform,
+						validateGeometry);
+				else if (lower.endsWith(".glb")) {
+					if (validateGeometry) validateGlb(target, state, cumulativeTransform, volume);
+					else collectGlbMetadata(target, state);
+				}
 				else state.errors.add("Unsupported tile content URI: " + uri);
 			}
 		}
@@ -108,12 +148,32 @@ public final class TilesetValidator {
 		JsonElement children = entry.get("children");
 		if (children != null && children.isJsonArray()) {
 			for (JsonElement child : children.getAsJsonArray()) {
-				if (child.isJsonObject()) validateEntry(child.getAsJsonObject(), directory, state);
+				if (child.isJsonObject()) validateEntry(child.getAsJsonObject(), directory, state,
+						cumulativeTransform, validateGeometry);
 			}
 		}
 	}
 
-	private static void validateGlb(Path file, ValidationState state) throws IOException {
+	private static void collectGlbMetadata(Path file, ValidationState state) {
+		file = safePath(file, state);
+		if (file == null || !state.visitedGlbs.add(file)) return;
+		if (!Files.isRegularFile(file)) {
+			state.errors.add("Missing GLB: " + file);
+			return;
+		}
+		try {
+			for (String partId : new FinalGlbFeatureIndex().readPartIds(file)) {
+				if (!state.finalPartIds.add(partId)) {
+					state.errors.add("Duplicate final GLB feature part metadata: " + partId);
+				}
+			}
+		} catch (IOException exception) {
+			state.errors.add(exception.getMessage());
+		}
+	}
+
+	private static void validateGlb(Path file, ValidationState state, double[] transform,
+			JsonObject boundingVolume) throws IOException {
 		file = safePath(file, state);
 		if (file == null) return;
 		if (!state.visitedGlbs.add(file)) return;
@@ -121,44 +181,43 @@ public final class TilesetValidator {
 			state.errors.add("Missing GLB: " + file);
 			return;
 		}
-		long fileSize = Files.size(file);
-		if (fileSize < 20) {
-			state.errors.add("GLB is too short: " + file);
-			return;
+		var validation = new GlbSemanticValidator().validate(file, state.baseDirectory, transform, boundingVolume);
+		state.vertexCount += validation.vertexCount();
+		state.triangleCount += validation.triangleCount();
+		state.slopedSurfaceTriangleCount += validation.slopedSurfaceTriangleCount();
+		if (Double.isFinite(validation.minimumModelHeight())) {
+			state.minimumModelHeight = Math.min(state.minimumModelHeight, validation.minimumModelHeight());
+			state.maximumModelHeight = Math.max(state.maximumModelHeight, validation.maximumModelHeight());
 		}
-		try (FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
-			ByteBuffer header = ByteBuffer.allocate(20).order(LITTLE_ENDIAN);
-			readFully(channel, header);
-			header.flip();
-			int magic = header.getInt();
-			int version = header.getInt();
-			long declaredLength = Integer.toUnsignedLong(header.getInt());
-			if (magic != GLB_MAGIC) state.errors.add("Invalid GLB magic: " + file);
-			if (version != 2) state.errors.add("Expected GLB version 2: " + file);
-			if (declaredLength != fileSize) state.errors.add("GLB length mismatch: " + file);
-
-			long jsonLengthUnsigned = Integer.toUnsignedLong(header.getInt());
-			int chunkType = header.getInt();
-			if (chunkType != GLB_JSON_CHUNK || jsonLengthUnsigned < 2
-					|| jsonLengthUnsigned > MAX_GLTF_JSON_BYTES || jsonLengthUnsigned > fileSize - 20) {
-				state.errors.add("Invalid GLB JSON chunk: " + file);
-				return;
-			}
-			ByteBuffer jsonBuffer = ByteBuffer.allocate((int)jsonLengthUnsigned);
-			readFully(channel, jsonBuffer);
-			JsonObject gltf = JsonParser.parseString(new String(jsonBuffer.array(), UTF_8).trim()).getAsJsonObject();
-			JsonObject asset = object(gltf.get("asset"));
-			if (!"2.0".equals(string(asset.get("version")))) {
-				state.errors.add("Expected embedded glTF asset.version 2.0: " + file);
-			}
-			JsonElement extensions = gltf.get("extensionsUsed");
-			if (extensions != null && extensions.isJsonArray()) {
-				for (JsonElement extension : extensions.getAsJsonArray()) {
-					state.extensionsUsed.add(extension.getAsString());
+		state.errors.addAll(validation.errors());
+		try {
+			for (String partId : new FinalGlbFeatureIndex().readPartIds(file)) {
+				if (!state.finalPartIds.add(partId)) {
+					state.errors.add("Duplicate final GLB feature part metadata: " + partId);
 				}
 			}
-		} catch (RuntimeException exception) {
-			state.errors.add("Invalid embedded glTF JSON " + file + ": " + exception.getMessage());
+		} catch (IOException exception) {
+			state.errors.add(exception.getMessage());
+		}
+		try {
+			byte[] bytes = Files.readAllBytes(file);
+			if (bytes.length >= 20) {
+				ByteBuffer buffer = ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN);
+				buffer.position(12);
+				int jsonLength = buffer.getInt();
+				buffer.getInt();
+				if (jsonLength > 0 && jsonLength <= buffer.remaining()) {
+					byte[] json = new byte[jsonLength];
+					buffer.get(json);
+					JsonElement extensions = JsonParser.parseString(new String(json, UTF_8).trim())
+							.getAsJsonObject().get("extensionsUsed");
+					if (extensions != null && extensions.isJsonArray()) for (JsonElement extension : extensions.getAsJsonArray()) {
+						state.extensionsUsed.add(extension.getAsString());
+					}
+				}
+			}
+		} catch (RuntimeException ignored) {
+			// Semantic validation already emitted the precise parse error.
 		}
 	}
 
@@ -222,28 +281,27 @@ public final class TilesetValidator {
 		}
 	}
 
-	private static void readFully(FileChannel channel, ByteBuffer buffer) throws IOException {
-		while (buffer.hasRemaining()) {
-			if (channel.read(buffer) < 0) throw new IOException("Unexpected end of GLB file");
-		}
-	}
-
 	private static void reconcileReports(ValidationState state, int expectedGlbCount) {
 		Path report = state.baseDirectory.resolve("generation-report.json");
 		Path manifest = state.baseDirectory.resolve("manifest.json");
+		Path ledger = state.baseDirectory.resolve("modeling-ledger.json");
 		if (!Files.exists(report) && !Files.exists(manifest)) return;
 		try {
-			if (!Files.isRegularFile(report) || !Files.isRegularFile(manifest)) {
-				state.errors.add("Batch result must contain both manifest.json and generation-report.json");
+			if (!Files.isRegularFile(report) || !Files.isRegularFile(manifest) || !Files.isRegularFile(ledger)) {
+				state.errors.add("Batch result must contain manifest.json, generation-report.json and modeling-ledger.json");
 				return;
 			}
 			JsonObject reportJson;
 			JsonObject manifestJson;
+			JsonObject ledgerJson;
 			try (var reader = Files.newBufferedReader(report, UTF_8)) {
 				reportJson = JsonParser.parseReader(reader).getAsJsonObject();
 			}
 			try (var reader = Files.newBufferedReader(manifest, UTF_8)) {
 				manifestJson = JsonParser.parseReader(reader).getAsJsonObject();
+			}
+			try (var reader = Files.newBufferedReader(ledger, UTF_8)) {
+				ledgerJson = JsonParser.parseReader(reader).getAsJsonObject();
 			}
 			int reportedContents = reportJson.get("successfulTileContents").getAsInt();
 			int manifestContents = manifestJson.getAsJsonArray("tileContents").size();
@@ -252,6 +310,38 @@ public final class TilesetValidator {
 			}
 			if (expectedGlbCount >= 0 && reportedContents != expectedGlbCount) {
 				state.errors.add("Generation report content count does not match the expected result");
+			}
+			Set<String> modeledPartIds = new LinkedHashSet<>();
+			JsonArray entries = ledgerJson.getAsJsonArray("entries");
+			if (entries == null) {
+				state.errors.add("Modeling ledger is missing entries");
+				return;
+			}
+			for (JsonElement element : entries) {
+				JsonObject entry = object(element);
+				String status = string(entry.get("status"));
+				String partId = string(entry.get("partId"));
+				if (status == null || partId == null || "PENDING".equals(status)) {
+					state.errors.add("Modeling ledger contains an invalid or non-terminal entry");
+				} else if ("MODELED".equals(status) && !modeledPartIds.add(partId)) {
+					state.errors.add("Modeling ledger contains duplicate modeled part: " + partId);
+				}
+			}
+			JsonObject manifestLedger = object(manifestJson.get("modelingLedger"));
+			JsonObject reportLedger = object(reportJson.get("modelingLedger"));
+			JsonObject ledgerSummary = object(ledgerJson.get("summary"));
+			int inputParts = entries.size();
+			if (integer(manifestLedger.get("inputParts")) != inputParts
+					|| integer(reportLedger.get("inputParts")) != inputParts
+					|| integer(ledgerSummary.get("inputParts")) != inputParts) {
+				state.errors.add("Modeling ledger input part counts do not reconcile");
+			}
+			if (integer(reportJson.get("modeledParts")) != modeledPartIds.size()
+					|| integer(manifestLedger.get("modeledParts")) != modeledPartIds.size()) {
+				state.errors.add("Modeled part counts do not reconcile with the modeling ledger");
+			}
+			if (!modeledPartIds.equals(state.finalPartIds)) {
+				state.errors.add("Final GLB feature-part metadata does not match MODELED ledger entries");
 			}
 		} catch (Exception exception) {
 			state.errors.add("Invalid manifest/report reconciliation data: " + exception.getMessage());
@@ -275,11 +365,22 @@ public final class TilesetValidator {
 		return element != null && element.isJsonPrimitive() ? element.getAsString() : null;
 	}
 
+	private static int integer(JsonElement element) {
+		try { return element == null ? -1 : element.getAsInt(); }
+		catch (RuntimeException exception) { return -1; }
+	}
+
 	public record ValidationResult(
 			boolean valid,
 			String assetVersion,
 			int tilesetCount,
 			int glbCount,
+			long vertexCount,
+			long triangleCount,
+			long slopedSurfaceTriangleCount,
+			double minimumModelHeight,
+			double maximumModelHeight,
+			String validationProfile,
 			List<String> errors,
 			Set<String> extensionsUsed) {
 	}
@@ -290,6 +391,12 @@ public final class TilesetValidator {
 		final Set<Path> visitedGlbs = new LinkedHashSet<>();
 		final List<String> errors = new ArrayList<>();
 		final Set<String> extensionsUsed = new LinkedHashSet<>();
+		final Set<String> finalPartIds = new LinkedHashSet<>();
+		long vertexCount;
+		long triangleCount;
+		long slopedSurfaceTriangleCount;
+		double minimumModelHeight = Double.POSITIVE_INFINITY;
+		double maximumModelHeight = Double.NEGATIVE_INFINITY;
 		String assetVersion;
 
 		ValidationState(Path baseDirectory) {

@@ -2,6 +2,7 @@ package org.osm2world.buildingtiler.application;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.UUID;
 
 import org.osm2world.buildingtiler.domain.HeightMapping;
@@ -13,17 +14,19 @@ public final class ManagedDataset {
 	private final Instant createdAt;
 	private final Path workDirectory;
 	private final String originalFileName;
+	private final Duration importTimeout;
 	private volatile Instant lastAccessedAt;
 	private volatile DatasetStatus status;
 	private volatile DatasetInspection inspection;
 	private volatile HeightMapping heightMapping;
 
-	ManagedDataset(UUID id, Path workDirectory, String originalFileName) {
+	ManagedDataset(UUID id, Path workDirectory, String originalFileName, Duration importTimeout) {
 		this.id = id;
 		this.createdAt = Instant.now();
 		this.lastAccessedAt = createdAt;
 		this.workDirectory = workDirectory;
 		this.originalFileName = originalFileName;
+		this.importTimeout = importTimeout;
 		this.status = DatasetStatus.UPLOADING;
 	}
 
@@ -33,6 +36,7 @@ public final class ManagedDataset {
 	public DatasetStatus status() { return status; }
 	public DatasetInspection inspection() { return inspection; }
 	public HeightMapping heightMapping() { return heightMapping; }
+	Duration importTimeout() { return importTimeout; }
 	Path workDirectory() { return workDirectory; }
 	String originalFileName() { return originalFileName; }
 

@@ -100,7 +100,7 @@ export function ImportStep({ dataset, onDataset, onClear, onNext }: Props) {
         <details className="native-details">
           <summary>导入高级选项</summary>
           <div className="form-grid two-columns">
-            <label>源坐标系（缺少 .prj 时）<Input value={sourceCrs} onChange={(event) => setSourceCrs(event.target.value)} placeholder="例如 EPSG:4326" disabled={uploading} /></label>
+            <label>源坐标系（GeoJSON 未声明或 SHP 缺少 .prj 时）<Input value={sourceCrs} onChange={(event) => setSourceCrs(event.target.value)} placeholder="例如 EPSG:4326" disabled={uploading} /></label>
             <label>DBF 字符集<Input value={dbfCharset} onChange={(event) => setDbfCharset(event.target.value)} placeholder="自动识别；可填 GBK / UTF-8" disabled={uploading} /></label>
           </div>
         </details>
@@ -125,7 +125,7 @@ export function ImportStep({ dataset, onDataset, onClear, onNext }: Props) {
               <Descriptions.Item label="要素总数">{dataset.featureCount.toLocaleString("zh-CN")}</Descriptions.Item>
               <Descriptions.Item label="有效几何">{dataset.validGeometryCount.toLocaleString("zh-CN")}</Descriptions.Item>
               <Descriptions.Item label="修复几何">{dataset.repairedGeometryCount.toLocaleString("zh-CN")}</Descriptions.Item>
-              <Descriptions.Item label="坐标系">{dataset.crs}</Descriptions.Item>
+              <Descriptions.Item label="坐标系">{dataset.crs} · {dataset.crsSource === "EXPLICIT_OVERRIDE" ? "用户显式指定" : "文件声明已验证"}</Descriptions.Item>
               <Descriptions.Item label="图层">{dataset.layers.map((layer) => layer.name).join("、") || "—"}</Descriptions.Item>
               <Descriptions.Item label="编码">{dataset.sourceEncoding || "不适用 / 自动"}</Descriptions.Item>
               <Descriptions.Item label="范围" span={2}>{dataset.bboxWgs84.map((value) => value.toFixed(6)).join(", ")}</Descriptions.Item>

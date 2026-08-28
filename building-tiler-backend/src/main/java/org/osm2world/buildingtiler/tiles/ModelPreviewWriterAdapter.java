@@ -64,6 +64,7 @@ public final class ModelPreviewWriterAdapter {
 			if (!Files.isRegularFile(tileset) || !Files.isRegularFile(staging.resolve("tileset.glb"))) {
 				throw new IOException("OSM2World did not write the preview tileset and GLB");
 			}
+			new TilesetRegionReconciler().expandToFinalVertices(tileset, staging.resolve("tileset.glb"));
 			TilesetValidator.ValidationResult validation = validator.validate(staging);
 			if (!validation.valid()) throw new IOException("Preview validation failed: " + validation.errors());
 			Envelope bounds = new Envelope();
@@ -80,6 +81,7 @@ public final class ModelPreviewWriterAdapter {
 			report.put("osm2worldCommit", UpstreamBaseline.OSM2WORLD_COMMIT);
 			report.put("ruleVersion", config.ruleVersion().value());
 			report.put("presetVersion", StylePresetCatalog.PRESET_VERSION);
+			report.put("styleBundle", engine.styleBundleInfo());
 			report.put("stylePreset", config.stylePreset().value());
 			report.put("roofMode", config.roofMode().name());
 			report.put("lod", config.lod());

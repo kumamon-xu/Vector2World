@@ -30,4 +30,8 @@ public record ImportOptions(
 		return new ImportOptions(crs, selectedLayer, dbfCharset, timeout,
 				repairWarningAreaRatio, repairRejectAreaRatio);
 	}
+
+	public ImportDeadline newDeadline() {
+		return ImportDeadline.start(timeout);
+	}
 }

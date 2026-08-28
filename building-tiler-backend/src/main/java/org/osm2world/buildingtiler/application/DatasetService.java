@@ -22,6 +22,7 @@ import org.osm2world.buildingtiler.gis.DatasetInspection;
 import org.osm2world.buildingtiler.gis.DatasetReadResult;
 import org.osm2world.buildingtiler.gis.GeoJsonDatasetReader;
 import org.osm2world.buildingtiler.gis.ImportOptions;
+import org.osm2world.buildingtiler.gis.ImportDeadline;
 import org.osm2world.buildingtiler.gis.SafeDatasetArchives;
 import org.osm2world.buildingtiler.gis.ShapefileDatasetReader;
 import org.osm2world.buildingtiler.gis.UploadFormat;
@@ -50,6 +51,8 @@ public final class DatasetService {
 			throw new DatasetImportException(DatasetErrorCode.UPLOAD_TOO_LARGE,
 					"Upload exceeds " + limits.maximumUploadBytes() + " bytes");
 		}
+		ImportDeadline deadline = options.newDeadline();
+		deadline.check("upload initialization");
 		ensureStorageRoot();
 		UUID id = UUID.randomUUID();
 		Path workDirectory = storageRoot.resolve("dataset-" + id).normalize();
@@ -60,25 +63,33 @@ public final class DatasetService {
 			throw storageFailure(exception);
 		}
 
-		ManagedDataset dataset = new ManagedDataset(id, workDirectory, safeDisplayName(originalFileName));
+		ManagedDataset dataset = new ManagedDataset(id, workDirectory, safeDisplayName(originalFileName),
+				options.timeout());
 		datasets.put(id, dataset);
 		try {
 			String suffix = safeSuffix(originalFileName);
 			Path stored = workDirectory.resolve("upload" + suffix);
-			copyLimited(content, stored);
+			copyLimited(content, stored, deadline);
+			deadline.check("format detection");
 			UploadFormat format = UploadInspector.detect(originalFileName, contentType, stored);
+			deadline.check("format detection");
 			dataset.status(DatasetStatus.INSPECTING);
 			DatasetInspection inspection;
+			Path normalizedStore = workDirectory.resolve("normalized-features.v2w");
 			if (format == UploadFormat.GEOJSON) {
-				inspection = geoJsonReader.inspect(stored, options);
+				inspection = geoJsonReader.inspectToStore(stored, options, deadline, normalizedStore,
+						limits.maximumZipUncompressedBytes());
 			} else {
 				Path unpacked = workDirectory.resolve("unpacked");
-				var extraction = SafeDatasetArchives.extract(stored, unpacked, limits);
+				var extraction = SafeDatasetArchives.extract(stored, unpacked, limits, deadline);
+				deadline.check("shapefile selection");
 				Path shapefile = SafeDatasetArchives.selectShapefile(extraction, options.selectedLayer());
 				ImportOptions shapefileOptions = new ImportOptions(options.explicitCrs(), null,
 						options.dbfCharset(), options.timeout(), options.repairWarningAreaRatio(),
 						options.repairRejectAreaRatio());
-				inspection = shapefileReader.inspect(shapefile, shapefileOptions);
+				inspection = shapefileReader.inspectToStore(shapefile, shapefileOptions, deadline,
+						normalizedStore, limits.maximumZipUncompressedBytes())
+						.withArchiveEntryEncoding(extraction.entryNameEncoding(), extraction.legacyEncodingFallback());
 			}
 			dataset.ready(inspection);
 			return dataset;
@@ -108,7 +119,8 @@ public final class DatasetService {
 
 	public DatasetReadResult materialize(String id, HeightMapping mapping) throws DatasetImportException {
 		ManagedDataset dataset = get(id);
-		DatasetReadResult result = dataset.inspection().materialize(mapping);
+		DatasetReadResult result = dataset.inspection().materialize(mapping,
+				ImportDeadline.start(dataset.importTimeout()));
 		dataset.heightMapping(mapping);
 		return result;
 	}
@@ -180,12 +192,13 @@ public final class DatasetService {
 		}
 	}
 
-	private void copyLimited(InputStream source, Path target) throws IOException {
+	private void copyLimited(InputStream source, Path target, ImportDeadline deadline) throws IOException {
 		long copied = 0;
 		try (OutputStream output = Files.newOutputStream(target, StandardOpenOption.CREATE_NEW)) {
 			byte[] buffer = new byte[8192];
 			int count;
 			while ((count = source.read(buffer)) >= 0) {
+				deadline.check("upload copy");
 				copied += count;
 				if (copied > limits.maximumUploadBytes()) {
 					throw new DatasetImportException(DatasetErrorCode.UPLOAD_TOO_LARGE,
@@ -194,6 +207,7 @@ public final class DatasetService {
 				output.write(buffer, 0, count);
 			}
 		}
+		deadline.check("upload copy");
 		if (copied == 0) throw new DatasetImportException(DatasetErrorCode.EMPTY_UPLOAD, "Uploaded file is empty");
 	}
 

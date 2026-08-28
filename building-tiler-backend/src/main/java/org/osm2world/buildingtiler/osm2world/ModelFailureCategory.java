@@ -5,5 +5,6 @@ public enum ModelFailureCategory {
 	GEOMETRY,
 	TAG_MAPPING,
 	OSM2WORLD_CONVERSION,
+	GLTF_EXPORT,
 	EMPTY_INPUT
 }

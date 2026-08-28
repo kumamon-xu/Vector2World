@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import org.osm2world.buildingtiler.application.GenerationJobEvent;
 import org.osm2world.buildingtiler.application.GenerationJobService;
 import org.osm2world.buildingtiler.application.GenerationJobSpec;
+import org.osm2world.buildingtiler.application.DeliveryPolicy;
 import org.osm2world.buildingtiler.application.ManagedGenerationJob;
 import org.osm2world.buildingtiler.domain.HeightMapping;
 import org.osm2world.buildingtiler.domain.HeightUnit;
@@ -55,7 +56,7 @@ public final class GenerationJobController {
 					"datasetId and heightField are required");
 		}
 		ManagedGenerationJob job = jobs.create(new GenerationJobSpec(request.datasetId(), heightMapping(request),
-				modelingConfig(request), tilingConfig(request)));
+				modelingConfig(request), tilingConfig(request), deliveryPolicy(request)));
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body(GenerationJobResponse.from(job));
 	}
 
@@ -125,10 +126,13 @@ public final class GenerationJobController {
 	@GetMapping(value = "/{jobId}/download", produces = "application/zip")
 	public ResponseEntity<StreamingResponseBody> download(@PathVariable("jobId") String jobId)
 			throws DatasetImportException {
+		ManagedGenerationJob job = jobs.get(jobId);
 		jobs.resultFile(jobId, "tileset.json");
 		StreamingResponseBody body = output -> jobs.streamZip(jobId, output);
+		String qualifier = job.result() != null && job.result().incomplete() ? "INCOMPLETE-" : "";
 		return ResponseEntity.ok()
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=vector2world-" + jobId + ".zip")
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						"attachment; filename=vector2world-" + qualifier + jobId + ".zip")
 				.contentType(MediaType.parseMediaType("application/zip"))
 				.body(body);
 	}
@@ -172,6 +176,8 @@ public final class GenerationJobController {
 
 	private ModelingConfig modelingConfig(CreateGenerationJobRequest request) {
 		ModelingConfig defaults = ModelingConfig.defaults();
+		int lod = request.lods() == null || request.lods().isEmpty()
+				? TilingConfig.DEFAULT_LODS.get(0) : request.lods().get(0);
 		RuleVersion version = blank(request.ruleVersion()) ? defaults.ruleVersion() : new RuleVersion(request.ruleVersion());
 		RoofMode roofMode = blank(request.roofMode()) ? defaults.roofMode()
 				: RoofMode.valueOf(request.roofMode().trim().toUpperCase(Locale.ROOT).replace('-', '_'));
@@ -183,7 +189,7 @@ public final class GenerationJobController {
 				value(request.minimumBodyHeightMeters(), defaults.minimumBodyHeightMeters()),
 				value(request.minimumPitchedBuildingHeightMeters(), defaults.minimumPitchedBuildingHeightMeters()),
 				value(request.maximumPitchedBuildingHeightMeters(), defaults.maximumPitchedBuildingHeightMeters()),
-				2, 100, request.variantSeed() == null ? defaults.variantSeed() : request.variantSeed(),
+				lod, 100, request.variantSeed() == null ? defaults.variantSeed() : request.variantSeed(),
 				defaults.footprintThresholds());
 	}
 
@@ -197,6 +203,22 @@ public final class GenerationJobController {
 				request.transientRetryCount() == null ? 1 : request.transientRetryCount(),
 				request.crossTileBufferMeters() == null ? 0 : request.crossTileBufferMeters(),
 				request.largeBuildingTileSpanWarning() == null ? 4 : request.largeBuildingTileSpanWarning(), formats);
+	}
+
+	private DeliveryPolicy deliveryPolicy(CreateGenerationJobRequest request) throws DatasetImportException {
+		if (!Boolean.TRUE.equals(request.allowPartialResult())) return DeliveryPolicy.requireComplete();
+		if (request.maxFailedTiles() == null || request.maxFailedTileRatio() == null
+				|| request.maxFailedBuildings() == null || request.maxFailedBuildingRatio() == null) {
+			throw new DatasetImportException(DatasetErrorCode.INVALID_REQUEST,
+					"Partial delivery requires all failed-tile and failed-building count/ratio limits");
+		}
+		try {
+			return DeliveryPolicy.allowPartial(request.maxFailedTiles(), request.maxFailedTileRatio(),
+					request.maxFailedBuildings(), request.maxFailedBuildingRatio());
+		} catch (IllegalArgumentException exception) {
+			throw new DatasetImportException(DatasetErrorCode.INVALID_REQUEST,
+					"Partial delivery limits are invalid: " + exception.getMessage(), exception);
+		}
 	}
 
 	private static HeightUnit parseUnit(String value) throws DatasetImportException {

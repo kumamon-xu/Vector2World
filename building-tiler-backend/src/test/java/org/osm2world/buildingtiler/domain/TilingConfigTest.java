@@ -13,14 +13,20 @@ class TilingConfigTest {
 	void defaultsLockEvidenceSelectedMvpDecisions() {
 		TilingConfig config = TilingConfig.defaults(3, 16);
 		assertEquals(15, config.zoom());
-		assertEquals(List.of(2), config.lods());
+		assertEquals(List.of(3), config.lods());
 		assertEquals(List.of(OutputFormat.THREE_D_TILES), config.outputFormats());
 		assertEquals(0, config.crossTileBufferMeters());
 	}
 
 	@Test
-	void rejectsUnverifiedLodAndExporter() {
-		assertThrows(IllegalArgumentException.class, () -> new TilingConfig(15, List.of(4),
+	void acceptsQualityLodsAndRejectsUnsupportedOrMultipleLodsAndExporter() {
+		for (int lod : List.of(2, 3, 4)) {
+			assertEquals(List.of(lod), new TilingConfig(15, List.of(lod),
+					2, 8, 1, 0, 4, List.of(OutputFormat.THREE_D_TILES)).lods());
+		}
+		assertThrows(IllegalArgumentException.class, () -> new TilingConfig(15, List.of(1),
+				2, 8, 1, 0, 4, List.of(OutputFormat.THREE_D_TILES)));
+		assertThrows(IllegalArgumentException.class, () -> new TilingConfig(15, List.of(2, 3),
 				2, 8, 1, 0, 4, List.of(OutputFormat.THREE_D_TILES)));
 		assertThrows(IllegalArgumentException.class, () -> OutputFormat.parse("OBJ"));
 	}

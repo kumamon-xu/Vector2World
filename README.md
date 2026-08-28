@@ -4,7 +4,7 @@ Vector2World 是基于 [OSM2World](https://github.com/tordanik/OSM2World) 的二
 
 项目提供完整的 Windows 本地工作台：导入矢量、检查 CRS/编码/几何、配置高度与建筑样式、抽样预览、批量建模、CesiumJS 验证和成果交付。应用仅在本机环回地址运行，不需要部署公网服务。
 
-当前产品版本：`1.0.0-rc.1`<br>
+当前产品版本：`1.0.1`<br>
 OSM2World 基线：`0.5.0-SNAPSHOT` / `bfa31df1124295721ec848273fbf93ab46b24d25`<br>
 规则与预设版本：`m2-rules-v1` / `m2-presets-v1`
 
@@ -441,8 +441,8 @@ npm run check
 
 ```powershell
 .\release\windows\build-release.ps1 `
-  -Version 1.0.0-rc.1 `
-  -PackageVersion 1.0.0 `
+  -Version 1.0.1 `
+  -PackageVersion 1.0.1 `
   -BuildNumber local001 `
   -WixBin C:\Tools\wix314
 ```
@@ -450,9 +450,9 @@ npm run check
 输出位于：
 
 ```text
-output/release/1.0.0-rc.1+local001/
-├── Vector2World-1.0.0-rc.1+local001-windows-x64-portable.zip
-├── installer/Vector2World-1.0.0.msi
+output/release/1.0.1+local001/
+├── Vector2World-1.0.1+local001-windows-x64-portable.zip
+├── installer/Vector2World-1.0.1.msi
 ├── portable/Vector2World/
 ├── sample/
 ├── legal/

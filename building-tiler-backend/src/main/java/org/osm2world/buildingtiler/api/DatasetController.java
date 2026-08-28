@@ -66,7 +66,7 @@ public final class DatasetController {
 	public DatasetResponse metadata(@PathVariable("datasetId") String datasetId) throws DatasetImportException {
 		ManagedDataset dataset = datasets.get(datasetId);
 		DatasetMetadata materialized = dataset.heightMapping() == null ? null
-				: dataset.inspection().materialize(dataset.heightMapping()).metadata();
+				: datasets.materialize(datasetId, dataset.heightMapping()).metadata();
 		return DatasetResponse.from(dataset, materialized);
 	}
 

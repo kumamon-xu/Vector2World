@@ -47,7 +47,7 @@ class GeoJsonDatasetReaderTest {
 	@Test
 	void repairsSelfIntersectionExtractsPolygonFromCollectionAndSkipsOtherGeometry() throws Exception {
 		Path input = write("damaged.geojson", """
-				{"type":"FeatureCollection","features":[
+				{"type":"FeatureCollection","crs":{"type":"name","properties":{"name":"OGC:CRS84"}},"features":[
 				 {"type":"Feature","properties":{"h":12},"geometry":{"type":"Polygon","coordinates":[[[0,0],[2,2],[0,2],[2,0],[0,0]]]}},
 				 {"type":"Feature","properties":{"h":14},"geometry":{"type":"GeometryCollection","geometries":[{"type":"Point","coordinates":[0,0]},{"type":"Polygon","coordinates":[[[3,0],[4,0],[4,1],[3,1],[3,0]]]}]}},
 				 {"type":"Feature","properties":{"h":15},"geometry":{"type":"Polygon","coordinates":[[[5,0],[6,0],[7,0],[5,0]]]}},
@@ -78,6 +78,18 @@ class GeoJsonDatasetReaderTest {
 	}
 
 	@Test
+	void preservesNullSourceAttributesAndProjectsOnlyModelingFields() throws Exception {
+		Path input = write("null-attribute.geojson", featureCollection("{\"h\":12,\"optional\":null}"));
+		DatasetInspection inspection = reader.inspect(input, ImportOptions.defaults());
+		SourceBuildingFeature source = inspection.features().get(0);
+		assertTrue(source.properties().containsKey("optional"));
+		assertEquals(null, source.properties().get("optional"));
+		var building = inspection.materialize(new HeightMapping("h", HeightUnit.M)).buildings().get(0);
+		assertEquals(12.0, building.sourceAttributes().get("h"));
+		assertTrue(!building.sourceAttributes().containsKey("optional"));
+	}
+
+	@Test
 	void transformsProjectedGeoJsonAndHonorsExplicitOverride() throws Exception {
 		Path input = write("mercator.geojson", """
 				{"type":"FeatureCollection","crs":{"type":"name","properties":{"name":"EPSG:3857"}},"features":[
@@ -93,7 +105,7 @@ class GeoJsonDatasetReaderTest {
 	@Test
 	void supportsEmptyCollectionsButRejectsMalformedJsonAndBadCoordinates() throws Exception {
 		DatasetInspection empty = reader.inspect(write("empty.geojson",
-				"{\"type\":\"FeatureCollection\",\"features\":[]}"), ImportOptions.defaults());
+				"{\"type\":\"FeatureCollection\",\"crs\":{\"type\":\"name\",\"properties\":{\"name\":\"OGC:CRS84\"}},\"features\":[]}"), ImportOptions.defaults());
 		assertEquals(0, empty.featureCount());
 		assertTrue(empty.boundsWgs84().isNull());
 
@@ -108,9 +120,28 @@ class GeoJsonDatasetReaderTest {
 	}
 
 	@Test
+	void missingOrMalformedGeoJsonCrsRequiresAnExplicitUserDecision() throws Exception {
+		Path missing = write("missing-crs.geojson",
+				"{\"type\":\"FeatureCollection\",\"features\":[]}");
+		DatasetImportException missingError = assertThrows(DatasetImportException.class,
+				() -> reader.inspect(missing, ImportOptions.defaults()));
+		assertEquals(DatasetErrorCode.CRS_REQUIRED, missingError.code());
+
+		Path malformed = write("malformed-crs.geojson",
+				"{\"type\":\"FeatureCollection\",\"crs\":{\"type\":\"name\",\"properties\":{}},\"features\":[]}");
+		DatasetImportException malformedError = assertThrows(DatasetImportException.class,
+				() -> reader.inspect(malformed, ImportOptions.defaults()));
+		assertEquals(DatasetErrorCode.CRS_REQUIRED, malformedError.code());
+
+		DatasetInspection explicit = reader.inspect(missing, ImportOptions.defaults().withExplicitCrs("EPSG:4326"));
+		assertEquals("EPSG:4326", explicit.sourceCrs());
+		assertEquals("EXPLICIT_OVERRIDE", explicit.crsSource());
+	}
+
+	@Test
 	void duplicateSourceIdsAreDeterministicallyDisambiguatedAndInterruptionCancelsImport() throws Exception {
 		Path duplicates = write("duplicates.geojson", """
-				{"type":"FeatureCollection","features":[
+				{"type":"FeatureCollection","crs":{"type":"name","properties":{"name":"OGC:CRS84"}},"features":[
 				 {"type":"Feature","id":"same","properties":{"h":1},"geometry":{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,0]]]}},
 				 {"type":"Feature","id":"same","properties":{"h":2},"geometry":{"type":"Polygon","coordinates":[[[2,0],[3,0],[3,1],[2,0]]]}}
 				]}
@@ -126,7 +157,7 @@ class GeoJsonDatasetReaderTest {
 		try {
 			DatasetImportException cancelled = assertThrows(DatasetImportException.class,
 					() -> reader.inspect(duplicates, ImportOptions.defaults()));
-			assertEquals(DatasetErrorCode.IMPORT_TIMEOUT, cancelled.code());
+			assertEquals(DatasetErrorCode.IMPORT_CANCELLED, cancelled.code());
 		} finally {
 			Thread.interrupted();
 		}
@@ -139,7 +170,7 @@ class GeoJsonDatasetReaderTest {
 	}
 
 	private static String featureCollection(String properties) {
-		return "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":"
+		return "{\"type\":\"FeatureCollection\",\"crs\":{\"type\":\"name\",\"properties\":{\"name\":\"OGC:CRS84\"}},\"features\":[{\"type\":\"Feature\",\"properties\":"
 				+ properties + ",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}}]}";
 	}
 }

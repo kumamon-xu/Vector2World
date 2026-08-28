@@ -4,7 +4,7 @@
   "title": "Vector2World Dataset Metadata",
   "type": "object",
   "required": [
-    "schemaVersion", "datasetId", "status", "format", "crs", "layers",
+    "schemaVersion", "datasetId", "status", "format", "crs", "crsSource", "layers",
     "geometryTypes", "featureCount", "validGeometryCount", "bboxWgs84",
     "fields", "heightCandidates", "issues"
   ],
@@ -15,7 +15,10 @@
     "createdAt": { "type": "string", "format": "date-time" },
     "format": { "enum": ["GEOJSON", "SHP"] },
     "crs": { "type": "string", "minLength": 1 },
+    "crsSource": { "enum": ["DECLARED_VALID", "EXPLICIT_OVERRIDE"] },
     "sourceEncoding": { "type": ["string", "null"] },
+    "archiveEntryEncoding": { "type": ["string", "null"] },
+    "archiveEntryEncodingFallback": { "type": "boolean" },
     "layers": { "type": "array", "items": { "$ref": "#/$defs/layer" } },
     "geometryTypes": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
     "featureCount": { "type": "integer", "minimum": 0 },

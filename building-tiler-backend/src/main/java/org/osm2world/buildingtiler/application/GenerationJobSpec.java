@@ -8,12 +8,19 @@ public record GenerationJobSpec(
 		String datasetId,
 		HeightMapping heightMapping,
 		ModelingConfig modelingConfig,
-		TilingConfig tilingConfig) {
+		TilingConfig tilingConfig,
+		DeliveryPolicy deliveryPolicy) {
 
 	public GenerationJobSpec {
 		if (datasetId == null || datasetId.isBlank() || heightMapping == null
 				|| modelingConfig == null || tilingConfig == null) {
 			throw new IllegalArgumentException("datasetId, heightMapping, modelingConfig and tilingConfig are required");
 		}
+		deliveryPolicy = deliveryPolicy == null ? DeliveryPolicy.requireComplete() : deliveryPolicy;
+	}
+
+	public GenerationJobSpec(String datasetId, HeightMapping heightMapping,
+			ModelingConfig modelingConfig, TilingConfig tilingConfig) {
+		this(datasetId, heightMapping, modelingConfig, tilingConfig, DeliveryPolicy.requireComplete());
 	}
 }

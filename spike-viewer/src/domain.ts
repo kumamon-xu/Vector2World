@@ -68,7 +68,10 @@ export interface DatasetResponse {
   createdAt: string;
   format: "GEOJSON" | "SHP";
   crs: string;
+  crsSource: "DECLARED_VALID" | "EXPLICIT_OVERRIDE";
   sourceEncoding: string | null;
+  archiveEntryEncoding: string | null;
+  archiveEntryEncodingFallback: boolean;
   layers: Array<{ name: string; geometryType: string; selected: boolean }>;
   geometryTypes: Record<string, number>;
   featureCount: number;
@@ -105,7 +108,7 @@ export interface ModelingConfig {
   minimumBodyHeightMeters: number;
   minimumPitchedBuildingHeightMeters: number;
   maximumPitchedBuildingHeightMeters: number;
-  lod: 2;
+  lod: 2 | 3 | 4;
   sampleSize: number;
   variantSeed: number;
   zoom: number;
@@ -128,7 +131,7 @@ export const DEFAULT_CONFIG: ModelingConfig = {
   minimumBodyHeightMeters: 2.5,
   minimumPitchedBuildingHeightMeters: 6,
   maximumPitchedBuildingHeightMeters: 30,
-  lod: 2,
+  lod: 3,
   sampleSize: 100,
   variantSeed: 1_446_139_724,
   zoom: 15,
@@ -181,6 +184,8 @@ export interface TileFailure {
   category: string;
   attempts: number;
   retryable: boolean;
+  failedBuildings: number;
+  failedFeatureIds: string[];
   message: string;
 }
 
@@ -200,6 +205,8 @@ export interface JobResponse {
   tilingConfig: Record<string, unknown>;
   successfulTiles: number | null;
   failedTiles: number | null;
+  incomplete: boolean | null;
+  failedBuildings: number | null;
   modeledBuildings: number | null;
   outputBytes: number | null;
   ownershipHash: string | null;
@@ -247,6 +254,15 @@ export interface GenerationManifest {
   boundsWgs84: number[];
   ownershipHash: string;
   tileContents: Array<{ tile: string; lod: number; tilesetPath: string; glbPath: string }>;
+  incomplete: boolean;
+  failedBuildings: number;
+  deliveryPolicy: {
+    allowPartialResult: boolean;
+    maxFailedTiles: number;
+    maxFailedTileRatio: number;
+    maxFailedBuildings: number;
+    maxFailedBuildingRatio: number;
+  };
   buildTime: string;
 }
 
@@ -259,6 +275,8 @@ export interface GenerationReport {
   plannedTiles: number;
   successfulTiles: number;
   failedTiles: number;
+  incomplete: boolean;
+  failedBuildings: number;
   modeledBuildings: number;
   meshCount: number;
   vertexCount: number;

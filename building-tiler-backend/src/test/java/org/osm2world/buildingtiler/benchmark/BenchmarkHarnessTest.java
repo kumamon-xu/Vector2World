@@ -30,8 +30,10 @@ class BenchmarkHarnessTest {
 		assertEquals(first.sha256(), second.sha256());
 		assertEquals(1_000, first.scenarioCounts().values().stream().mapToInt(Integer::intValue).sum());
 		assertTrue(first.scenarioCounts().keySet().containsAll(
-				java.util.Set.of("simple", "complex", "holes", "multipolygon", "cross-tile")));
-		var inspection = new GeoJsonDatasetReader().inspect(first.geoJson(), ImportOptions.defaults());
+				java.util.Set.of("simple", "complex", "holes", "multipolygon", "cross-tile",
+						"wide-attributes")));
+		var inspection = new GeoJsonDatasetReader().inspect(first.geoJson(),
+				ImportOptions.defaults().withExplicitCrs("OGC:CRS84"));
 		var result = inspection.materialize(new HeightMapping("Elevation", HeightUnit.M,
 				InvalidHeightPolicy.FAIL, 10_000));
 		assertEquals(1_000, result.buildings().size());

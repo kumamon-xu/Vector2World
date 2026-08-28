@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,18 +32,20 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.osm2world.buildingtiler.gis.DatasetErrorCode;
 import org.osm2world.buildingtiler.gis.DatasetImportException;
 import org.osm2world.buildingtiler.gis.DatasetReadResult;
+import org.osm2world.buildingtiler.osm2world.ModelingLedgerEntry.Status;
 import org.osm2world.buildingtiler.tiles.TileOwnershipPlanner;
+import org.osm2world.buildingtiler.tiles.TileArtifactPaths;
 import org.osm2world.buildingtiler.tiles.TileRenderException;
 import org.osm2world.buildingtiler.tiles.TileRenderResult;
 import org.osm2world.buildingtiler.tiles.TileRenderer;
@@ -365,15 +368,22 @@ public final class GenerationJobService implements AutoCloseable {
 			metrics.finish("modelingAndGlb", phase);
 			checkCancellation(job);
 			if (batch.successes().isEmpty()) {
-				throw new IOException("All " + plan.tiles().size() + " tiles failed; no result was published");
-			}
-			if (!batch.failures().isEmpty()) {
-				warnings.add(batch.failures().size() + " tile(s) failed and were omitted from the tree");
+				String samples = batch.failures().stream().limit(3)
+						.map(failure -> failure.tile() + " [" + failure.category() + "]: " + failure.message())
+						.collect(java.util.stream.Collectors.joining("; "));
+				throw new IOException("All " + plan.tiles().size() + " tiles failed; no result was published"
+						+ (samples.isBlank() ? "" : "; samples: " + samples));
 			}
 			for (TileRenderResult result : batch.successes()) {
 				warnings.addAll(result.warnings());
 				if (!result.featureFailures().isEmpty()) warnings.add(result.tile() + " isolated "
 						+ result.featureFailures().size() + " feature failure(s)");
+			}
+			DeliveryAssessment delivery = assessDelivery(batch, plan.tiles().size(),
+					dataset.metadata().validBuildings(), job.spec().deliveryPolicy());
+			if (delivery.incomplete()) {
+				warnings.add(delivery.failedTiles() + " tile(s) and " + delivery.failedBuildings()
+						+ " building(s) failed; publishing only because the explicit partial-delivery policy permits it");
 			}
 			job.transition(GenerationJobState.BUILDING_TILESET, "Building sparse external tileset tree");
 			phase = metrics.start();
@@ -388,9 +398,11 @@ public final class GenerationJobService implements AutoCloseable {
 			metrics.finish("validation", phase);
 			Instant finished = Instant.now();
 			var write = resultWriter.write(staging, job, dataset, plan, batch.successes(), batch.failures(),
+					delivery.incomplete(), delivery.failedBuildings(),
 					List.copyOf(warnings), preliminary, started, finished,
 					metrics.snapshot(job.spec().tilingConfig().workerCount()));
-			TilesetValidator.ValidationResult finalValidation = validator.validate(staging, expectedContents);
+			TilesetValidator.ValidationResult finalValidation = validator.validateReconciliation(
+					staging, expectedContents, preliminary);
 			if (!finalValidation.valid()) throw new IOException("Manifest/report reconciliation failed: "
 					+ finalValidation.errors());
 			Path resultDirectory = job.workDirectory().resolve("result");
@@ -400,7 +412,8 @@ public final class GenerationJobService implements AutoCloseable {
 			long vertices = batch.successes().stream().mapToLong(TileRenderResult::vertexCount).sum();
 			long triangles = batch.successes().stream().mapToLong(TileRenderResult::triangleCount).sum();
 			job.complete(new GenerationJobResult(resultDirectory, plan.tiles().size(), batch.successes().size(),
-					batch.failures().size(), modeled, meshes, vertices, triangles, write.outputBytes(),
+					batch.failures().size(), delivery.incomplete(), delivery.failedBuildings(),
+					modeled, meshes, vertices, triangles, write.outputBytes(),
 					plan.ownershipHash(), successfulTiles,
 					batch.failures(), warnings, write.artifacts(), finalValidation));
 		} catch (CancellationException exception) {
@@ -418,34 +431,22 @@ public final class GenerationJobService implements AutoCloseable {
 	private TileBatch executeTiles(ManagedGenerationJob job, Path staging, List<TileWork> work,
 			List<String> warnings, JobMetrics metrics) throws InterruptedException, IOException {
 		CompletionService<TileExecution> completion = new ExecutorCompletionService<>(workers);
-		Semaphore jobLimit = new Semaphore(job.spec().tilingConfig().workerCount());
-		List<Future<TileExecution>> submitted = new ArrayList<>();
 		Map<Future<TileExecution>, TileWork> workByFuture = new ConcurrentHashMap<>();
-		Map<Future<TileExecution>, ScheduledFuture<?>> timeoutByFuture = new ConcurrentHashMap<>();
-		Set<Future<TileExecution>> timedOut = ConcurrentHashMap.newKeySet();
-		for (TileWork tile : work) {
-			checkCancellation(job);
-			Future<TileExecution> future = completion.submit(() -> executeTile(job, staging, tile, jobLimit, metrics));
-			submitted.add(future);
-			workByFuture.put(future, tile);
-			ScheduledFuture<?> timeout = timeouts.schedule(() -> {
-				if (!future.isDone()) {
-					timedOut.add(future);
-					future.cancel(true);
-				}
-			}, resourcePolicy.tileTimeout().toMillis(), TimeUnit.MILLISECONDS);
-			timeoutByFuture.put(future, timeout);
-			job.track(future);
+		Set<Future<TileExecution>> inFlight = ConcurrentHashMap.newKeySet();
+		int window = Math.max(1, Math.min(job.spec().tilingConfig().workerCount(),
+				job.spec().tilingConfig().queueCapacity()));
+		int next = 0;
+		while (next < work.size() && inFlight.size() < window) {
+			next = submitTile(job, staging, work, next, completion, workByFuture, inFlight, metrics);
 		}
 		List<TileRenderResult> successes = new ArrayList<>();
 		List<TileFailure> failures = new ArrayList<>();
 		int processed = 0;
 		try {
-		for (processed = 1; processed <= submitted.size(); processed++) {
+		while (processed < work.size()) {
 			checkCancellation(job);
 			Future<TileExecution> future = completion.take();
-			ScheduledFuture<?> timeout = timeoutByFuture.remove(future);
-			if (timeout != null) timeout.cancel(false);
+			inFlight.remove(future);
 			job.untrack(future);
 			try {
 				TileExecution execution = future.get();
@@ -456,40 +457,65 @@ public final class GenerationJobService implements AutoCloseable {
 						throw new IOException("RESOURCE_JOB_QUOTA: emitted tile bytes exceed "
 								+ resourcePolicy.maximumJobBytes());
 					}
-					if (processed % 16 == 0 || processed == submitted.size()) ensureDiskReserve();
+					if ((processed + 1) % 16 == 0 || processed + 1 == work.size()) ensureDiskReserve();
 					if (execution.attempts() > 1) warnings.add(execution.result().tile()
 							+ " succeeded after " + execution.attempts() + " attempts");
 				} else failures.add(execution.failure());
 			} catch (CancellationException exception) {
 				if (job.cancellationRequested()) throw exception;
 				TileWork tile = workByFuture.get(future);
-				if (timedOut.remove(future)) failures.add(new TileFailure(tile.tile().toString(),
-						"TIMEOUT", 1, true, "Tile exceeded " + resourcePolicy.tileTimeout()));
-				else failures.add(new TileFailure(tile.tile().toString(), "CANCELLED", 1, true,
-						"Tile worker was interrupted"));
+				failures.add(new TileFailure(tile.tile().toString(), "CANCELLED", 1, true,
+						tile.features().size(), featureIds(tile), "Tile worker was interrupted"));
 			} catch (ExecutionException exception) {
 				Throwable cause = exception.getCause();
 				if (cause instanceof CancellationException) throw new CancellationException(cause.getMessage());
-				failures.add(new TileFailure("unknown", "INTERNAL", 1, false, cause.toString()));
+				TileWork tile = workByFuture.get(future);
+				failures.add(new TileFailure(tile == null ? "unknown" : tile.tile().toString(),
+						"INTERNAL", 1, false, tile == null ? 0 : tile.features().size(),
+						tile == null ? List.of() : featureIds(tile), cause.toString()));
 			}
-			job.progress(processed, submitted.size(), "Processed " + processed + "/" + submitted.size() + " tiles");
+			workByFuture.remove(future);
+			processed++;
+			job.progress(processed, work.size(), "Processed " + processed + "/" + work.size() + " tiles");
+			if (next < work.size()) {
+				next = submitTile(job, staging, work, next, completion, workByFuture, inFlight, metrics);
+			}
 		}
 		return new TileBatch(List.copyOf(successes), List.copyOf(failures));
 		} finally {
-			for (ScheduledFuture<?> timeout : timeoutByFuture.values()) timeout.cancel(false);
-			if (processed <= submitted.size()) {
-				for (Future<TileExecution> future : submitted) {
-					if (!future.isDone()) future.cancel(true);
-					job.untrack(future);
-				}
+			for (Future<TileExecution> future : inFlight) {
+				if (!future.isDone()) future.cancel(true);
+				job.untrack(future);
 			}
 		}
 	}
 
-	private TileExecution executeTile(ManagedGenerationJob job, Path staging, TileWork tile, Semaphore jobLimit,
-			JobMetrics metrics)
-			throws InterruptedException {
-		jobLimit.acquire();
+	private int submitTile(ManagedGenerationJob job, Path staging, List<TileWork> work, int index,
+			CompletionService<TileExecution> completion, Map<Future<TileExecution>, TileWork> workByFuture,
+			Set<Future<TileExecution>> inFlight, JobMetrics metrics) {
+		checkCancellation(job);
+		TileWork tile = work.get(index);
+		long queuedAt = System.nanoTime();
+		metrics.tileQueued(workers.getQueue().size());
+		Future<TileExecution> future = completion.submit(() -> {
+			long started = metrics.tileStarted(queuedAt);
+			try { return executeTile(job, staging, tile, metrics); }
+			finally { metrics.tileFinished(started); }
+		});
+		workByFuture.put(future, tile);
+		inFlight.add(future);
+		job.track(future);
+		return index + 1;
+	}
+
+	private TileExecution executeTile(ManagedGenerationJob job, Path staging, TileWork tile,
+			JobMetrics metrics) throws InterruptedException {
+		AtomicBoolean timedOut = new AtomicBoolean();
+		Thread workerThread = Thread.currentThread();
+		ScheduledFuture<?> deadline = timeouts.schedule(() -> {
+			timedOut.set(true);
+			workerThread.interrupt();
+		}, resourcePolicy.tileTimeout().toMillis(), TimeUnit.MILLISECONDS);
 		try {
 			int attempts = 0;
 			while (true) {
@@ -499,9 +525,11 @@ public final class GenerationJobService implements AutoCloseable {
 					logTileAttempt(job, tile, attempts, "STARTED", null, null);
 					TileRenderResult result = renderer.render(tile, job.spec().tilingConfig().lods(),
 							job.spec().modelingConfig(), staging, job::cancellationRequested);
+					if (timedOut.get()) return timedOut(staging, tile, attempts);
 					logTileAttempt(job, tile, attempts, "SUCCEEDED", null, null);
 					return new TileExecution(result, null, attempts);
 				} catch (TileRenderException exception) {
+					if (timedOut.get()) return timedOut(staging, tile, attempts);
 					logTileAttempt(job, tile, attempts, "FAILED", exception.category().name(), exception.getMessage());
 					if (exception.retryable() && attempts <= job.spec().tilingConfig().transientRetryCount()) {
 						metrics.retried();
@@ -511,12 +539,85 @@ public final class GenerationJobService implements AutoCloseable {
 						continue;
 					}
 					return new TileExecution(null, new TileFailure(tile.tile().toString(),
-							exception.category().name(), attempts, exception.retryable(), exception.getMessage()), attempts);
+							exception.category().name(), attempts, exception.retryable(), tile.features().size(),
+							featureIds(tile), exception.getMessage()), attempts);
 				}
 			}
+		} catch (CancellationException exception) {
+			if (timedOut.get()) return timedOut(staging, tile, 1);
+			throw exception;
+		} catch (InterruptedException exception) {
+			if (timedOut.get()) return timedOut(staging, tile, 1);
+			throw exception;
 		} finally {
-			jobLimit.release();
+			deadline.cancel(false);
+			if (timedOut.get()) Thread.interrupted();
 		}
+	}
+
+	private TileExecution timedOut(Path staging, TileWork tile, int attempts) {
+		deleteTileArtifacts(staging, tile);
+		return new TileExecution(null, new TileFailure(tile.tile().toString(), "TIMEOUT",
+				Math.max(1, attempts), true, tile.features().size(), featureIds(tile),
+				"Tile exceeded " + resourcePolicy.tileTimeout()), Math.max(1, attempts));
+	}
+
+	private static void deleteTileArtifacts(Path staging, TileWork tile) {
+		TileArtifactPaths.deleteKnownLods(staging, tile);
+	}
+
+	private static List<String> featureIds(TileWork tile) {
+		return tile.features().stream().map(feature -> feature.id()).toList();
+	}
+
+	private static DeliveryAssessment assessDelivery(TileBatch batch, int plannedTiles,
+			long validBuildings, DeliveryPolicy policy) throws IOException {
+		var failedFeatureIds = new HashSet<String>();
+		long missingUnattributed = 0;
+		for (TileRenderResult result : batch.successes()) {
+			for (var entry : result.modelingLedger()) {
+				if (entry.status() != Status.MODELED) failedFeatureIds.add(entry.sourceFeatureId());
+				if (entry.status() == Status.MISSING_UNATTRIBUTED) missingUnattributed++;
+			}
+		}
+		if (missingUnattributed > 0) {
+			throw new IOException("INCOMPLETE_UNATTRIBUTED: " + missingUnattributed
+					+ " final GLB part(s) disappeared without an attributed failure; result was not published");
+		}
+		long failedBuildingsLong = failedFeatureIds.size();
+		for (TileFailure failure : batch.failures()) {
+			if (failure.failedBuildings() != failure.failedFeatureIds().size()) {
+				throw new IOException("INCOMPLETE_UNATTRIBUTED: tile " + failure.tile()
+						+ " reports " + failure.failedBuildings() + " missing building(s) but only "
+						+ failure.failedFeatureIds().size() + " have explicit IDs/reasons");
+			}
+			failedBuildingsLong += failure.failedBuildings();
+		}
+		if (failedBuildingsLong > Integer.MAX_VALUE) {
+			throw new IOException("INCOMPLETE_RESULT: failed-building count exceeds the supported range");
+		}
+		int failedBuildings = (int)failedBuildingsLong;
+		int failedTiles = batch.failures().size();
+		boolean incomplete = failedTiles > 0 || failedBuildings > 0;
+		if (!incomplete) return new DeliveryAssessment(false, 0, 0);
+		if (!policy.allowPartialResult()) {
+			throw new IOException("INCOMPLETE_RESULT: " + failedTiles + " tile(s) and " + failedBuildings
+					+ " building(s) failed; complete delivery is required and no result was published");
+		}
+		double failedTileRatio = plannedTiles == 0 ? 0 : (double)failedTiles / plannedTiles;
+		double failedBuildingRatio = validBuildings == 0 ? 0 : failedBuildingsLong / validBuildings;
+		List<String> exceeded = new ArrayList<>();
+		if (failedTiles > policy.maxFailedTiles()) exceeded.add("failedTiles=" + failedTiles);
+		if (failedTileRatio > policy.maxFailedTileRatio()) exceeded.add("failedTileRatio=" + failedTileRatio);
+		if (failedBuildings > policy.maxFailedBuildings()) exceeded.add("failedBuildings=" + failedBuildings);
+		if (failedBuildingRatio > policy.maxFailedBuildingRatio()) {
+			exceeded.add("failedBuildingRatio=" + failedBuildingRatio);
+		}
+		if (!exceeded.isEmpty()) {
+			throw new IOException("INCOMPLETE_RESULT_THRESHOLD_EXCEEDED: " + String.join(", ", exceeded)
+					+ "; no result was published");
+		}
+		return new DeliveryAssessment(true, failedTiles, failedBuildings);
 	}
 
 	private ManagedGenerationJob completed(String id) throws DatasetImportException {
@@ -714,4 +815,5 @@ public final class GenerationJobService implements AutoCloseable {
 
 	private record TileExecution(TileRenderResult result, TileFailure failure, int attempts) {}
 	private record TileBatch(List<TileRenderResult> successes, List<TileFailure> failures) {}
+	private record DeliveryAssessment(boolean incomplete, int failedTiles, int failedBuildings) {}
 }

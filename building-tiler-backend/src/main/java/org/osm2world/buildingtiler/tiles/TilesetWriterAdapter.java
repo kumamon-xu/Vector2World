@@ -178,6 +178,8 @@ public final class TilesetWriterAdapter {
 		manifest.put("sourceFormat", dataset.metadata().format());
 		manifest.put("sourceCrs", dataset.metadata().sourceCrs());
 		manifest.put("sourceEncoding", dataset.metadata().sourceEncoding());
+		manifest.put("archiveEntryEncoding", dataset.metadata().archiveEntryEncoding());
+		manifest.put("archiveEntryEncodingFallback", dataset.metadata().archiveEntryEncodingFallback());
 		manifest.put("heightField", "Elevation");
 		manifest.put("heightUnit", "m");
 		manifest.put("zoom", zoom);

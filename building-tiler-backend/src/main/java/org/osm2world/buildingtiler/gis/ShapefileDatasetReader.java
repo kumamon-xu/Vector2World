@@ -5,7 +5,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -28,6 +27,25 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 
 	@Override
 	public DatasetInspection inspect(Path input, ImportOptions options) throws IOException {
+		return inspect(input, options, options.newDeadline());
+	}
+
+	public DatasetInspection inspect(Path input, ImportOptions options, ImportDeadline deadline) throws IOException {
+		try (var features = NormalizedFeatureStore.memory()) {
+			return inspect(input, options, deadline, features);
+		}
+	}
+
+	public DatasetInspection inspectToStore(Path input, ImportOptions options, ImportDeadline deadline,
+			Path store, long maximumStoreBytes) throws IOException {
+		try (var features = NormalizedFeatureStore.streaming(store, maximumStoreBytes, deadline)) {
+			return inspect(input, options, deadline, features);
+		}
+	}
+
+	private DatasetInspection inspect(Path input, ImportOptions options, ImportDeadline deadline,
+			NormalizedFeatureStore.FeatureSink accepted) throws IOException {
+		deadline.check("shapefile initialization");
 		if (!Files.isRegularFile(input)) throw new DatasetImportException(DatasetErrorCode.UNSUPPORTED_FORMAT,
 				"Shapefile does not exist");
 		for (String extension : List.of(".shx", ".dbf")) {
@@ -45,8 +63,7 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 
 		Charset charset = options.dbfCharset() != null ? options.dbfCharset() : readCpg(input);
 		if (charset == null) charset = StandardCharsets.ISO_8859_1;
-		Instant deadline = Instant.now().plus(options.timeout());
-		checkDeadline(deadline);
+		deadline.check("shapefile datastore initialization");
 		ShapefileDataStore dataStore = new ShapefileDataStore(input.toUri().toURL());
 		dataStore.setCharset(charset);
 		try {
@@ -61,7 +78,6 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 			FieldProfiler fields = new FieldProfiler();
 			ImportIssueCollector issues = new ImportIssueCollector();
 			Map<String, Long> geometryTypes = new LinkedHashMap<>();
-			List<SourceBuildingFeature> accepted = new ArrayList<>();
 			Map<String, Integer> ids = new HashMap<>();
 			Envelope bounds = new Envelope();
 			long featureCount = 0;
@@ -71,7 +87,7 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 			var collection = dataStore.getFeatureSource(typeName).getFeatures(Query.ALL);
 			try (var iterator = collection.features()) {
 				while (iterator.hasNext()) {
-					checkDeadline(deadline);
+					deadline.check("shapefile feature read");
 					SimpleFeature feature = iterator.next();
 					featureCount++;
 					Map<String, Object> properties = new LinkedHashMap<>();
@@ -88,7 +104,9 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 						continue;
 					}
 					Geometry wgs84 = CrsSupport.toWgs84(geometry, crs);
+					deadline.check("shapefile CRS transform");
 					GeometryNormalizer.Result normalized = GeometryNormalizer.normalize(wgs84, options);
+					deadline.check("shapefile geometry repair");
 					if (!normalized.accepted()) {
 						skipped++;
 						issues.error(normalized.rejectionCode(), normalized.rejectionMessage());
@@ -97,6 +115,7 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 					if (normalized.repaired()) repaired++;
 					if (normalized.warning() != null) issues.warning("REPAIR_AREA_CHANGED", normalized.warning());
 					String baseId = StableIdGenerator.baseId(feature.getID(), normalized.geometry(), properties);
+					deadline.check("shapefile stable ID hashing");
 					int occurrence = ids.merge(baseId, 1, Integer::sum);
 					String id = occurrence == 1 ? baseId
 							: baseId + "~" + StableIdGenerator.collisionSuffix(baseId, normalized.geometry(), properties)
@@ -107,15 +126,19 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 					for (int part = 0; part < partCount; part++) partIds.add(new BuildingPartId(id, part));
 					accepted.add(new SourceBuildingFeature(id, normalized.geometry(), properties, partIds,
 							geometryType, normalized.repaired()));
+					ImportMemoryGuard.check(accepted.size(), "shapefile normalized feature retention");
 					bounds.expandToInclude(normalized.geometry().getEnvelopeInternal());
 				}
 			}
+			deadline.check("shapefile metadata finalization");
+			List<SourceBuildingFeature> features = accepted.finish();
 
 			List<LayerMetadata> layers = new ArrayList<>();
 			for (String name : names) layers.add(new LayerMetadata(name,
 					name.equals(typeName) ? dominantType(geometryTypes) : "Unknown", name.equals(typeName)));
-			return new DatasetInspection(input.toAbsolutePath(), "SHP", crs.name(), charset.name(),
-					layers, featureCount, accepted, fields.metadata(), fields.heightCandidates(),
+			return new DatasetInspection(input.toAbsolutePath(), "SHP", crs.name(), crs.sourceKind().name(),
+					charset.name(), null, false,
+					layers, featureCount, features, fields.metadata(), fields.heightCandidates(),
 					geometryTypes, bounds, skipped, repaired, issues.result());
 		} catch (DatasetImportException exception) {
 			throw exception;
@@ -161,12 +184,6 @@ public final class ShapefileDatasetReader implements InspectingDatasetReader {
 					.filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT)
 							.equals((base + extension).toLowerCase(Locale.ROOT)))
 					.findFirst().orElse(null);
-		}
-	}
-
-	private static void checkDeadline(Instant deadline) throws DatasetImportException {
-		if (Thread.currentThread().isInterrupted() || Instant.now().isAfter(deadline)) {
-			throw new DatasetImportException(DatasetErrorCode.IMPORT_TIMEOUT, "Dataset import timed out or was cancelled");
 		}
 	}
 

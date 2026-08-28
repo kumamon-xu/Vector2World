@@ -26,5 +26,10 @@ public record CreateGenerationJobRequest(
 		Double crossTileBufferMeters,
 		Integer largeBuildingTileSpanWarning,
 		List<String> outputFormats,
-		Long variantSeed) {
+		Long variantSeed,
+		Boolean allowPartialResult,
+		Integer maxFailedTiles,
+		Double maxFailedTileRatio,
+		Integer maxFailedBuildings,
+		Double maxFailedBuildingRatio) {
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
@@ -19,6 +20,11 @@ import org.osm2world.buildingtiler.domain.RoofMode;
 import org.osm2world.buildingtiler.modeling.BuildingRuleEngine;
 import org.osm2world.buildingtiler.modeling.OsmTagMapper;
 import org.osm2world.buildingtiler.support.TestBuildingFactory;
+import org.osm2world.O2WConverter;
+import org.osm2world.map_data.data.MapData;
+import org.osm2world.math.geo.MapProjection;
+import org.osm2world.output.Output;
+import org.osm2world.scene.Scene;
 import org.osm2world.math.geo.LatLon;
 import org.osm2world.math.geo.TileNumber;
 
@@ -93,5 +99,35 @@ class Osm2WorldEngineAdapterM2Test {
 		} finally {
 			executor.shutdownNow();
 		}
+	}
+
+	@Test
+	void isolatesAFeatureThatFailsInsideOsm2WorldConversion() {
+		AtomicInteger conversions = new AtomicInteger();
+		var isolatingEngine = new Osm2WorldEngineAdapter(new OsmTagMapper(), new BuildingRuleEngine(),
+				new Osm2WorldConfigFactory(), () -> new O2WConverter() {
+					@Override public Scene convert(MapData mapData, MapProjection projection, Output... outputs) {
+						int invocation = conversions.incrementAndGet();
+						if (invocation == 1 || invocation == 3) {
+							throw new IllegalStateException("injected conversion failure");
+						}
+						return super.convert(mapData, projection, outputs);
+					}
+				});
+		var first = TestBuildingFactory.rectangle("first", 116.6000, 39.9000, .0002, .0002, 18);
+		var poisoned = TestBuildingFactory.rectangle("poisoned", 116.6004, 39.9000, .0002, .0002, 18);
+		var third = TestBuildingFactory.rectangle("third", 116.6008, 39.9000, .0002, .0002, 18);
+
+		var result = isolatingEngine.generate(tile, List.of(first, poisoned, third),
+				ModelingConfig.defaults(), false);
+
+		assertFalse(result.empty());
+		assertEquals(2, result.modeledFeatures());
+		assertTrue(result.failures().stream().anyMatch(failure -> failure.featureId().equals("poisoned")
+				&& failure.category() == ModelFailureCategory.OSM2WORLD_CONVERSION));
+		assertTrue(result.ledger().stream().anyMatch(entry -> entry.sourceFeatureId().equals("poisoned")
+				&& entry.status() == ModelingLedgerEntry.Status.FAILED_O2W_CONVERSION));
+		assertTrue(result.ledger().stream().filter(entry -> entry.status() == ModelingLedgerEntry.Status.PENDING)
+				.map(ModelingLedgerEntry::sourceFeatureId).distinct().count() == 2);
 	}
 }

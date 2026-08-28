@@ -115,6 +115,13 @@ export function ConfigStep({ dataset, config, onConfig, onDataset, onBack, onNex
                 <Form.Item label="倾斜屋顶上限（米）"><InputNumber min={0} value={config.maximumPitchedBuildingHeightMeters} onChange={(value) => change("maximumPitchedBuildingHeightMeters", value ?? 30)} /></Form.Item>
                 <Form.Item label="样例建筑数"><InputNumber min={1} max={500} value={config.sampleSize} onChange={(value) => change("sampleSize", value ?? 100)} /></Form.Item>
                 <Form.Item label="3D Tiles Zoom"><InputNumber min={0} max={22} value={config.zoom} onChange={(value) => change("zoom", value ?? 15)} /></Form.Item>
+                <Form.Item label="建模质量">
+                  <Select value={config.lod} onChange={(value) => change("lod", value)} options={[
+                    { value: 2, label: "快速 · 贴图立面（LOD2）" },
+                    { value: 3, label: "精细 · 几何窗户（LOD3）" },
+                    { value: 4, label: "最高 · 完整几何（LOD4）" }
+                  ]} />
+                </Form.Item>
                 <Form.Item label="并行任务数（1–8）" validateStatus={config.workerCount >= 1 && config.workerCount <= 8 ? "success" : "error"}><InputNumber min={1} max={8} value={config.workerCount} onChange={(value) => change("workerCount", value ?? 1)} /></Form.Item>
               </div>
             )

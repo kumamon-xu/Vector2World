@@ -13,13 +13,14 @@ public record TilingConfig(
 		List<OutputFormat> outputFormats) {
 
 	public static final int DEFAULT_ZOOM = 15;
-	public static final List<Integer> MVP_LODS = List.of(2);
+	public static final List<Integer> DEFAULT_LODS = List.of(3);
+	public static final List<Integer> SUPPORTED_LODS = List.of(2, 3, 4);
 
 	public TilingConfig {
 		if (zoom < 0 || zoom > 22) throw new IllegalArgumentException("zoom must be between 0 and 22");
-		lods = lods == null || lods.isEmpty() ? MVP_LODS : List.copyOf(lods);
-		if (!MVP_LODS.equals(lods)) {
-			throw new IllegalArgumentException("M3 MVP supports the evidence-selected LOD set [2]");
+		lods = lods == null || lods.isEmpty() ? DEFAULT_LODS : List.copyOf(lods);
+		if (lods.size() != 1 || !SUPPORTED_LODS.contains(lods.get(0))) {
+			throw new IllegalArgumentException("Exactly one supported LOD must be selected: 2, 3 or 4");
 		}
 		if (workerCount < 1 || workerCount > 64) {
 			throw new IllegalArgumentException("workerCount must be between 1 and 64");
@@ -49,7 +50,7 @@ public record TilingConfig(
 	}
 
 	public static TilingConfig defaults(int workerCount, int queueCapacity) {
-		return new TilingConfig(DEFAULT_ZOOM, MVP_LODS, workerCount, queueCapacity,
+		return new TilingConfig(DEFAULT_ZOOM, DEFAULT_LODS, workerCount, queueCapacity,
 				1, 0, 4, List.of(OutputFormat.THREE_D_TILES));
 	}
 }
